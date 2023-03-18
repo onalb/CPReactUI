@@ -3,8 +3,6 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-// var exec = require('child_process').exec;
-import * as child from 'child_process';
 
 // killUI().then(function(){
 
