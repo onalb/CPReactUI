@@ -1,4 +1,3 @@
-
 export class TaskService {
 
     public async getAllTasks(): Promise<any> {
