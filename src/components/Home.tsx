@@ -25,11 +25,11 @@ function Home() {
   const [photoList, setPhotoList] = useState([])
   const [photos, setPhotos] = useState<Photo[]>([])
   const folder = 
-  null;
+  // null;
   // `C%3A%5CUsers%5Cburak%5CPictures%5C%2722%20Istanbul%5C4%5C`
   // 'C:\\Users\\burak\\Pictures\\\'22 Istanbul\\edited\\'
   // 'C:\\Users\\burak\\Pictures\\topaz\\raw\\'
-  // 'C:\\Users\\burak\\Pictures\\sell\\90d\\'
+  'C:\\Users\\burak\\Pictures\\sell\\90d\\'
   // `C:\\Users\\burak\\Pictures\\'23 tattoo convention\\`
   // `C:\\Users\\burak\\Pictures\\'23 philly\\`
 
@@ -59,40 +59,41 @@ function Home() {
   // }
 
   var photoService = new PhotoService();
-  useEffect(() => {
-    if(folder) {
-      photoService.getPhotoListFromFolder(folder).then(photoList => {
-        console.log(photoList)
-        setPhotoList(photoList)
+  // useEffect(() => {
+  //   if(folder) {
+  //     photoService.getPhotoListFromFolder(folder).then(photoList => {
+  //       console.log(photoList)
+  //       setPhotoList(photoList)
 
-        var bar = new Promise<void>((resolve, reject) => {
-          var _photos: any[] = []
-          photoList.forEach(async (_photo: any, index: number, array: string | any[]) => {
-              console.log(_photo);
-              var p = await photoService.getPhotoFromFolder(_photo.directory, _photo.name)
-              _photos.push(p);
-              if (index === array.length -1)
-              {
-                setPhotos(_photos);
-                resolve();
-              } 
-          });
+  //       var bar = new Promise<void>((resolve, reject) => {
+  //         var _photos: any[] = []
+  //         photoList.forEach(async (_photo: any, index: number, array: string | any[]) => {
+  //             console.log(_photo);
+  //             var p = await photoService.getPhotoFromFolder(_photo.directory, _photo.name)
+  //             _photos.push(p);
+  //             if (index === array.length -1)
+  //             {
+  //               setPhotos(_photos);
+  //               resolve();
+  //             } 
+  //         });
 
-        }
-        );
+  //       }
+  //       );
       
-      bar.then((p) => {
-          console.log('All done!');
-      });
-    });
-    }
+  //     bar.then((p) => {
+  //         console.log('All done!');
+  //     });
+  //   });
+  //   }
 
-  }, [])
+  // }, [])
   
   return (
     <>
     <Photos photos={ photos }></Photos>
-    {/* <div className="container mrgnbtm">
+    {
+    /* <div className="container mrgnbtm">
       <div className="row">
         <div className="col-md-12">
           <CreateTask taskCreated={taskCreated}></CreateTask>
@@ -101,142 +102,8 @@ function Home() {
     </div>
     <div className="container mrgnbtm">
       <Tasks tasks={tasks} deleteTask={delTask} taskEdited={taskEdited}></Tasks>
-    </div> */}
-
-
-<img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
-    <img 
-// style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-src={"http://localhost:3333/?image=0H7A9097.JPG"} 
-// width={"1203"} 
-height={"300"}
-alt="">
-    </img>
+    </div> */
+    }    
     </>
 
 
