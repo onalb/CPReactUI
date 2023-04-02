@@ -30,70 +30,70 @@ export const Photos = ({photos}: IPhotos) => {
         <>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3333/?imageDir=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"} 
+        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
         height={"802"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3333/?imageDir=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"} 
+        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
         height={"802"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3333/?imageDir=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"} 
+        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
         height={"802"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3333/?imageDir=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"} 
+        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
         height={"802"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3333/?imageDir=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"} 
+        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
         height={"802"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3333/?imageDir=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"} 
+        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
         height={"802"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3333/?imageDir=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"} 
+        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
         height={"802"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3333/?imageDir=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"} 
+        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
         height={"802"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3333/?imageDir=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"} 
+        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
         height={"802"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3333/?imageDir=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"} 
+        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
         height={"802"}
         alt="">
