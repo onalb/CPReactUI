@@ -1,103 +1,115 @@
-import React from 'react'
-
+import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { Button } from 'react-bootstrap';
 interface IPhotos {
-    photos: any[];
+    folder: string;
+    // photos: any[];
 }
 
-export const Photos = ({photos}: IPhotos) => {
+interface Photo {
+    name: string;
+    encodedPhoto: string;
+    directory: string;
+    content: string;
+}
+
+export const Photos = ({ folder }: IPhotos) => {
+
+    const [photos, setPhotos] = useState<string>('')
+    let photosArray: Photo[] = []
+    useEffect(() => {
+        async function fetchData() {
+            let _photos = await axios.get(
+                "http://localhost:3080/api/photoList?folder=" + folder
+            );
+                let photoGrid = ''
+                _photos.data.map((photo: { name: any; }, i: any) => {     
+                console.log("Entered"); 
+                photoGrid += `<img src="http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}" height="300" alt=""></img>`
+             })
+
+            setPhotos(photoGrid);
+        }
+
+        if (folder) {
+            fetchData()
+        }
+    }, [folder])
     
-    // function toBase64(arr: any[]) {
-    //     //arr = new Uint8Array(arr) if it's an ArrayBuffer
-    //     return btoa(
-    //        arr.reduce((data, byte) => data + String.fromCharCode(byte), '')
-    //     );
-    //  }
-    // console.log('photos length:::', photos)
-    // if (photos.length === 0) return null
-
-    // const PhotoRow = (photo: any, index: number) => {
-        
-    //     return(<img style={{height: "300px"}} src={`data:image/jpg;base64,` + toBase64(photo.data)} alt=""></img>)
-    // }
-    // var photoTable;
-    // if(photos)
-    // {
-    //     photoTable = photos.map((photo, index) => PhotoRow(photo, index))
-    // }
-
-
     return(
         <>
-        <img 
+        <div dangerouslySetInnerHTML={{ __html: photos }} />
+        {/* <Button onClick={() => changeImage('20211202_203921.jpg')}>Image</Button> */}
+        {/* {photos.map((photo, i) => {     
+           console.log("Entered");                 
+            <img 
+                src={"http://localhost:3080/api/photos?folder=" + folder + "&image=" + photo.name}
+                height={"300"}
+                alt="">
+            </img>
+        })} */}
+        {/* {photos} */}
+        {/* <img 
+            src={"http://localhost:3080/api/photos?folder=C:\\Users\\burak\\Pictures\\sell\\90d\\&image=20211202_203921.jpg"}
+            height={"300"}
+            alt="">
+        </img> */}
+
+        {/* <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
         src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
         width={"1203"} 
-        height={"802"}
+        height={"300"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
         src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
-        width={"1203"} 
-        height={"802"}
+        height={"300"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
         src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
-        width={"1203"} 
-        height={"802"}
+        height={"300"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
         src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
-        width={"1203"} 
-        height={"802"}
+        height={"300"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
         src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
-        width={"1203"} 
-        height={"802"}
+        height={"300"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
         src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
-        width={"1203"} 
-        height={"802"}
+        height={"300"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
         src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
-        width={"1203"} 
-        height={"802"}
+        height={"300"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
         src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
-        width={"1203"} 
-        height={"802"}
+        height={"300"}
         alt="">
         </img>
         <img 
         // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
         src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
-        width={"1203"} 
-        height={"802"}
+        height={"300"}
         alt="">
-        </img>
-        <img 
-        // style={"display: block;-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"} 
-        src={"http://localhost:3080/api/photo?folder=C:\\Users\\burak\\Pictures\\topaz\\raw\\&image=20211219_225109(0).jpg"} 
-        width={"1203"} 
-        height={"802"}
-        alt="">
-        </img>
+        </img> */}
         
         {/* <div>{photoTable}
         </div> */}

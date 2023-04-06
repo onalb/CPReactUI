@@ -9,27 +9,29 @@ import { Photos } from './Photos'
 import CreateTask from './CreateTask'
 import { TaskService} from '../services/TaskService'
 import { PhotoService } from '../services/PhotoService';
+import { strict } from 'assert';
+import { Button } from 'react-bootstrap';
 
-type Photo = {
-  name: string
-  encodedPhoto: string
-  directory: string
-  content: string
-};
+// type Photo = {
+//   name: string
+//   encodedPhoto: string
+//   folder: string
+//   content: string
+// };
 
 function Home() {
 
-  const [tasks, setTasks] = useState([])
-  const [numberOfTasks, setNumberOfTasks] = useState<number>(0)
-  const [isTaskEdited, setTaskEdited] = useState(false)
-  const [photoList, setPhotoList] = useState([])
-  const [photos, setPhotos] = useState<Photo[]>([])
-  const folder = 
+  // const [tasks, setTasks] = useState([])
+  // const [numberOfTasks, setNumberOfTasks] = useState<number>(0)
+  // const [isTaskEdited, setTaskEdited] = useState(false)
+  // const [photoList, setPhotoList] = useState([])
+  // const [photos, setPhotos] = useState<Photo[]>([])
+  // const folder = 
   // null;
   // `C%3A%5CUsers%5Cburak%5CPictures%5C%2722%20Istanbul%5C4%5C`
   // 'C:\\Users\\burak\\Pictures\\\'22 Istanbul\\edited\\'
   // 'C:\\Users\\burak\\Pictures\\topaz\\raw\\'
-  'C:\\Users\\burak\\Pictures\\sell\\90d\\'
+  // 'C:\\Users\\burak\\Pictures\\sell\\90d\\'
   // `C:\\Users\\burak\\Pictures\\'23 tattoo convention\\`
   // `C:\\Users\\burak\\Pictures\\'23 philly\\`
 
@@ -58,57 +60,22 @@ function Home() {
   //    setTaskEdited(res)
   // }
 
-  var photoService = new PhotoService();
-  // useEffect(() => {
-  //   if(folder) {
-  //     photoService.getPhotoListFromFolder(folder).then(photoList => {
-  //       console.log(photoList)
-  //       setPhotoList(photoList)
+  const [folder, setFolder] = useState<string>('')
+  useEffect(() => {
+    console.log(folder);
+  }, [folder])
 
-  //       var bar = new Promise<void>((resolve, reject) => {
-  //         var _photos: any[] = []
-  //         photoList.forEach(async (_photo: any, index: number, array: string | any[]) => {
-  //             console.log(_photo);
-  //             var p = await photoService.getPhotoFromFolder(_photo.directory, _photo.name)
-  //             _photos.push(p);
-  //             if (index === array.length -1)
-  //             {
-  //               setPhotos(_photos);
-  //               resolve();
-  //             } 
-  //         });
 
-  //       }
-  //       );
-      
-  //     bar.then((p) => {
-  //         console.log('All done!');
-  //     });
-  //   });
-  //   }
+  const changeFolder = (folder:string) => {
+    setFolder(folder);
+  };
 
-  // }, [])
-  
   return (
     <>
-    <Photos photos={ photos }></Photos>
-    {
-    /* <div className="container mrgnbtm">
-      <div className="row">
-        <div className="col-md-12">
-          <CreateTask taskCreated={taskCreated}></CreateTask>
-        </div>
-      </div>
-    </div>
-    <div className="container mrgnbtm">
-      <Tasks tasks={tasks} deleteTask={delTask} taskEdited={taskEdited}></Tasks>
-    </div> */
-    }    
+    {/* <Button onClick={() => changeFolder('C:\\Users\\burak\\Pictures\\sell\\90d\\')}>Folder</Button> */}
+    <Button onClick={() => changeFolder('C:\\Users\\burak\\Pictures\\\'23 Portland\\')}>Folder</Button>
+    <Photos folder={ folder }></Photos>
     </>
-
-
-
-
   );
 }
 
