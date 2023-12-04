@@ -26,7 +26,7 @@ function Home() {
   // const [isTaskEdited, setTaskEdited] = useState(false)
   // const [photoList, setPhotoList] = useState([])
   // const [photos, setPhotos] = useState<Photo[]>([])
-  // const folder = 
+  const testfolder = 
   // null;
   // `C%3A%5CUsers%5Cburak%5CPictures%5C%2722%20Istanbul%5C4%5C`
   // 'C:\\Users\\burak\\Pictures\\\'22 Istanbul\\edited\\'
@@ -34,6 +34,7 @@ function Home() {
   // 'C:\\Users\\burak\\Pictures\\sell\\90d\\'
   // `C:\\Users\\burak\\Pictures\\'23 tattoo convention\\`
   // `C:\\Users\\burak\\Pictures\\'23 philly\\`
+  `C:\\Users\\burak\\Pictures\\\'23 Portland\\`
 
   // const taskService = new TaskService();
 
@@ -73,8 +74,10 @@ function Home() {
   return (
     <>
     {/* <Button onClick={() => changeFolder('C:\\Users\\burak\\Pictures\\sell\\90d\\')}>Folder</Button> */}
-    <Button onClick={() => changeFolder('C:\\Users\\burak\\Pictures\\\'23 Portland\\')}>Folder</Button>
-    <Photos folder={ folder }></Photos>
+    <Button onClick={() => changeFolder(testfolder)}>Folder</Button>
+    {/* <Photos folder={ folder }></Photos> */}
+
+    
     </>
   );
 }

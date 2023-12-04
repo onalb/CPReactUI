@@ -1,7 +1,8 @@
 import React from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
-import Home from './components/Home'
+// import Home from './components/Home'
+import ImageZoom from './components/ImageZoom'
 import {
   BrowserRouter,
   Routes,
@@ -14,7 +15,7 @@ function App() {
     <BrowserRouter>
       <div>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<ImageZoom></ImageZoom>} />
         </Routes>
       </div>
     </BrowserRouter>
