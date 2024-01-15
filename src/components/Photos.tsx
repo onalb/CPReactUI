@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
-import { Button } from 'react-bootstrap';
+import { LazyLoadImage } from "react-lazy-load-image-component";
 
 interface IPhotos {
     folder: string;
@@ -15,16 +15,16 @@ interface Photo {
 
 export const Photos = ({ folder }: IPhotos) => {
     const [photos, setPhotos] = useState<string>('')
-    let photosArray: Photo[] = []
+      
     useEffect(() => {
         async function fetchData() {
-            let _photos = await axios.get(
+            await axios.get(
                 "http://localhost:3080/api/photoList?folder=" + folder
             ).then((res)=>{
                 let photoGrid = ''
                 res.data.map((photo: { name: any; }, i: any) => {
                     console.log("Entered"); 
-                    photoGrid += `<img src="http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}" height="300" alt=""></img>`
+                    photoGrid += `<img src="http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}" height="300" alt="" loading="eager" />`
                  })
     
                 setPhotos(photoGrid);
@@ -32,8 +32,6 @@ export const Photos = ({ folder }: IPhotos) => {
             .catch((e)=>{
                 console.log(e)
             });
-
-
         }
 
         if (folder) {
@@ -47,7 +45,9 @@ export const Photos = ({ folder }: IPhotos) => {
     
     return(
         <>
-        <div dangerouslySetInnerHTML={{ __html: photos }} />
+        <div style={{ height: 'auto', overflow: 'hidden' }}>
+            <div id="photos-container" dangerouslySetInnerHTML={{ __html: photos }} />
+        </div>
         </>
     )
 }

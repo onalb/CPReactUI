@@ -16,6 +16,8 @@
     "react-bootstrap": "^2.1.2",
     "react-dom": "^17.0.2",
     "react-hook-form": "^7.27.0",
+    "react-lazy-load-image-component": "^1.6.0",
+    "react-map-interaction": "^2.1.0",
     "react-router-dom": "^6.2.1",
     "react-scripts": "^5.0.0",
     "react-zoom-pan-pinch": "^3.0.7",
@@ -51,5 +53,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/react-lazy-load-image-component": "^1.6.3"
   }
 }
