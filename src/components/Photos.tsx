@@ -45,9 +45,8 @@ export const Photos = ({ folder }: IPhotos) => {
     
     return(
         <>
-        <div style={{ height: 'auto', overflow: 'hidden' }}>
-            <div id="photos-container" dangerouslySetInnerHTML={{ __html: photos }} />
-        </div>
+            <div id="photos-container" dangerouslySetInnerHTML={{ __html: photos }}/>
+
         </>
     )
 }
