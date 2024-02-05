@@ -1,20 +1,20 @@
-// App.js
 import React from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './App.css';
-import ImageZoom from './components/ImageZoom';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import DraggableBox from '../src/components/ImageZoom';
 
-function App() {
+const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <div>
-        <Routes>
-          <Route path="/" element={<ImageZoom />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
+    <div style={styles.container}>
+      <DraggableBox />
+    </div>
   );
-}
+};
+
+const styles = {
+  container: {
+    height: '100vh',
+    overflow: 'auto',
+    margin: 0,
+  },
+};
 
 export default App;
