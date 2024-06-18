@@ -1,194 +1,163 @@
-import React, { useState, useEffect } from "react";
-import { Card } from "react-bootstrap";
-import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import pictures from './pictures';
-import Draggable, { DraggableData } from 'react-draggable';
+import React, { useEffect, useState, Component } from 'react';
+import Draggable from 'react-draggable';
 
-const ImageZoom: React.FC = () => {
-  const initialScale = 1;
-  const [bodyHeight, setBodyHeight] = useState<number>(0);
-  const [bigRectHeight, setBigRectHeight] = useState<number>(0);
-  const [smallRectHeight, setSmallRectHeight] = useState<number>(0);
-  const [scale, setScale] = useState<number>(1);
+const DraggableComponent = () => {
+  const [position1, setPosition1] = useState({ x: 0, y: 0 });
+  const [position2, setPosition2] = useState({ x: 0, y: 0 });
+  const [contentHeight, setContentHeight] = useState(20000);
+  const [scale, setScale] = useState(1);
+  const [originX, setOriginX] = useState(0);
+  const [originY, setOriginY] = useState(0);
 
-  const containerStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    width: '100%',
-    height: '100%',
-    overflow: 'hidden'
-  };
-
-  const cardStyle: React.CSSProperties = {
-    paddingTop: '10px',
-    textAlign: 'center',
-  };
-
-  const [containerSize, setContainerSize] = useState<{ width?: number; height?: number }>({
-    width: window.screen.width,
-    height: 0,
+  const [scrollThumbWidth, setScrollThumbWidth] = useState(100);
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
   });
 
-  const [position, setPosition] = useState<{ x: number; y: number }>({
-    x: 10,
-    y: 0,
-  });
-
-  useEffect(() => {
-    setBodyHeight(document.body.clientHeight);
-    const transformWrapperElement = document.querySelector('.react-transform-wrapper');
-
-    if (transformWrapperElement) {
-      (transformWrapperElement as HTMLElement).style.height = `99vh`;
+  const calculateScrollThumHeight = () => {
+    const scrollThumbHeight = windowSize.height * windowSize.height / contentHeight;
+    if (scrollThumbHeight < 50) {
+      return 50;
     }
+    return scrollThumbHeight;
+  }
 
-    setBigRectHeight(document.body.clientHeight);
-    calculateScrollThumbHeight();
-  }, [document.body.clientHeight]);
+  const [scrollThumbHeight, setScrollThumbHeight] = useState(calculateScrollThumHeight);
 
-  useEffect(() => {
-    setBodyHeight(document.body.clientHeight);
-    window.addEventListener('resize', () => {
-      setBigRectHeight(document.body.clientHeight);
-      calculateScrollThumbHeight();
+  // useEffect(() => {
+  //   function handleResize() {
+  //     setWindowSize({
+  //       width: window.innerWidth,
+  //       height: window.innerHeight,
+  //     });
+  //   }
 
-      const reactDraggableTop = parseFloat(
-        window.getComputedStyle(document.querySelector('.react-draggable') || new Element()).transform.slice(7, -1).split(',')[5]
-      ); //scroll thumb
+  //   window.addEventListener('resize', handleResize);
+  //   return () => window.removeEventListener('resize', handleResize);
+  // }, []);
+  
+  const handleDragContent = (e: any, data: any) => {
+    setPosition2({ x: 0, y: data.y });
+    setPosition1({ x: 0, y: - data.y * (windowSize.height - scrollThumbHeight) / (contentHeight - windowSize.height) });
+  };
+
+  const handleDragScrollBar = (e: any, data: any) => {
+    setPosition1({ x: 0, y: data.y });
+    setPosition2({ x: 0, y: - data.y * (contentHeight - windowSize.height) / (windowSize.height - scrollThumbHeight) });
+    // console.log('p1', position1.y);
+    // console.log('p2', position2.y);
+  };
+
+  const handleWheel = (event: any) => {
+    console.log('scroll')
+    const scrollableElement = document.getElementById('scrollable-element');
+    event.stopPropagation();
+    if (scrollableElement) {
       debugger;
-      handleScrollDrag(null, {} as DraggableData, reactDraggableTop);
-    });
-  }, [document.body.clientHeight])
+      // const zoomFactor = 0.1 * event.deltaY / Math.sqrt(event.deltaY ** 2);
+      // // const deltaY = event.deltaY;
+      // const currentZoom = parseFloat(scrollableElement.style.transform?.replace('scale(', '').replace(')', '')) || 1;
+      // const newZoom = currentZoom - zoomFactor;
+      // scrollableElement.style.transform = `scale(${newZoom.toFixed(2)})`;
 
-  function calculateScrollThumbHeight() {
-    const transformComponent = document.querySelector('.react-transform-component'); //pictures
-    
-    if (transformComponent) {
-      const transformComponentHeight = transformComponent.scrollHeight;
-      const thumbHeight = (bodyHeight * bodyHeight) / (transformComponentHeight * scale);
-      setSmallRectHeight(thumbHeight)
-      // (reactDraggable as HTMLElement).style.height = thumbHeight.toString() + "px";
-    }
-  }
+      const x = event.pageX - (scrollableElement.clientWidth / 2);
+      const y = event.pageY - (scrollableElement.clientHeight / 2);
+      if (event.deltaY < 0) { 
+          view.scaleAt({x, y}, 1.1);
+          view.applyTo(scrollableElement);
+      } else { 
+          view.scaleAt({x, y}, 1 / 1.1);
+          view.applyTo(scrollableElement);
+      }
+      const rect = scrollableElement.getBoundingClientRect();
+      const style = window.getComputedStyle(scrollableElement);
+      const matrix = new DOMMatrix(style.transform);
 
-  const handleScrollDrag = (_?: any, data?: DraggableData, topPosition?: number) => {
-    const top = (data && data.y) || topPosition || 0;
-    const transformComponent = document.querySelector('.react-transform-component'); //pictures
-    let translateX: number = 0;
-    // const transformComponent = document.querySelector('.react-transform-component')
-    if (transformComponent) {
-      const transformStyle = window.getComputedStyle(transformComponent);
-      if (transformStyle) {
-        const transform = transformStyle.getPropertyValue('transform');
-        if (transform) {
-          const matches = transform.slice(7, -1).split(',').map(Number);
-          
-          if (matches && matches.length > 1) {
-            setScale(matches[3] || 0);
-            translateX = matches[4] || 0;
-          }
-        }
+      if (rect.left < 0) {
+        // Adjust the e value to move the element
+        matrix.e -= rect.left;
+        // Apply the new transform matrix
+        scrollableElement.style.transform = matrix.toString();
       }
 
-      const reactDraggable = document.querySelector('.react-draggable'); //scroll thumb
-      let topPositionThumb = 0
-      if (reactDraggable) {
-        console.log("asd")
-        const draggableStyle = window.getComputedStyle(reactDraggable);
-        topPositionThumb = parseFloat(draggableStyle.top);
-
-        console.log('topPositionThumb' + topPositionThumb)
-
-        const tfcHeight = transformStyle.height; // pictures
-        const tfcScrollHeightToTfcHeight = (bigRectHeight) / (parseFloat(tfcHeight));
-
-        const topPosition = Math.min(Math.max(top, 0), bigRectHeight - smallRectHeight);
-        console.log('topPosition: ' + topPosition)
-        const translateY = - (topPosition) / (scale * tfcScrollHeightToTfcHeight);
-
-        console.log(`translateX(${translateX}px) translateY(${translateY}px) scale(${scale})`);
-        (transformComponent as HTMLElement).style.transform = `translateX(${translateX}px) translateY(${translateY}px) scale(${scale})`;
+      if (rect.top < 0) {
+        // Adjust the e value to move the element
+        matrix.f -= rect.top;
+        // Apply the new transform matrix
+        scrollableElement.style.transform = matrix.toString();
       }
-    };
-  }
 
-  const handlePictureDrag = (ref: ReactZoomPanPinchRef, event: MouseEvent | TouchEvent) => {
-    setPosition((prevPosition) => ({
-      x: prevPosition.x + (event as MouseEvent).movementX,
-      y: prevPosition.y + (event as MouseEvent).movementY,
-    }));
+      // setOriginX(x);
+      // setOriginY(y);
+      // setScale(newScale);
 
-    const transformComponent = document.querySelector('.react-transform-component');
-
-    if (transformComponent) {
-      const transformStyle = window.getComputedStyle(transformComponent);
-      const transformArray = transformStyle.transform.slice(7, -1).split(', ').map((value, index) => (index === 0 ? value.slice(7) : value)).map(Number);
-
-      const tfcHeight = transformStyle.height;
-      const tfcScrollHeightToTfcHeight = bigRectHeight / parseFloat(tfcHeight);
-
-      const scale = transformArray[3] || 0;
-      const translateY = transformArray[5] * -tfcScrollHeightToTfcHeight || 0;
-      const translateX = 0;
-
-      const draggableElement = document.querySelector('.react-draggable');
-      if (draggableElement) {
-        // console.log(transformArray);
-        // console.log(`translate(${translateX}px, ${translateY}px) scale(${scale})`);
-        (draggableElement as HTMLElement).style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-      }
+      // scrollableElement.style.position = 'absolute';
+      // scrollableElement.style.left = `${x}px`;
+      // scrollableElement.style.top = `${y}px`;
     }
   };
 
-  const handlePictureZoom = (ref: ReactZoomPanPinchRef, event: MouseEvent | TouchEvent) => {
-    setScale(ref.instance.transformState.scale);
-    calculateScrollThumbHeight();
-  }
+  const view = (() => {
+    const matrix = [1, 0, 0, 1, 0, 0]; // current view transform
+    var m = matrix;             // alias 
+    var scale = 1;              // current scale
+    const pos = { x: 0, y: 0 }; // current position of origin
+    var dirty = true;
+    const API = {
+      applyTo(el: any) {
+        if (dirty) { this.update() }
+        el.style.transform = `matrix(${m[0]},${m[1]},${m[2]},${m[3]},${m[4]},${m[5]})`;
+      },
+      update() {
+        dirty = false;
+        m[3] = m[0] = scale;
+        m[2] = m[1] = 0;
+        m[4] = pos.x;
+        m[5] = pos.y;
+      },
+      pan(amount: any) {
+        if (dirty) { this.update() }
+         pos.x += amount.x;
+         pos.y += amount.y;
+         dirty = true;
+      },
+      scaleAt(at: any, amount: any) { // at in screen coords
+        if (dirty) { this.update() }
+        scale *= amount;
+        pos.x = at.x - (at.x - pos.x) * amount;
+        pos.y = at.y - (at.y - pos.y) * amount;
+        dirty = true;
+      },
+    };
+    return API;
+  })();
 
   return (
-    <div style={containerStyle}>
-      <Card style={{ ...cardStyle, width: containerSize.width, height: containerSize.height }}>
-        <TransformWrapper
-          initialScale={initialScale}
-          initialPositionX={position.x}
-          initialPositionY={position.y}
-          limitToBounds={false}
-          minScale={0.25}
-          maxScale={10}
-          panning={{ disabled: false }}
-          onPanning={handlePictureDrag}
-          onZoom={handlePictureZoom}
-        >
-          <TransformComponent>
-            <div className="image-container">
-              {pictures.map((src, index) => (
-                <img
-                  key={index}
-                  src={src}
-                  alt={`test-${index}`}
-                  height="300"
-                />
-              ))}
-            </div>
-          </TransformComponent>
-        </TransformWrapper>
-      </Card>
-      <div className="scroll-bar-container" style={{ height: `${bigRectHeight}px`, width: '200px', border: '1px solid black', position: 'relative' }}>
-        <Draggable axis="y" bounds={{ top: 0, bottom: bigRectHeight - smallRectHeight }} onDrag={handleScrollDrag}>
-          <div
-            style={{
-              width: '100%',
-              height: `${smallRectHeight}px`,
-              background: 'blue',
-              cursor: 'grab',
-              position: 'absolute',
-            }}
-          />
+    <>
+      <div id="scrollable-element" onWheel={handleWheel}>
+        <Draggable axis="y" bounds={{top: -contentHeight + windowSize.height, bottom: 0}} position={position2} onDrag={handleDragContent}>
+          <div style={{width: windowSize.width - scrollThumbWidth, height: contentHeight + 'px', background: 'blue', position: 'absolute', left: '0', fontSize: '15px'}}>
+            <div>01</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>20</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>30</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>40</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>50-1000px</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>59</div><div>60</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>70</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>80</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>90</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>100-2000px</div>
+            <div>01</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>20</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>30</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>40</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>50-1000px</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>59</div><div>60</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>70</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>80</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>90</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>100-4000px</div>
+            <div>01</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>20</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>30</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>40</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>50-1000px</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>59</div><div>60</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>70</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>80</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>90</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>100-6000px</div>
+            <div>01</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>20</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>30</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>40</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>50-1000px</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>59</div><div>60</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>70</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>80</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>90</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>100-8000px</div>
+            <div>01</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>20</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>30</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>40</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>50-1000px</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>59</div><div>60</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>70</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>80</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>90</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>100-10000px</div>
+            <div>01</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>20</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>30</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>40</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>50-1000px</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>59</div><div>60</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>70</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>80</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>90</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>100-12000px</div>
+            <div>01</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>20</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>30</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>40</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>50-1000px</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>59</div><div>60</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>70</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>80</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>90</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>100-14000px</div>
+            <div>01</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>20</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>30</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>40</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>50-1000px</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>59</div><div>60</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>70</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>80</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>90</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>100-16000px</div>
+            <div>01</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>20</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>30</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>40</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>50-1000px</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>59</div><div>60</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>70</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>80</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>90</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>100-18000px</div>
+            <div>01</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>20</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>30</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>40</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>50-1000px</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>59</div><div>60</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>70</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>80</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>90</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>100-20000px</div>
+          </div>
         </Draggable>
       </div>
-    </div>
+      <Draggable axis="y" bounds="parent" position={position1} onDrag={handleDragScrollBar}>
+        <div style={{width: '100px', height: scrollThumbHeight + 'px', background: 'red', position: 'absolute', right: '0'}}>
+          Scroll me!
+        </div>
+      </Draggable>
+    </>
   );
 };
 
-export default ImageZoom;
+export default DraggableComponent;

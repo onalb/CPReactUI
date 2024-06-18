@@ -12,7 +12,7 @@ const App: React.FC = () => {
 const styles = {
   container: {
     height: '100vh',
-    overflow: 'auto',
+    overflow: 'hidden',
     margin: 0,
   },
 };
