@@ -3,3 +3,8 @@
     height: 300px;
     background-color: red;
   }
+
+  .no-drag {
+    -webkit-user-drag: none;
+    user-select: none;
+  }

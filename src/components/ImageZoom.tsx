@@ -124,7 +124,7 @@ const BlueSquare: React.FC = () => {
         transform: `scale(${zoomLevel})`,
         transition: 'transform 0.2s ease-out',
         transformOrigin: origin, // Dynamic transform-origin based on mouse position
-
+        userSelect: 'none',
       }}
     >
       {Array.from({ length: rows * columns }, (_, index) => {
@@ -132,7 +132,7 @@ const BlueSquare: React.FC = () => {
         const col = (index % columns) + 1;
         return { row, col };
       }).map(({ row, col }, index) => (
-        <div key={index} style={{
+        <div key={index} className='no-drag' style={{
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
