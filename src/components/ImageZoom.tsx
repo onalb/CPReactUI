@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import pictures from './pictures';
+import '../styles/ImageZoom.css';
 
 const BlueSquare: React.FC = () => {
   const rows = 20;
@@ -9,8 +11,6 @@ const BlueSquare: React.FC = () => {
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
-
-
 
   useEffect(() => {
     const handleMouseDown = (event: any) => {
@@ -112,37 +112,46 @@ const BlueSquare: React.FC = () => {
       style={{
         backgroundColor: 'blue',
         color: 'white',
-        width: '50vw',
-        height: '200vh',
-        display: 'grid',
+        // width: '50vw',
+        // height: '200vh',
+        // width: firtsRowWidth,
+        height: '100%',
+        display: 'inline-flex',
+        flexWrap: 'wrap',
         gridTemplateRows: `repeat(${rows}, 1fr)`,
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
         gap: '2px',
         padding: '10px',
         boxSizing: 'border-box',
-        overflow: 'auto',
+        // overflow: 'auto',
         transform: `scale(${zoomLevel})`,
         transition: 'transform 0.2s ease-out',
         transformOrigin: origin, // Dynamic transform-origin based on mouse position
-        userSelect: 'none',
+        userSelect: 'none'
+
       }}
     >
-      {Array.from({ length: rows * columns }, (_, index) => {
-        const row = Math.floor(index / columns) + 1;
-        const col = (index % columns) + 1;
-        return { row, col };
-      }).map(({ row, col }, index) => (
-        <div key={index} className='no-drag' style={{
+      {pictures.map((src, index) => (
+        <img 
+        key={index}
+        src={src}
+        alt={`Image ${index}`} 
+        className="no-drag"
+        // ref={el => imgRefs.current[index] = el} // Assign the ref to each image
+        // onLoad={() => console.log(`Image ${index} loaded`)}
+        style={{
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
           backgroundColor: 'rgba(255, 255, 255, 0.2)',
           color: 'white',
           fontSize: '0.8em',
-          border: '1px solid rgba(255, 255, 255, 0.5)'
-        }}>
-          {row},{col}
-        </div>
+          border: '1px solid rgba(255, 255, 255, 0.5)',
+          // width: '100%', 
+          height: '100px',
+          userSelect: 'none'
+        }} 
+      />
       ))}
     </div>
   );
