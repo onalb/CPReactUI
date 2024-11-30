@@ -1,16 +1,33 @@
-import React, { useEffect, useState } from 'react';
-import pictures from './pictures';
+import React, { useEffect, useState, useRef } from 'react';
+import { pictures } from './pictures';
 import '../styles/ImageZoom.css';
 
 const BlueSquare: React.FC = () => {
   const rows = 20;
-  const columns = 10;
-  const [scale, setScale] = useState(1); // Initial scale is 1
+  const numberOfColumns = 5;
+  const padding = 10;
+  const columnGap = 2;
+  const defaultRowHeight = 100;
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
-  const [zoomLevel, setZoomLevel] = useState(1); // Initial zoom level
+  const [zoomLevel, setZoomLevel] = useState(0); // Initial zoom level
+  const [images, setImages] = useState(pictures);
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
+
+  const calculateFirstRowWidth = () => { 
+    let result = padding; 
+    const ratio = defaultRowHeight / images[0]!.height;
+
+    for (let i = 0; i < numberOfColumns; i++) {
+      if (images[i]) {
+        result += images[i]!.width * ratio + columnGap;
+      }
+    }
+
+    result -= columnGap;
+    return result;
+  }
 
   useEffect(() => {
     const handleMouseDown = (event: any) => {
@@ -34,9 +51,22 @@ const BlueSquare: React.FC = () => {
       isDragging = false;
     };
 
+    window.addEventListener('load', (event) => {
+      debugger;
+      const mainElement = document.getElementById('main-element');
+      if (mainElement) {
+        const rect = mainElement.getBoundingClientRect();
+        const x = (window.innerWidth - rect.width) / 2;
+        debugger;
+        view.move({ x, y: 0 });
+        view.applyTo(mainElement);
+      }
+    });
+
     document.addEventListener('mousedown', handleMouseDown);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    // document.addEventListener('DOMContentLoaded', () => { view.pan({ x: 200, y: 0 }); });
 
     return () => {
       document.removeEventListener('mousedown', handleMouseDown);
@@ -65,6 +95,8 @@ const BlueSquare: React.FC = () => {
   });
 
 
+
+
   const view = (() => {
     const matrix = [1, 0, 0, 1, 0, 0]; // current view transform
     var m = matrix;             // alias 
@@ -84,7 +116,15 @@ const BlueSquare: React.FC = () => {
         m[4] = pos.x; // Translate X
         m[5] = pos.y; // Translate Y
       },
+      move(amount: any) {
+        debugger;
+        if (dirty) { this.update() }
+        pos.x += amount.x;
+        pos.y += amount.y;
+        dirty = true;
+      },
       pan(amount: any) {
+        debugger;
         if (dirty) { this.update() }
         pos.x += amount.x;
         pos.y += amount.y;
@@ -101,10 +141,10 @@ const BlueSquare: React.FC = () => {
     return API;
   })();
 
-  const zoomStyle = {
-    transform: `scale(${zoomLevel})`,
-    transition: 'transform 0.2s ease-out', // Smooth transition for zoom effect
-  };
+  // const zoomStyle = {
+  //   transform: `scale(${zoomLevel})`,
+  //   transition: 'transform 0.2s ease-out', // Smooth transition for zoom effect
+  // };
 
   return (
     <div 
@@ -114,31 +154,32 @@ const BlueSquare: React.FC = () => {
         color: 'white',
         // width: '50vw',
         // height: '200vh',
-        // width: firtsRowWidth,
-        height: '100%',
+        width: calculateFirstRowWidth() + 'px',
+        // height: '100%',
         display: 'inline-flex',
         flexWrap: 'wrap',
-        gridTemplateRows: `repeat(${rows}, 1fr)`,
-        gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        gap: '2px',
-        padding: '10px',
+        justifyContent: 'center', // Center images vertically
+        // gridTemplateRows: `repeat(${rows}, 1fr)`,
+        // gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gap: columnGap + 'px',
+        padding: padding + 'px',
         boxSizing: 'border-box',
         // overflow: 'auto',
-        transform: `scale(${zoomLevel})`,
+        transform: 'matrix(1, 0, 0, 0, 0, 0)', // Scale down to 0
+        // transform: `scale(${zoomLevel})`,
         transition: 'transform 0.2s ease-out',
         transformOrigin: origin, // Dynamic transform-origin based on mouse position
-        userSelect: 'none'
-
+        userSelect: 'none',
+        // position: 'absolute',
+        // right: '200px',
       }}
     >
-      {pictures.map((src, index) => (
+      {images.map((image, index) => (
         <img 
         key={index}
-        src={src}
+        src={image.path}
         alt={`Image ${index}`} 
         className="no-drag"
-        // ref={el => imgRefs.current[index] = el} // Assign the ref to each image
-        // onLoad={() => console.log(`Image ${index} loaded`)}
         style={{
           display: 'flex',
           justifyContent: 'center',
@@ -147,8 +188,7 @@ const BlueSquare: React.FC = () => {
           color: 'white',
           fontSize: '0.8em',
           border: '1px solid rgba(255, 255, 255, 0.5)',
-          // width: '100%', 
-          height: '100px',
+          height: defaultRowHeight + 'px',
           userSelect: 'none'
         }} 
       />
