@@ -1,19 +1,30 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { pictures } from './pictures';
 import '../styles/ImageZoom.css';
+import 'bootstrap/dist/css/bootstrap.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
-const BlueSquare: React.FC = () => {
-  const rows = 20;
+const DraggableBox: React.FC = () => {
+  //user paramters
   const numberOfColumns = 5;
+
   const padding = 10;
   const columnGap = 2;
-  const defaultRowHeight = 100;
+  const defaultRowHeight = 200;
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
   const [zoomLevel, setZoomLevel] = useState(0); // Initial zoom level
   const [images, setImages] = useState(pictures);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerMap = useRef<Map<number, NodeJS.Timeout>>(new Map());
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
+
+  const updateImages = (image: any) => {
+    setImages(images.map(img => img.id === image.id ? image : img));
+    // Here we will make a call to DB. 
+    // If the call is successful, we will keep the state as updated if wrong we will invalidate the query for images.
+  }
 
   const calculateFirstRowWidth = () => { 
     let result = padding; 
@@ -28,6 +39,8 @@ const BlueSquare: React.FC = () => {
     result -= columnGap;
     return result;
   }
+
+  const [firstRowWidth, setFirstRowWidth] = useState(calculateFirstRowWidth()); // Initial transform-origin
 
   useEffect(() => {
     const handleMouseDown = (event: any) => {
@@ -51,51 +64,50 @@ const BlueSquare: React.FC = () => {
       isDragging = false;
     };
 
+    const handleWheel = (event: any) => {
+      // Prevent the default zoom
+      event.preventDefault();
+      // Determine the zoom point (e.g., the current mouse position)
+      const at = { x: event.clientX, y: event.clientY };
+      // Determine the zoom amount based on the wheel delta
+      const amount = event.deltaY < 0 ? 1.1 : 0.9;
+      // Call the scaleAt function
+      view.scaleAt(at, amount);
+      // Apply the transformation to the element you want to zoom
+      view.applyTo(document.getElementById('main-element'));
+    };
+
     window.addEventListener('load', (event) => {
-      debugger;
       const mainElement = document.getElementById('main-element');
+      const windowWidth = window.innerWidth;
+
       if (mainElement) {
         const rect = mainElement.getBoundingClientRect();
-        const x = (window.innerWidth - rect.width) / 2;
-        debugger;
-        view.move({ x, y: 0 });
-        view.applyTo(mainElement);
+        
+        if(rect.width < windowWidth) {
+          const x = (windowWidth - rect.width) / 2;
+          view.move({ x, y: 0 });
+          view.applyTo(mainElement);
+          // mainElement.style.justifyContent = 'center';
+        } else {
+          view.move({ x: 0, y: 0 });
+          view.applyTo(mainElement);
+        }
       }
     });
 
     document.addEventListener('mousedown', handleMouseDown);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-    // document.addEventListener('DOMContentLoaded', () => { view.pan({ x: 200, y: 0 }); });
+    document.addEventListener('wheel', handleWheel);
 
     return () => {
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('wheel', handleWheel);
     };
   }, []);
-
-
-
-  document.addEventListener('wheel', (event) => {
-    // Prevent the default zoom
-    event.preventDefault();
-  
-    // Determine the zoom point (e.g., the current mouse position)
-    const at = { x: event.clientX, y: event.clientY };
-  
-    // Determine the zoom amount based on the wheel delta
-    const amount = event.deltaY < 0 ? 1.1 : 0.9;
-  
-    // Call the scaleAt function
-    view.scaleAt(at, amount);
-  
-    // Apply the transformation to the element you want to zoom
-    view.applyTo(document.getElementById('main-element'));
-  });
-
-
-
 
   const view = (() => {
     const matrix = [1, 0, 0, 1, 0, 0]; // current view transform
@@ -117,14 +129,12 @@ const BlueSquare: React.FC = () => {
         m[5] = pos.y; // Translate Y
       },
       move(amount: any) {
-        debugger;
         if (dirty) { this.update() }
         pos.x += amount.x;
         pos.y += amount.y;
         dirty = true;
       },
       pan(amount: any) {
-        debugger;
         if (dirty) { this.update() }
         pos.x += amount.x;
         pos.y += amount.y;
@@ -141,24 +151,44 @@ const BlueSquare: React.FC = () => {
     return API;
   })();
 
-  // const zoomStyle = {
-  //   transform: `scale(${zoomLevel})`,
-  //   transition: 'transform 0.2s ease-out', // Smooth transition for zoom effect
-  // };
+  const startTimer = (image: any) => {
+    if (timerMap.current.has(image.id)) {
+      clearTimeout(timerMap.current.get(image.id)!); // Clear any existing timer for this ID
+    }
+
+    const timer = setTimeout(() => {
+      if (image) {
+        image.deleteClickedOnce = false;
+        setImages(prevImages => prevImages.map(img => img.id === image.id ? image : img));
+        console.log(`Timer finished for image ${image.id}`);
+      }
+      timerMap.current.delete(image.id); // Remove the timer from the map after it finishes
+    }, 3000); // 3 seconds timer
+
+    timerMap.current.set(image.id, timer); // Store the timer in the map
+  };
+
+  const stopTimer = (image: any) => {
+    if (timerMap.current.has(image.id)) {
+      clearTimeout(timerMap.current.get(image.id)!);
+      timerMap.current.delete(image.id); // Remove the timer from the map
+      console.log(`Timer stopped for image ${image.id}`);
+    }
+  };
 
   return (
     <div 
       id='main-element'
       style={{
-        backgroundColor: 'blue',
+        backgroundColor: 'black',
         color: 'white',
         // width: '50vw',
         // height: '200vh',
-        width: calculateFirstRowWidth() + 'px',
+        width: firstRowWidth + 'px',
         // height: '100%',
         display: 'inline-flex',
         flexWrap: 'wrap',
-        justifyContent: 'center', // Center images vertically
+        // justifyContent: 'center', // Center images vertically
         // gridTemplateRows: `repeat(${rows}, 1fr)`,
         // gridTemplateColumns: `repeat(${columns}, 1fr)`,
         gap: columnGap + 'px',
@@ -175,26 +205,100 @@ const BlueSquare: React.FC = () => {
       }}
     >
       {images.map((image, index) => (
-        <img 
-        key={index}
-        src={image.path}
-        alt={`Image ${index}`} 
-        className="no-drag"
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: 'rgba(255, 255, 255, 0.2)',
-          color: 'white',
-          fontSize: '0.8em',
-          border: '1px solid rgba(255, 255, 255, 0.5)',
-          height: defaultRowHeight + 'px',
-          userSelect: 'none'
-        }} 
-      />
+        <div key={index} style={{ display: 'flex', flexDirection: 'column' }}>
+          <img
+            id={`image-${image.id}`}
+            src={image.path}
+            alt={`Image ${index}`}
+            className="no-drag"
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              color: 'white',
+              fontSize: '0.8em',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              height: defaultRowHeight + 'px',
+              width: 'fit-content',
+              userSelect: 'none'
+            }}
+          />
+          <div>
+          <button 
+            id={`delete-button-${image.id}`} 
+            type="button" 
+            className="btn btn-dark py-1.5 my-1"
+            onClick={(e) => {
+                // const deleteIcon = document.getElementById(`delete-icon-${image.id}`);
+                const deleteIcon = e.currentTarget.querySelector(`i#delete-icon-${image.id}`);
+              if(deleteIcon) {
+                if(!image.deleteClickedOnce) {
+                  image.deleteClickedOnce = true;
+                  setImages(images.map(img => img.id === image.id ? image : img));
+                  startTimer(image);
+                } else {
+                  stopTimer(image);
+                  setImages(images.filter(img => img.id !== image.id));
+                }
+              }
+            }}>
+            <i
+              id={`delete-icon-${image.id}`} 
+              style={{
+              fontSize: '1.2em',
+              cursor: 'pointer',
+              zIndex: 10,
+              transition: 'color 0.5s ease, transform 0.3s ease', // Add smooth transition
+              transform: image.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
+              }} 
+              className={`bi bi-trash3-fill pointer${image.deleteClickedOnce ? ' clicked' : ''}`}
+              data-bs-toggle="tooltip"
+              data-bs-placement="top" 
+              title='DELETE'
+            ></i>
+            </button>   
+            <button 
+              id={`keep-button-${image.id}`}
+              type="button" 
+              className="btn btn-dark py-1.5 m-2 my-1 "
+              onClick={(e) => {
+                const isKept: boolean = image.isKept ? false : true;
+                updateImages({ ...image, isKept });
+
+                const imageElement = document.getElementById(`image-${image.id}`);
+                const keepIcon = document.getElementById(`keep-icon-${image.id}`);
+                if(keepIcon && imageElement) {
+                  keepIcon.style.color = isKept ? 'orange' : 'white'
+                  imageElement.style.borderColor = isKept ? 'orange' : 'white';
+                }
+
+                const deleteIcon = document.getElementById(`delete-icon-${image.id}`);
+                const deleteButton = document.getElementById(`delete-button-${image.id}`);
+                if (deleteIcon && deleteButton) {
+                  deleteButton.classList.toggle('disabled', isKept);
+                }
+              }}>
+              <i 
+              id={`keep-icon-${image.id}`}
+              style={{
+                color: 'white',
+                fontSize: '1.2em',
+                zIndex: 10,
+              }} 
+              className="bi bi-bag-plus-fill"
+              data-bs-toggle="tooltip"
+              data-bs-placement="top" 
+              title='KEEP'
+              ></i>
+            </button>
+            <span>
+              {image.fileName.length > 10 
+                ? `${image.fileName.slice(0, 5)}...${image.fileName.slice(-5)}` 
+                : image.fileName}
+            </span>
+          </div>
+        </div>
       ))}
     </div>
   );
 };
 
-export default BlueSquare;
+export default DraggableBox;
