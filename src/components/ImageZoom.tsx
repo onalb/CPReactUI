@@ -7,10 +7,9 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 const DraggableBox: React.FC = () => {
   //user paramters
   const numberOfColumns = 5;
-
   const padding = 10;
   const columnGap = 2;
-  const defaultRowHeight = 200;
+  const defaultRowHeight = 300;
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
   const [zoomLevel, setZoomLevel] = useState(0); // Initial zoom level
   const [images, setImages] = useState(pictures);
@@ -163,7 +162,7 @@ const DraggableBox: React.FC = () => {
         console.log(`Timer finished for image ${image.id}`);
       }
       timerMap.current.delete(image.id); // Remove the timer from the map after it finishes
-    }, 3000); // 3 seconds timer
+    }, 1000); // 2 seconds timer
 
     timerMap.current.set(image.id, timer); // Store the timer in the map
   };
@@ -205,7 +204,7 @@ const DraggableBox: React.FC = () => {
       }}
     >
       {images.map((image, index) => (
-        <div key={index} style={{ display: 'flex', flexDirection: 'column' }}>
+        <div key={index}>
           <img
             id={`image-${image.id}`}
             src={image.path}
@@ -218,47 +217,50 @@ const DraggableBox: React.FC = () => {
               border: '1px solid rgba(255, 255, 255, 0.5)',
               height: defaultRowHeight + 'px',
               width: 'fit-content',
-              userSelect: 'none'
+              userSelect: 'none',
+              display: 'flex',
             }}
           />
-          <div>
-          <button 
-            id={`delete-button-${image.id}`} 
-            type="button" 
-            className="btn btn-dark py-1.5 my-1"
-            onClick={(e) => {
-                // const deleteIcon = document.getElementById(`delete-icon-${image.id}`);
-                const deleteIcon = e.currentTarget.querySelector(`i#delete-icon-${image.id}`);
-              if(deleteIcon) {
-                if(!image.deleteClickedOnce) {
-                  image.deleteClickedOnce = true;
-                  setImages(images.map(img => img.id === image.id ? image : img));
-                  startTimer(image);
-                } else {
-                  stopTimer(image);
-                  setImages(images.filter(img => img.id !== image.id));
+          <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+            <button 
+              id={`delete-button-${image.id}`} 
+              type="button" 
+              className="btn btn-dark py-1.5 my-1"
+              style={{flex: 'none'}}
+              onClick={(e) => {
+                  // const deleteIcon = document.getElementById(`delete-icon-${image.id}`);
+                  const deleteIcon = e.currentTarget.querySelector(`i#delete-icon-${image.id}`);
+                if(deleteIcon) {
+                  if(!image.deleteClickedOnce) {
+                    image.deleteClickedOnce = true;
+                    setImages(images.map(img => img.id === image.id ? image : img));
+                    startTimer(image);
+                  } else {
+                    stopTimer(image);
+                    setImages(images.filter(img => img.id !== image.id));
+                  }
                 }
-              }
-            }}>
-            <i
-              id={`delete-icon-${image.id}`} 
-              style={{
-              fontSize: '1.2em',
-              cursor: 'pointer',
-              zIndex: 10,
-              transition: 'color 0.5s ease, transform 0.3s ease', // Add smooth transition
-              transform: image.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
-              }} 
-              className={`bi bi-trash3-fill pointer${image.deleteClickedOnce ? ' clicked' : ''}`}
-              data-bs-toggle="tooltip"
-              data-bs-placement="top" 
-              title='DELETE'
-            ></i>
+              }}>
+              <i
+                id={`delete-icon-${image.id}`} 
+                style={{
+                fontSize: '1.2em',
+                cursor: 'pointer',
+                zIndex: 10,
+                transition: 'color 0.5s ease, transform 0.3s ease', // Add smooth transition
+                transform: image.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
+                }} 
+                className={`bi bi-trash3-fill pointer${image.deleteClickedOnce ? ' clicked' : ''}`}
+                data-bs-toggle="tooltip"
+                data-bs-placement="top" 
+                title='DELETE'
+              ></i>
             </button>   
             <button 
               id={`keep-button-${image.id}`}
               type="button" 
-              className="btn btn-dark py-1.5 m-2 my-1 "
+              className="btn btn-dark py-1.5 m-2 my-1"
+              style={{flex: 'none'}}
               onClick={(e) => {
                 const isKept: boolean = image.isKept ? false : true;
                 updateImages({ ...image, isKept });
@@ -289,7 +291,22 @@ const DraggableBox: React.FC = () => {
               title='KEEP'
               ></i>
             </button>
-            <span>
+            <span 
+              style={{
+                flex: 'auto', 
+                textAlign: 'right', 
+                alignSelf: 'center', 
+                marginRight: '15px', 
+                whiteSpace: 'nowrap', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis',
+                marginLeft: 'auto',
+              }}
+              data-bs-toggle="tooltip"
+              data-bs-placement="top"
+              title={image.fileName}
+            >
+              {/* {image.fileName} */}
               {image.fileName.length > 10 
                 ? `${image.fileName.slice(0, 5)}...${image.fileName.slice(-5)}` 
                 : image.fileName}
