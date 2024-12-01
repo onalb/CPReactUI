@@ -12,12 +12,12 @@ export const startTimer = (image: Image, setImages: React.Dispatch<React.SetStat
 
   const timer = setTimeout(() => {
     if (image) {
-      image.deleteClickedOnce = false;
-      setImages(prevImages => prevImages.map(img => img.id === image.id ? image : img));
-      console.log(`Timer finished for image ${image.id}`);
+        image.deleteClickedOnce = false;
+        setImages(prevImages => prevImages.map(prevImage => prevImage.id === image.id ? { ...prevImage, deleteClickedOnce: false } : prevImage));
+        console.log(`Timer finished for image ${image.id}`);
     }
     timerMap.delete(image.id); // Remove the timer from the map after it finishes
-  }, 5000); // 5 seconds timer
+  }, 3000); // 5 seconds timer
 
   timerMap.set(image.id, timer); // Store the timer in the map
 };
