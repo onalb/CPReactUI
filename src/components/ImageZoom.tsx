@@ -3,6 +3,7 @@ import { pictures } from './pictures';
 import '../styles/ImageZoom.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import { create } from 'domain';
 
 const DraggableBox: React.FC = () => {
   //user paramters
@@ -18,6 +19,76 @@ const DraggableBox: React.FC = () => {
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
+
+  //****************************particle pop start
+  const createParticles = (x: number, y: number, operation: string) => {
+    let transform: string = '';
+    let particleCount: number = 0;
+
+    if(operation === 'delete') {     
+      particleCount = Math.floor(Math.random() * 6) + 5;
+    } // Random number between 5 and 10 
+    else if(operation === 'keep') {
+      particleCount = 2;
+     } 
+
+    for (let i = 0; i < particleCount; i++) {
+      if(operation === 'delete') {
+        transform = `translate(-50%, -50%) translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px)`
+        createParticle(x, y, '', transform);
+      } else if(operation === 'keep') {
+        transform = `translate(500%, -500%)`
+        createParticle(x, y, transform, '');
+      }
+    }
+  }
+
+  const createParticle = (x: number, y: number, transform1: string, transform2: string) => {
+    const particle = document.createElement('particle');
+    document.body.appendChild(particle);
+
+    // Calculate a random size from 5px to 25px
+    const size = Math.floor(Math.random() * 20 + 5);
+    particle.style.width = `${size}px`;
+    particle.style.height = `${size}px`;
+
+    // Generate a random color
+    particle.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+
+    // Position the particle at the mouse coordinates
+    particle.style.position = 'absolute';
+    particle.style.left = `${x}px`;
+    particle.style.top = `${y}px`;
+    particle.style.pointerEvents = 'none';
+    particle.style.borderRadius = '50%';
+    particle.style.zIndex = '1000';
+
+    // Animate the particle
+    const animation = particle.animate(
+      [
+        {
+          transform: transform1,
+          opacity: 1,
+        },
+        {
+          transform: transform2,
+          opacity: 0,
+        },
+      ],
+      {
+        duration: 1000 + Math.random() * 1000,
+        easing: 'cubic-bezier(0, .9, .57, 1)',
+        iterations: 1,
+        fill: 'both',
+      }
+    );
+
+    // Remove the particle after the animation is done
+    animation.onfinish = () => {
+      particle.remove();
+    };
+  };
+//***********************************particle pop ends
 
   const updateImages = (image: any) => {
     setImages(images.map(img => img.id === image.id ? image : img));
@@ -238,6 +309,7 @@ const DraggableBox: React.FC = () => {
                   } else {
                     stopTimer(image);
                     setImages(images.filter(img => img.id !== image.id));
+                    createParticles(e.clientX, e.clientY, 'delete');
                   }
                 }
               }}>
@@ -267,7 +339,8 @@ const DraggableBox: React.FC = () => {
 
                 const imageElement = document.getElementById(`image-${image.id}`);
                 const keepIcon = document.getElementById(`keep-icon-${image.id}`);
-                if(keepIcon && imageElement) {
+
+                if (keepIcon && imageElement) {
                   keepIcon.style.color = isKept ? 'orange' : 'white'
                   imageElement.style.borderColor = isKept ? 'orange' : 'white';
                 }
@@ -276,6 +349,10 @@ const DraggableBox: React.FC = () => {
                 const deleteButton = document.getElementById(`delete-button-${image.id}`);
                 if (deleteIcon && deleteButton) {
                   deleteButton.classList.toggle('disabled', isKept);
+                }
+                console.log(isKept);
+                if(!image.isKept) {
+                  createParticles(e.clientX, e.clientY, 'keep');
                 }
               }}>
               <i 
