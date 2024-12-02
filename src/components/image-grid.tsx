@@ -107,6 +107,7 @@ const DraggableBox: React.FC = () => {
               color: 'white',
               fontSize: '0.8em',
               border: '1px solid rgba(255, 255, 255, 0.5)',
+              borderColor: image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
               height: defaultRowHeight + 'px',
               width: 'fit-content',
               userSelect: 'none',
