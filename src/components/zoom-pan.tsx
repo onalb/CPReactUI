@@ -7,6 +7,8 @@ export const applyMouseEvents = (setZoomScale: any) => {
   let lastPosY = 0;
   let initialDistance = 0;
   let isTouchDragging = false;
+  let touchMoved = false;
+  let clickDispatched = false;
 
   const handleMouseDown = (event: any) => {
     isDragging = true;
@@ -36,6 +38,11 @@ export const applyMouseEvents = (setZoomScale: any) => {
     const at = { x: event.clientX, y: event.clientY };
     // Determine the zoom amount based on the wheel delta
     const amount = event.deltaY < 0 ? 1.1 : 0.9;
+    // Check if the new scale is within the limits
+    const newScale = view.getScale() * amount;
+    if (newScale < 0.2 || newScale > 5) {
+      return; // Do not apply the zoom if it exceeds the limits
+    }
     // Call the scaleAt function
     view.scaleAt(at, amount, setZoomScale);
     // Apply the transformation to the element you want to zoom
@@ -43,7 +50,20 @@ export const applyMouseEvents = (setZoomScale: any) => {
   };
 
   const handleTouchStart = (event: TouchEvent) => {
-    event.preventDefault(); // Prevent default pinch behavior
+    touchMoved = false; // Reset touchMoved flag
+    if (!clickDispatched) {
+      // Dispatch click event at touch start
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        clientX: event.touches[0].clientX,
+        clientY: event.touches[0].clientY,
+      });
+      event.target &&
+      event.target.dispatchEvent(clickEvent);
+      clickDispatched = true; // Set clickDispatched flag
+    }
     if (event.touches.length === 2) {
       initialDistance = getDistance(event.touches[0], event.touches[1]);
       isTouchDragging = true;
@@ -57,7 +77,7 @@ export const applyMouseEvents = (setZoomScale: any) => {
   };
 
   const handleTouchMove = (event: TouchEvent) => {
-    event.preventDefault(); // Prevent default pinch behavior
+    touchMoved = true; // Set touchMoved flag
     if (event.touches.length === 2 && initialDistance !== 0) {
       const currentDistance = getDistance(event.touches[0], event.touches[1]);
       const amount = currentDistance / initialDistance;
@@ -87,9 +107,12 @@ export const applyMouseEvents = (setZoomScale: any) => {
   };
 
   const handleTouchEnd = (event: TouchEvent) => {
-    event.preventDefault(); // Prevent default pinch behavior
     initialDistance = 0;
     isTouchDragging = false;
+    if (!touchMoved) {
+      event.preventDefault(); // Prevent click event if touch did not move
+    }
+    clickDispatched = false; // Reset clickDispatched flag
   };
 
   const getDistance = (touch1: Touch, touch2: Touch) => {
@@ -175,11 +198,18 @@ const view = (() => {
       if (dirty) {
         this.update();
       }
-      scale *= amount;
+      const newScale = scale * amount;
+      if (newScale < 0.2 || newScale > 5) {
+        return; // Do not apply the zoom if it exceeds the limits
+      }
+      scale = newScale;
       setZoomScale(scale);
       pos.x = at.x - (at.x - pos.x) * amount;
       pos.y = at.y - (at.y - pos.y) * amount;
       dirty = true;
+    },
+    getScale() {
+      return scale;
     },
   };
   return API;

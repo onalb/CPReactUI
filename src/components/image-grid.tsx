@@ -63,7 +63,6 @@ const DraggableBox: React.FC = () => {
 
   const handleDeleteOnClick = (e: any, image: any) => {
     const deleteIcon = e.currentTarget.querySelector(`i#delete-icon-${image.id}`);
-    debugger;
     if(deleteIcon) {
       if(!image.deleteClickedOnce) {
         image.deleteClickedOnce = true;
