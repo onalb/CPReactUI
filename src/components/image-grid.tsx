@@ -8,7 +8,7 @@ import applyMouseEvents from './zoom-pan';
 import  { startTimer, stopTimer} from './timer-functions';
 
 const DraggableBox: React.FC = () => {
-  //user editable paramters
+  //User Editable Paramters
   const numberOfColumns = 5;
 
   // Constants
@@ -24,16 +24,54 @@ const DraggableBox: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [clickedImageIds, setClickedImageIds] = useState<number[]>([]);
   const [firstClickedIndex, setFirstClickedIndex] = useState<number | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
+  const squareRef = useRef<HTMLDivElement | null>(null);
 
+  // Side Effects
   useEffect(() => {
-    applyMouseEvents(setZoomScale, setIsDragging);
+    const cleanup = applyMouseEvents(setZoomScale, setIsDragging);
+    return cleanup;
   }, []);
 
   useEffect(() => {
     console.log('clickedImageIds:', clickedImageIds);
   }, [clickedImageIds]);
 
-  // functions
+  useEffect(() => {
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Control') {
+        if (squareRef.current) {
+          document.body.removeChild(squareRef.current);
+          squareRef.current = null;
+        }
+      }
+    };
+
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if(!event.ctrlKey && !isDragging) {
+        const target = event.target as HTMLElement;
+        if (target.tagName !== 'IMG' && target.tagName !== 'BUTTON' && target.tagName !== 'I' && !target.classList.contains('no-selection-removal-on-click')) {
+          setClickedImageIds([]);
+        }
+      };
+    }
+    document.addEventListener('click', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isDragging]);
+
+  // Functions
   function calculateFirstRowWidth () {
     let result = padding; 
     const ratio = defaultRowHeight / images[0]!.height;
@@ -68,7 +106,6 @@ const DraggableBox: React.FC = () => {
   }
 
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent) => {
-    // console.log('imageId:', imageId);
     if (!isDragging) {
       if (event.shiftKey && firstClickedIndex !== null) {
         const start = Math.min(firstClickedIndex, index);
@@ -100,12 +137,73 @@ const DraggableBox: React.FC = () => {
         startTimer(image, setImages);
       } else {
         stopTimer(image);
-        setImages(images.filter(img => img.id !== image.id)); //removes the deleted image from the array
+        setImages(images.filter(img => img.id !== image.id)); // removes the deleted image from the array
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
         setClickedImageIds(prevIds => prevIds.filter(id => id !== image.id));
       }
     }
   }
+
+  const handleMouseDown = (event: React.MouseEvent) => {
+    if (event.ctrlKey && event.button === 0) { // Right mouse button
+      setIsDrawing(true);
+      setStartPoint({ x: event.clientX, y: event.clientY });
+      const square = document.createElement('div');
+      square.id = 'mouse-square';
+      square.style.position = 'absolute';
+      square.style.border = '2px solid blue';
+      square.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
+      square.style.left = `${event.clientX}px`;
+      square.style.top = `${event.clientY}px`;
+      squareRef.current = square;
+      document.body.appendChild(square);
+    }
+  };
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (isDrawing && startPoint && squareRef.current) {
+      const width = event.clientX - startPoint.x;
+      const height = event.clientY - startPoint.y;
+      squareRef.current.style.width = `${Math.abs(width)}px`;
+      squareRef.current.style.height = `${Math.abs(height)}px`;
+      squareRef.current.style.left = `${Math.min(event.clientX, startPoint.x)}px`;
+      squareRef.current.style.top = `${Math.min(event.clientY, startPoint.y)}px`;
+    }
+  };
+
+  const handleMouseUp = (event: MouseEvent) => {
+    if (isDrawing) {
+      setIsDrawing(false);
+      if (squareRef.current) {
+        const squareRect = squareRef.current.getBoundingClientRect();
+        const newClickedImageIds = images.filter(image => {
+          const imageElement = document.getElementById(`image-${image.id}`);
+          if (imageElement) {
+            const imageRect = imageElement.getBoundingClientRect();
+            return (
+              squareRect.left < imageRect.right &&
+              squareRect.right > imageRect.left &&
+              squareRect.top < imageRect.bottom &&
+              squareRect.bottom > imageRect.top
+            );
+          }
+          return false;
+        }).map(image => image.id);
+
+        setClickedImageIds(prevIds => Array.from(new Set([...prevIds, ...newClickedImageIds])));
+
+        document.body.removeChild(squareRef.current);
+        squareRef.current = null;
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseUp]);
 
   return (
     <div 
@@ -124,6 +222,9 @@ const DraggableBox: React.FC = () => {
         transformOrigin: origin, // Dynamic transform-origin based on mouse position
         userSelect: 'none',
       }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
     >
       {images.map((image, index) => (
         <div key={index} className='image-card'>
@@ -140,7 +241,7 @@ const DraggableBox: React.FC = () => {
               color: 'white',
               fontSize: '0.8em',
               border: '1px solid rgba(255, 255, 255, 0.5)',
-              borderColor: image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
+              borderColor: clickedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
               opacity: clickedImageIds.includes(image.id) ? 0.5 : 1,
               height: defaultRowHeight + 'px',
               width: 'fit-content',
@@ -210,9 +311,9 @@ const DraggableBox: React.FC = () => {
               data-bs-placement="top"
               title={image.fileName}
             >
-              {image.fileName.length > 10 
+              <span className='no-selection-removal-on-click'>{image.fileName.length > 10 
                 ? `${image.fileName.slice(0, 5)}...${image.fileName.slice(-5)}` 
-                : image.fileName}
+                : image.fileName}</span>
             </span>
           </div>
         </div>

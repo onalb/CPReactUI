@@ -10,10 +10,12 @@ export const applyMouseEvents = (setZoomScale: any, setIsDragging: any) => {
   let clickDispatched = false;
 
   const handleMouseDown = (event: any) => {
-    setIsDragging(false);
-    isDragging = true;
-    lastPosX = event.clientX;
-    lastPosY = event.clientY;
+    if (!event.ctrlKey) {
+      setIsDragging(false); // this is to track if it is dragging for the image-grid
+      isDragging = true; // this is for internal use. Mousedown starts dragging
+      lastPosX = event.clientX;
+      lastPosY = event.clientY;
+    }
   };
 
   const handleMouseMove = (event: any) => {
