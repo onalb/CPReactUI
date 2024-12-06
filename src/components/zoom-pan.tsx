@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
-export const applyMouseEvents = (setZoomScale: any) => {
-  // Variables
+export const applyMouseEvents = (setZoomScale: any, setIsDragging: any) => {
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
@@ -11,6 +10,7 @@ export const applyMouseEvents = (setZoomScale: any) => {
   let clickDispatched = false;
 
   const handleMouseDown = (event: any) => {
+    setIsDragging(false);
     isDragging = true;
     lastPosX = event.clientX;
     lastPosY = event.clientY;
@@ -20,6 +20,7 @@ export const applyMouseEvents = (setZoomScale: any) => {
     if (isDragging) {
       const dx = event.clientX - lastPosX;
       const dy = event.clientY - lastPosY;
+      setIsDragging(dx || dy ? true : false);
       view.pan({ x: dx, y: dy });
       view.applyTo(document.getElementById('main-element'));
       lastPosX = event.clientX;

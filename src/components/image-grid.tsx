@@ -15,20 +15,26 @@ const DraggableBox: React.FC = () => {
   const padding = 10;
   const columnGap = 2;
   const defaultRowHeight = 300;
-  // const timerRef = useRef<NodeJS.Timeout | null>(null);
-
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
   const [images, setImages] = useState(pictures);
   const [zoomScale, setZoomScale] = useState(1);
+  const [firstRowWidth, setFirstRowWidth] = useState(calculateFirstRowWidth()); // Initial transform-origin
+  const [isDragging, setIsDragging] = useState(false);
+  const [clickedImageIds, setClickedImageIds] = useState<number[]>([]);
+  const [firstClickedIndex, setFirstClickedIndex] = useState<number | null>(null);
 
-  const updateImages = (images: any[]) => {
-    // Here we will make a call to DB. 
-    // If the call is successful, we will keep the state as updated if wrong we will invalidate the query for images.
-  }
+  useEffect(() => {
+    applyMouseEvents(setZoomScale, setIsDragging);
+  }, []);
 
-  const calculateFirstRowWidth = () => { 
+  useEffect(() => {
+    console.log('clickedImageIds:', clickedImageIds);
+  }, [clickedImageIds]);
+
+  // functions
+  function calculateFirstRowWidth () {
     let result = padding; 
     const ratio = defaultRowHeight / images[0]!.height;
 
@@ -42,12 +48,12 @@ const DraggableBox: React.FC = () => {
     return result;
   }
 
-  const [firstRowWidth, setFirstRowWidth] = useState(calculateFirstRowWidth()); // Initial transform-origin
+  const updateImages = (images: any[]) => {
+    // Here we will make a call to DB. 
+    // If the call is successful, we will keep the state as updated if wrong we will invalidate the query for images.
+  }
 
-  useEffect(() => {
-    applyMouseEvents(setZoomScale);
-  }, []);
-
+  // User-Event handlers
   const handleKeepOnClick = (e: any, image: any) => {
     const isKept: boolean = image.isKept ? false : true;
     const updatedImage = { ...image, isKept };
@@ -61,6 +67,30 @@ const DraggableBox: React.FC = () => {
     }
   }
 
+  const handleImageClick = (imageId: number, index: number, event: React.MouseEvent) => {
+    // console.log('imageId:', imageId);
+    if (!isDragging) {
+      if (event.shiftKey && firstClickedIndex !== null) {
+        const start = Math.min(firstClickedIndex, index);
+        const end = Math.max(firstClickedIndex, index);
+        const newClickedImageIds = images.slice(start, end + 1).map(img => img.id);
+        setClickedImageIds(prevIds => Array.from(new Set([...prevIds, ...newClickedImageIds])));
+      } else {
+        if(firstClickedIndex === index || clickedImageIds.includes(imageId)) {
+          setFirstClickedIndex(null);
+        } else {
+          setFirstClickedIndex(index);
+        }
+        
+        setClickedImageIds(prevIds =>
+          prevIds.includes(imageId)
+            ? prevIds.filter(id => id !== imageId) // Deselect if already selected
+            : [...prevIds, imageId] // Select if not already selected
+        );
+      }
+    }
+  };
+
   const handleDeleteOnClick = (e: any, image: any) => {
     const deleteIcon = e.currentTarget.querySelector(`i#delete-icon-${image.id}`);
     if(deleteIcon) {
@@ -72,6 +102,7 @@ const DraggableBox: React.FC = () => {
         stopTimer(image);
         setImages(images.filter(img => img.id !== image.id)); //removes the deleted image from the array
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
+        setClickedImageIds(prevIds => prevIds.filter(id => id !== image.id));
       }
     }
   }
@@ -95,18 +126,22 @@ const DraggableBox: React.FC = () => {
       }}
     >
       {images.map((image, index) => (
-        <div key={index}>
+        <div key={index} className='image-card'>
           <img
             id={`image-${image.id}`}
             src={image.path}
             alt={`Image ${index}`}
             className="no-drag"
+            onMouseUp={(event) => {  
+              return !isDragging ? handleImageClick(image.id, index, event) : null
+            }}
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.2)',
               color: 'white',
               fontSize: '0.8em',
               border: '1px solid rgba(255, 255, 255, 0.5)',
               borderColor: image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
+              opacity: clickedImageIds.includes(image.id) ? 0.5 : 1,
               height: defaultRowHeight + 'px',
               width: 'fit-content',
               userSelect: 'none',
