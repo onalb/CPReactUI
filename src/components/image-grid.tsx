@@ -6,6 +6,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import { createParticles } from './create-particles';
 import applyMouseEvents from './zoom-pan';
 import  { startTimer, stopTimer} from './timer-functions';
+import { start } from 'repl';
 
 const DraggableBox: React.FC = () => {
   //User Editable Paramters
@@ -146,6 +147,9 @@ const DraggableBox: React.FC = () => {
         setImages(images.filter(img => img.id !== image.id)); // removes the deleted image from the array
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
         setSelectedImageIds(prevIds => prevIds.filter(id => id !== image.id));
+        if(currentSelectedIndex === images.findIndex(img => img.id === image.id)) {
+          setCurrentSelectedIndex(null);
+        }
       }
     }
   }
@@ -160,18 +164,15 @@ const DraggableBox: React.FC = () => {
       square.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
       square.style.left = `${event.clientX}px`;
       square.style.top = `${event.clientY}px`;
-      square.onmousemove = handleMouseMove;
+      square.onmousemove = (e) => handleMouseMove(e, { x: event.clientX, y: event.clientY });
       squareRef.current = square;
       document.body.appendChild(square);
-      console.log(0)
     }
   };
 
-  const handleMouseMove = (event: React.MouseEvent | MouseEvent) => {
+  const handleMouseMove = (event: React.MouseEvent | MouseEvent, startPoint: any) => {
     setIsDrawing(true);
-    console.log(1)
     if (startPoint && squareRef.current) {
-      console.log(2)
       const width = event.clientX - startPoint.x;
       const height = event.clientY - startPoint.y;
       squareRef.current.style.width = `${Math.abs(width)}px`;
@@ -249,7 +250,7 @@ const DraggableBox: React.FC = () => {
         userSelect: 'none',
       }}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
+      onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
       onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
     >
       {images.map((image, index) => (
