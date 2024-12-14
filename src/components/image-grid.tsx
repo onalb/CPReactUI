@@ -6,7 +6,6 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import { createParticles } from './create-particles';
 import applyMouseEvents from './zoom-pan';
 import  { startTimer, stopTimer} from './timer-functions';
-import { start } from 'repl';
 
 const DraggableBox: React.FC = () => {
   //User Editable Paramters
@@ -25,13 +24,12 @@ const DraggableBox: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
   const [currentSelectedIndex, setCurrentSelectedIndex] = useState<number | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
   const squareRef = useRef<HTMLDivElement | null>(null);
 
   // Side Effects
   useEffect(() => {
-    const cleanup = applyMouseEvents(setZoomScale, setIsDragging);
+    const cleanup = applyMouseEvents(setZoomScale, setIsDragging, squareRef, handleMouseUp, squareSelection);
     return cleanup;
   }, []);
 
@@ -93,6 +91,20 @@ const DraggableBox: React.FC = () => {
     // If the call is successful, we will keep the state as updated if wrong we will invalidate the query for images.
   }
 
+  const squareSelection = (event: any) => {
+    console.log('Square selection', event);
+    const square = document.createElement('div');
+    square.id = 'mouse-square';
+    square.style.position = 'absolute';
+    square.style.border = '2px solid blue';
+    square.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
+    square.style.left = `${event.clientX}px`;
+    square.style.top = `${event.clientY}px`;
+    square.onmousemove = (e) => handleMouseMove(e, { x: event.clientX, y: event.clientY });
+    squareRef.current = square;
+    document.body.appendChild(square);
+  }
+
   // User-Event handlers
   const handleKeepOnClick = (e: any, image: any) => {
     debugger;
@@ -108,7 +120,7 @@ const DraggableBox: React.FC = () => {
     }
   }
 
-  const handleImageClick = (imageId: number, index: number, event: React.MouseEvent) => {
+  const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging) {
       if (event.shiftKey && currentSelectedIndex !== null) {
         const start = Math.min(currentSelectedIndex, index);
@@ -157,21 +169,11 @@ const DraggableBox: React.FC = () => {
   const handleMouseDown = (event: React.MouseEvent) => {
     if (event.ctrlKey && event.button === 0) { // Right mouse button
       setStartPoint({ x: event.clientX, y: event.clientY });
-      const square = document.createElement('div');
-      square.id = 'mouse-square';
-      square.style.position = 'absolute';
-      square.style.border = '2px solid blue';
-      square.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
-      square.style.left = `${event.clientX}px`;
-      square.style.top = `${event.clientY}px`;
-      square.onmousemove = (e) => handleMouseMove(e, { x: event.clientX, y: event.clientY });
-      squareRef.current = square;
-      document.body.appendChild(square);
+      squareSelection(event);
     }
   };
 
   const handleMouseMove = (event: React.MouseEvent | MouseEvent, startPoint: any) => {
-    setIsDrawing(true);
     if (startPoint && squareRef.current) {
       const width = event.clientX - startPoint.x;
       const height = event.clientY - startPoint.y;
@@ -182,41 +184,40 @@ const DraggableBox: React.FC = () => {
     }
   };
 
-  const handleMouseUp = (event: MouseEvent) => {
+  const handleMouseUp = () => {
     if (squareRef.current) {
-        setIsDrawing(false);
-        const squareRect = squareRef.current.getBoundingClientRect();
-        const isAClick = squareRect.right - squareRect.left === 4 && squareRect.bottom - squareRect.top === 4;
-        const deselectedImages: number[] = [];
-        const newSelectedImageIds = images.filter(image => {
-          const index = images.findIndex(img => img.id === image.id);
-          const imageElement = document.getElementById(`image-${image.id}`);
+      const squareRect = squareRef.current.getBoundingClientRect();
+      const isAClick = squareRect.right - squareRect.left === 4 && squareRect.bottom - squareRect.top === 4;
+      const deselectedImages: number[] = [];
+      const newSelectedImageIds = images.filter(image => {
+        const index = images.findIndex(img => img.id === image.id);
+        const imageElement = document.getElementById(`image-${image.id}`);
 
-          if (imageElement) {
-            const imageRect = imageElement.getBoundingClientRect();
-            const isIntersecting = (
-              squareRect.left < imageRect.right &&
-              squareRect.right > imageRect.left &&
-              squareRect.top < imageRect.bottom &&
-              squareRect.bottom > imageRect.top
-            );
+        if (imageElement) {
+          const imageRect = imageElement.getBoundingClientRect();
+          const isIntersecting = (
+            squareRect.left < imageRect.right &&
+            squareRect.right > imageRect.left &&
+            squareRect.top < imageRect.bottom &&
+            squareRect.bottom > imageRect.top
+          );
 
-            if (isIntersecting) {
-              if (isAClick && selectedImageIds.includes(image.id) && currentSelectedIndex === index) {
-                setCurrentSelectedIndex(null);
-                deselectedImages.push(image.id);
-                return false;
-              } else if (isAClick && selectedImageIds.includes(image.id) && currentSelectedIndex !== index) {
-                deselectedImages.push(image.id);
-                return false;
-              } else {
-                setCurrentSelectedIndex(index);
-              }
-
-              return true;
+          if (isIntersecting) {
+            if (isAClick && selectedImageIds.includes(image.id) && currentSelectedIndex === index) {
+              setCurrentSelectedIndex(null);
+              deselectedImages.push(image.id);
+              return false;
+            } else if (isAClick && selectedImageIds.includes(image.id) && currentSelectedIndex !== index) {
+              deselectedImages.push(image.id);
+              return false;
+            } else {
+              setCurrentSelectedIndex(index);
             }
+
+            return true;
           }
-          return false;
+        }
+        return false;
       }).map(image => image.id);
       
       setSelectedImageIds(prevIds => Array.from(new Set([...prevIds, ...newSelectedImageIds])).filter(id => !deselectedImages.includes(id)));
@@ -260,6 +261,9 @@ const DraggableBox: React.FC = () => {
             src={image.path}
             alt={`Image ${index}`}
             className="no-drag"
+            onTouchEnd={(event) => {  
+              return !isDragging ? handleImageClick(image.id, index, event) : null
+            }}
             onMouseUp={(event) => {  
               return !isDragging ? handleImageClick(image.id, index, event) : null
             }}

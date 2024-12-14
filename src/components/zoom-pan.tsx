@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
-
-export const applyMouseEvents = (setZoomScale: any, setIsDragging: any) => {
+export const applyMouseEvents = (setZoomScale: any, setIsDragging: any, squareRef: any, handleClientMouseUp: any, squareSelection: any) => {
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
@@ -8,6 +6,9 @@ export const applyMouseEvents = (setZoomScale: any, setIsDragging: any) => {
   let isTouchDragging = false;
   let touchMoved = false;
   let clickDispatched = false;
+  let longTapTimeout: number | null = null;
+  let isLongTouch = false;
+  let startPoint: any = null;
 
   const handleMouseDown = (event: any) => {
     if (!event.ctrlKey) {
@@ -67,6 +68,17 @@ export const applyMouseEvents = (setZoomScale: any, setIsDragging: any) => {
       event.target.dispatchEvent(clickEvent);
       clickDispatched = true; // Set clickDispatched flag
     }
+
+    // Long tap detection
+    longTapTimeout = window.setTimeout(() => {
+      isLongTouch = true;
+      if (isLongTouch) { 
+        squareSelection(event.touches[0])
+        startPoint = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      }
+
+    }, 1000); // 1000ms for long tap detection
+
     if (event.touches.length === 2) {
       initialDistance = getDistance(event.touches[0], event.touches[1]);
       isTouchDragging = true;
@@ -80,36 +92,58 @@ export const applyMouseEvents = (setZoomScale: any, setIsDragging: any) => {
   };
 
   const handleTouchMove = (event: TouchEvent) => {
+    if (longTapTimeout) {
+      clearTimeout(longTapTimeout);
+      longTapTimeout = null;
+    }
     touchMoved = true; // Set touchMoved flag
-    if (event.touches.length === 2 && initialDistance !== 0) {
-      const currentDistance = getDistance(event.touches[0], event.touches[1]);
-      const amount = currentDistance / initialDistance;
-      const at = {
-        x: (event.touches[0].clientX + event.touches[1].clientX) / 2,
-        y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
-      };
-      view.scaleAt(at, amount, setZoomScale);
-      view.applyTo(document.getElementById('main-element'));
-      initialDistance = currentDistance;
+    if (isLongTouch) {
+      if (startPoint && squareRef.current) {
+        const width = event.touches[0].clientX - startPoint.x;
+        const height = event.touches[0].clientY - startPoint.y;
+        squareRef.current.style.width = `${Math.abs(width)}px`;
+        squareRef.current.style.height = `${Math.abs(height)}px`;
+        squareRef.current.style.left = `${Math.min(event.touches[0].clientX, startPoint.x)}px`;
+        squareRef.current.style.top = `${Math.min(event.touches[0].clientY, startPoint.y)}px`;
+      }
+    } else {
+      if (event.touches.length === 2 && initialDistance !== 0) {
+        const currentDistance = getDistance(event.touches[0], event.touches[1]);
+        const amount = currentDistance / initialDistance;
+        const at = {
+          x: (event.touches[0].clientX + event.touches[1].clientX) / 2,
+          y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
+        };
+        view.scaleAt(at, amount, setZoomScale);
+        view.applyTo(document.getElementById('main-element'));
+        initialDistance = currentDistance;
 
-      // Handle dragging with double touches
-      const dx = at.x - lastPosX;
-      const dy = at.y - lastPosY;
-      view.pan({ x: dx, y: dy });
-      view.applyTo(document.getElementById('main-element'));
-      lastPosX = at.x;
-      lastPosY = at.y;
-    } else if (event.touches.length === 1 && isTouchDragging) {
-      const dx = event.touches[0].clientX - lastPosX;
-      const dy = event.touches[0].clientY - lastPosY;
-      view.pan({ x: dx, y: dy });
-      view.applyTo(document.getElementById('main-element'));
-      lastPosX = event.touches[0].clientX;
-      lastPosY = event.touches[0].clientY;
+        // Handle dragging with double touches
+        const dx = at.x - lastPosX;
+        const dy = at.y - lastPosY;
+        view.pan({ x: dx, y: dy });
+        view.applyTo(document.getElementById('main-element'));
+        lastPosX = at.x;
+        lastPosY = at.y;
+      } else if (event.touches.length === 1 && isTouchDragging) {
+        const dx = event.touches[0].clientX - lastPosX;
+        const dy = event.touches[0].clientY - lastPosY;
+        view.pan({ x: dx, y: dy });
+        view.applyTo(document.getElementById('main-element'));
+        lastPosX = event.touches[0].clientX;
+        lastPosY = event.touches[0].clientY;
+      }
     }
   };
 
   const handleTouchEnd = (event: TouchEvent) => {
+    if (isLongTouch) {
+      handleClientMouseUp();
+    }
+    if (longTapTimeout) {
+      clearTimeout(longTapTimeout);
+      longTapTimeout = null;
+    }
     initialDistance = 0;
     isTouchDragging = false;
     if (!touchMoved) {
