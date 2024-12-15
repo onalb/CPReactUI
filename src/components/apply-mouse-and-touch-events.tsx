@@ -1,4 +1,4 @@
-export const applyMouseEvents = (setZoomScale: any, setIsDragging: any, squareRef: any, handleClientMouseUp: any, squareSelection: any) => {
+export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, squareRef: any, handleClientMouseUp: any, squareSelection: any) => {
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
@@ -9,6 +9,45 @@ export const applyMouseEvents = (setZoomScale: any, setIsDragging: any, squareRe
   let longTapTimeout: number | null = null;
   let isLongTouch = false;
   let startPoint: any = null;
+
+  const squareSelectionAnimation = (event: any) => {
+    // Long tap detection
+    longTapTimeout = window.setTimeout(() => {
+      isLongTouch = true;
+      if (isLongTouch) { 
+        squareSelection(event.touches[0])
+        startPoint = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      }
+      if (squareRef.current) {
+        const newSquare = document.createElement('div');
+        newSquare.style.position = 'absolute';
+        newSquare.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
+        newSquare.style.border = '2px solid blue';
+        newSquare.style.width = '1px';
+        newSquare.style.height = '1px';
+        newSquare.style.left = `${event.touches[0].clientX}px`;
+        newSquare.style.top = `${event.touches[0].clientY}px`;
+        newSquare.style.opacity = '0';
+        document.body.appendChild(newSquare);
+        newSquare.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+        setTimeout(() => {
+          if (newSquare) {
+            newSquare.style.transform = 'scale(25)';
+            newSquare.style.opacity = '0.8'
+          }
+          setTimeout(() => {
+            if (newSquare) {
+              newSquare.style.transform = 'scale(50)';
+              newSquare.style.opacity = '0'
+              setTimeout(() => {
+                newSquare.remove();
+              }, 200);
+            }
+          }, 200);
+        }, 200);
+      }
+    }, 1000);
+  }
 
   const handleMouseDown = (event: any) => {
     if (!event.ctrlKey) {
@@ -54,6 +93,9 @@ export const applyMouseEvents = (setZoomScale: any, setIsDragging: any, squareRe
   };
 
   const handleTouchStart = (event: TouchEvent) => {
+    // setIsDragging(false);
+    isLongTouch = false;
+    event.preventDefault();
     touchMoved = false; // Reset touchMoved flag
     if (!clickDispatched) {
       // Dispatch click event at touch start
@@ -69,15 +111,7 @@ export const applyMouseEvents = (setZoomScale: any, setIsDragging: any, squareRe
       clickDispatched = true; // Set clickDispatched flag
     }
 
-    // Long tap detection
-    longTapTimeout = window.setTimeout(() => {
-      isLongTouch = true;
-      if (isLongTouch) { 
-        squareSelection(event.touches[0])
-        startPoint = { x: event.touches[0].clientX, y: event.touches[0].clientY };
-      }
-
-    }, 1000); // 1000ms for long tap detection
+    squareSelectionAnimation(event);
 
     if (event.touches.length === 2) {
       initialDistance = getDistance(event.touches[0], event.touches[1]);
@@ -92,6 +126,7 @@ export const applyMouseEvents = (setZoomScale: any, setIsDragging: any, squareRe
   };
 
   const handleTouchMove = (event: TouchEvent) => {
+    setIsDragging(true);
     if (longTapTimeout) {
       clearTimeout(longTapTimeout);
       longTapTimeout = null;
@@ -137,6 +172,7 @@ export const applyMouseEvents = (setZoomScale: any, setIsDragging: any, squareRe
   };
 
   const handleTouchEnd = (event: TouchEvent) => {
+    setIsDragging(false);
     if (isLongTouch) {
       handleClientMouseUp();
     }
@@ -252,4 +288,4 @@ const view = (() => {
   return API;
 })();
 
-export default applyMouseEvents;
+export default applyMouseAndTouchEvents;

@@ -4,7 +4,7 @@ import '../styles/ImageZoom.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { createParticles } from './create-particles';
-import applyMouseEvents from './zoom-pan';
+import applyMouseAndTouchEvents from './apply-mouse-and-touch-events';
 import  { startTimer, stopTimer} from './timer-functions';
 
 const DraggableBox: React.FC = () => {
@@ -29,12 +29,12 @@ const DraggableBox: React.FC = () => {
 
   // Side Effects
   useEffect(() => {
-    const cleanup = applyMouseEvents(setZoomScale, setIsDragging, squareRef, handleMouseUp, squareSelection);
+    const cleanup = applyMouseAndTouchEvents(setZoomScale, setIsDragging, squareRef, handleMouseUp, squareSelection);
     return cleanup;
   }, []);
 
   useEffect(() => {
-    console.log('selectedImageIds:', selectedImageIds);
+    // console.log('selectedImageIds:', selectedImageIds);
   }, [selectedImageIds]);
 
   useEffect(() => {
@@ -55,8 +55,10 @@ const DraggableBox: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if(!event.ctrlKey && !isDragging) {
+    const handleClickOutside = (event: any) => {
+      console.log(event)
+      console.log('isDragging:', isDragging);
+      if(!event.ctrlKey && !isDragging && ((event.pointerType && event.pointerType === 'mouse') || (event.type === 'touchend'))) {
         const target = event.target as HTMLElement;
         if (target.tagName !== 'IMG' && target.tagName !== 'BUTTON' && target.tagName !== 'I' && !target.classList.contains('no-selection-removal-on-click')) {
           setSelectedImageIds([]);
@@ -65,9 +67,12 @@ const DraggableBox: React.FC = () => {
       };
     }
     document.addEventListener('click', handleClickOutside);
-
+    document.addEventListener('touchend', handleClickOutside);
+    // document.removeEventListener('touchstart', handleClickOutside);
     return () => {
       document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('touchend', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [isDragging]);
 
@@ -92,7 +97,6 @@ const DraggableBox: React.FC = () => {
   }
 
   const squareSelection = (event: any) => {
-    console.log('Square selection', event);
     const square = document.createElement('div');
     square.id = 'mouse-square';
     square.style.position = 'absolute';
@@ -107,7 +111,6 @@ const DraggableBox: React.FC = () => {
 
   // User-Event handlers
   const handleKeepOnClick = (e: any, image: any) => {
-    debugger;
     const isKept: boolean = image.isKept ? false : true;
     const updatedImage = { ...image, isKept };
     const updatedImages: any[] = images.map(img => img.id === updatedImage.id ? updatedImage : img);
