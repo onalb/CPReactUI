@@ -22,6 +22,7 @@ const DraggableBox: React.FC = () => {
   const [zoomScale, setZoomScale] = useState(1);
   const [firstRowWidth, setFirstRowWidth] = useState(calculateFirstRowWidth()); // Initial transform-origin
   const [isDragging, setIsDragging] = useState(false);
+  const [isLongTouch, setIsLongTouch] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
   const [currentSelectedIndex, setCurrentSelectedIndex] = useState<number | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
@@ -29,12 +30,12 @@ const DraggableBox: React.FC = () => {
 
   // Side Effects
   useEffect(() => {
-    const cleanup = applyMouseAndTouchEvents(setZoomScale, setIsDragging, squareRef, handleMouseUp, squareSelection);
+    const cleanup = applyMouseAndTouchEvents(setZoomScale, setIsDragging, setIsLongTouch, squareRef, handleMouseUp, squareSelection);
     return cleanup;
   }, []);
 
   useEffect(() => {
-    // console.log('selectedImageIds:', selectedImageIds);
+    console.log('selectedImageIds:', selectedImageIds);
   }, [selectedImageIds]);
 
   useEffect(() => {
@@ -56,9 +57,8 @@ const DraggableBox: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: any) => {
-      console.log(event)
-      console.log('isDragging:', isDragging);
-      if(!event.ctrlKey && !isDragging && ((event.pointerType && event.pointerType === 'mouse') || (event.type === 'touchend'))) {
+
+      if (!event.ctrlKey && !isDragging && !isLongTouch && ((event.pointerType && event.pointerType === 'mouse') || (event.type === 'touchend'))) {
         const target = event.target as HTMLElement;
         if (target.tagName !== 'IMG' && target.tagName !== 'BUTTON' && target.tagName !== 'I' && !target.classList.contains('no-selection-removal-on-click')) {
           setSelectedImageIds([]);
@@ -68,13 +68,11 @@ const DraggableBox: React.FC = () => {
     }
     document.addEventListener('click', handleClickOutside);
     document.addEventListener('touchend', handleClickOutside);
-    // document.removeEventListener('touchstart', handleClickOutside);
     return () => {
       document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('touchend', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [isDragging]);
+  }, [isDragging, isLongTouch]);
 
   // Functions
   function calculateFirstRowWidth () {
