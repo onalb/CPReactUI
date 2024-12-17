@@ -4,7 +4,7 @@ import '../styles/ImageZoom.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { createParticles } from './create-particles';
-import applyMouseAndTouchEvents from './apply-mouse-and-touch-events';
+import applyMouseAndTouchEvents from './mouse-and-touch-events';
 import  { startTimer, stopTimer} from './timer-functions';
 
 const DraggableBox: React.FC = () => {
@@ -22,6 +22,7 @@ const DraggableBox: React.FC = () => {
   const [zoomScale, setZoomScale] = useState(1);
   const [firstRowWidth, setFirstRowWidth] = useState(calculateFirstRowWidth()); // Initial transform-origin
   const [isDragging, setIsDragging] = useState(false);
+  const [isZooming, setIsZooming] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
   const [currentSelectedIndex, setCurrentSelectedIndex] = useState<number | null>(null);
@@ -30,7 +31,7 @@ const DraggableBox: React.FC = () => {
 
   // Side Effects
   useEffect(() => {
-    const cleanup = applyMouseAndTouchEvents(setZoomScale, setIsDragging, setIsLongTouch, squareRef, handleMouseUp, squareSelection);
+    const cleanup = applyMouseAndTouchEvents(setZoomScale, setIsDragging, setIsZooming, setIsLongTouch, squareRef, handleMouseUp, squareSelection);
     return cleanup;
   }, []);
 
@@ -57,7 +58,6 @@ const DraggableBox: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: any) => {
-
       if (!event.ctrlKey && !isDragging && !isLongTouch && ((event.pointerType && event.pointerType === 'mouse') || (event.type === 'touchend'))) {
         const target = event.target as HTMLElement;
         if (target.tagName !== 'IMG' && target.tagName !== 'BUTTON' && target.tagName !== 'I' && !target.classList.contains('no-selection-removal-on-click')) {
@@ -108,21 +108,8 @@ const DraggableBox: React.FC = () => {
   }
 
   // User-Event handlers
-  const handleKeepOnClick = (e: any, image: any) => {
-    const isKept: boolean = image.isKept ? false : true;
-    const updatedImage = { ...image, isKept };
-    const updatedImages: any[] = images.map(img => img.id === updatedImage.id ? updatedImage : img);
-
-    setImages(updatedImages);
-    updateImages(updatedImages);
-
-    if (!image.isKept) {
-      createParticles(e.clientX, e.clientY, zoomScale, 'keep');
-    }
-  }
-
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging) {
+    if (!isDragging && !isZooming) {
       if (event.shiftKey && currentSelectedIndex !== null) {
         const start = Math.min(currentSelectedIndex, index);
         const end = Math.max(currentSelectedIndex, index);
@@ -138,7 +125,7 @@ const DraggableBox: React.FC = () => {
         } else {
           setCurrentSelectedIndex(index);
         }
-        
+
         setSelectedImageIds(prevIds =>
           prevIds.includes(imageId)
             ? prevIds.filter(id => id !== imageId) // Deselect if already selected
@@ -148,7 +135,22 @@ const DraggableBox: React.FC = () => {
     }
   };
 
-  const handleDeleteOnClick = (e: any, image: any) => {
+  const handleKeepOnClick = (e: any, image: any) => {
+    if (isZooming) return;
+    const isKept: boolean = image.isKept ? false : true;
+    const updatedImage = { ...image, isKept };
+    const updatedImages: any[] = images.map(img => img.id === updatedImage.id ? updatedImage : img);
+
+    setImages(updatedImages);
+    updateImages(updatedImages);
+
+    if (!image.isKept) {
+      createParticles(e.clientX, e.clientY, zoomScale, 'keep');
+    }
+  }
+
+  const handleDeleteOnClick = (e: any, image: any, index: number) => {
+    if (isZooming) return;
     const deleteIcon = e.currentTarget.querySelector(`i#delete-icon-${image.id}`);
     if(deleteIcon) {
       if(!image.deleteClickedOnce) {
@@ -160,6 +162,15 @@ const DraggableBox: React.FC = () => {
         setImages(images.filter(img => img.id !== image.id)); // removes the deleted image from the array
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
         setSelectedImageIds(prevIds => prevIds.filter(id => id !== image.id));
+        setCurrentSelectedIndex((prevIndex: number | null) => { 
+           if (prevIndex === index || prevIndex === null) {
+             return null;
+           } else if (prevIndex! > index) {
+             return prevIndex - 1;
+           } else {
+              return prevIndex + 1;
+           }
+        });
         if(currentSelectedIndex === images.findIndex(img => img.id === image.id)) {
           setCurrentSelectedIndex(null);
         }
@@ -281,17 +292,19 @@ const DraggableBox: React.FC = () => {
               display: 'flex',
             }}
           />
-          <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+          <div className='no-selection-removal-on-click' style={{ display: 'flex', flexWrap: 'wrap' }}>
             <button 
               id={`delete-button-${image.id}`} 
               type="button" 
               className={`btn btn-dark py-1.5 my-1 ${image.isKept ? ' disabled' : ''}`}
               style={{
                 flex: 'none',
-                // transition: 'color 0.5s ease, transform 0.2s ease', // Add smooth transition
               }}
-              onClick={(e) => {
-                handleDeleteOnClick(e, image);
+              onMouseUp={(e) => {
+                handleDeleteOnClick(e, image, index);
+              }}
+              onTouchEnd={(e) => {
+                handleDeleteOnClick(e, image, index);
               }}>
               <i
                 id={`delete-icon-${image.id}`} 
@@ -312,7 +325,10 @@ const DraggableBox: React.FC = () => {
               type="button" 
               className="btn btn-dark py-1.5 m-2 my-1"
               style={{flex: 'none'}}
-              onClick={(e) => {
+              onMouseUp={(e) => {
+                handleKeepOnClick(e, image);
+              }}
+              onTouchEnd={(e) => {
                 handleKeepOnClick(e, image);
               }}>
               <i 

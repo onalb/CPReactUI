@@ -1,4 +1,4 @@
-export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, setIsLongTouch: any, squareRef: any, handleClientMouseUp: any, squareSelection: any) => {
+export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, setIsZooming: any, setIsLongTouch: any, squareRef: any, handleClientMouseUp: any, squareSelection: any) => {
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
@@ -10,9 +10,8 @@ export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, 
   let isLongTouch = false;
   let startPoint: any = null;
 
-  const squareSelectionAnimation = (event: any) => {
+  const applyLongTouch = (event: any) => {
     // Long tap detection
-    
     if (event.touches && event.touches.length > 1) { return }
     const touches = event.touches && event.touches[0] || event;
 
@@ -25,29 +24,29 @@ export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, 
         startPoint = { x: touches.clientX, y: touches.clientY };
       }
 
-      const newSquare = document.createElement('div');
-      newSquare.style.position = 'absolute';
-      newSquare.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
-      newSquare.style.border = '2px solid blue';
-      newSquare.style.width = '1px';
-      newSquare.style.height = '1px';
-      newSquare.style.left = `${touches.clientX}px`;
-      newSquare.style.top = `${touches.clientY}px`;
-      newSquare.style.opacity = '0';
-      document.body.appendChild(newSquare);
-      newSquare.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+      const cursonSquare = document.createElement('div');
+      cursonSquare.style.position = 'absolute';
+      cursonSquare.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
+      cursonSquare.style.border = '2px solid blue';
+      cursonSquare.style.width = '1px';
+      cursonSquare.style.height = '1px';
+      cursonSquare.style.left = `${touches.clientX}px`;
+      cursonSquare.style.top = `${touches.clientY}px`;
+      cursonSquare.style.opacity = '0';
+      document.body.appendChild(cursonSquare);
+      cursonSquare.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
 
       setTimeout(() => {
-        if (newSquare) {
-          newSquare.style.transform = 'scale(25)';
-          newSquare.style.opacity = '0.8'
+        if (cursonSquare) {
+          cursonSquare.style.transform = 'scale(25)';
+          cursonSquare.style.opacity = '0.8'
         }
         setTimeout(() => {
-          if (newSquare) {
-            newSquare.style.transform = 'scale(50)';
-            newSquare.style.opacity = '0'
+          if (cursonSquare) {
+            cursonSquare.style.transform = 'scale(50)';
+            cursonSquare.style.opacity = '0'
             setTimeout(() => {
-              newSquare.remove();
+              cursonSquare.remove();
             }, 200);
           }
         }, 200);
@@ -56,14 +55,17 @@ export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, 
   }
 
   const handleMouseDown = (event: any) => {
+    isLongTouch = false;
+    setIsLongTouch(false);
+    event.preventDefault();
+
     if (!event.ctrlKey) {
       setIsDragging(false); // this is to track if it is dragging for the image-grid
       isDragging = true; // this is for internal use. Mousedown starts dragging
       lastPosX = event.clientX;
       lastPosY = event.clientY;
-      squareSelectionAnimation(event);
+      applyLongTouch(event);
     }
-    setIsLongTouch(false);
   };
 
   const handleMouseMove = (event: any) => {
@@ -128,8 +130,10 @@ export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, 
   const handleTouchStart = (event: TouchEvent) => {
     isLongTouch = false;
     setIsLongTouch(false);
+    setIsZooming(false);
     event.preventDefault();
     touchMoved = false; // Reset touchMoved flag
+
     if (!clickDispatched) {
       // Dispatch click event at touch start
       const clickEvent = new MouseEvent('click', {
@@ -139,14 +143,15 @@ export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, 
         clientX: event.touches[0].clientX,
         clientY: event.touches[0].clientY,
       });
-      event.target &&
-      event.target.dispatchEvent(clickEvent);
+
+      event.target && event.target.dispatchEvent(clickEvent);
       clickDispatched = true; // Set clickDispatched flag
     }
 
-    squareSelectionAnimation(event);
+    applyLongTouch(event);
 
     if (event.touches.length === 2) {
+      setIsZooming(true);
       initialDistance = getDistance(event.touches[0], event.touches[1]);
       isTouchDragging = true;
       lastPosX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
