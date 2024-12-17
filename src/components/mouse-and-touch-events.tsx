@@ -25,14 +25,9 @@ export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, 
       }
 
       const cursorSquare = document.createElement('div');
-      cursorSquare.style.position = 'absolute';
-      cursorSquare.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
-      cursorSquare.style.border = '2px solid blue';
-      cursorSquare.style.width = '1px';
-      cursorSquare.style.height = '1px';
+      cursorSquare.id = 'cursor-square';
       cursorSquare.style.left = `${touches.clientX}px`;
       cursorSquare.style.top = `${touches.clientY}px`;
-      cursorSquare.style.opacity = '0';
       document.body.appendChild(cursorSquare);
       cursorSquare.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
 

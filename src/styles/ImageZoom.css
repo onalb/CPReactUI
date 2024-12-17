@@ -63,3 +63,12 @@ i {
   display: 'flex';
   flex-wrap: 'wrap';
 }
+
+#cursor-square {
+  position: absolute;
+  background-color: rgba(0, 0, 255, 0.2);
+  border: 2px solid blue;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
