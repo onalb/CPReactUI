@@ -24,34 +24,34 @@ export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, 
         startPoint = { x: touches.clientX, y: touches.clientY };
       }
 
-      const cursonSquare = document.createElement('div');
-      cursonSquare.style.position = 'absolute';
-      cursonSquare.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
-      cursonSquare.style.border = '2px solid blue';
-      cursonSquare.style.width = '1px';
-      cursonSquare.style.height = '1px';
-      cursonSquare.style.left = `${touches.clientX}px`;
-      cursonSquare.style.top = `${touches.clientY}px`;
-      cursonSquare.style.opacity = '0';
-      document.body.appendChild(cursonSquare);
-      cursonSquare.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+      const cursorSquare = document.createElement('div');
+      cursorSquare.style.position = 'absolute';
+      cursorSquare.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
+      cursorSquare.style.border = '2px solid blue';
+      cursorSquare.style.width = '1px';
+      cursorSquare.style.height = '1px';
+      cursorSquare.style.left = `${touches.clientX}px`;
+      cursorSquare.style.top = `${touches.clientY}px`;
+      cursorSquare.style.opacity = '0';
+      document.body.appendChild(cursorSquare);
+      cursorSquare.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
 
       setTimeout(() => {
-        if (cursonSquare) {
-          cursonSquare.style.transform = 'scale(25)';
-          cursonSquare.style.opacity = '0.8'
+        if (cursorSquare) {
+          cursorSquare.style.transform = 'scale(25)';
+          cursorSquare.style.opacity = '0.5'
         }
         setTimeout(() => {
-          if (cursonSquare) {
-            cursonSquare.style.transform = 'scale(50)';
-            cursonSquare.style.opacity = '0'
+          if (cursorSquare) {
+            cursorSquare.style.transform = 'scale(50)';
+            cursorSquare.style.opacity = '0'
             setTimeout(() => {
-              cursonSquare.remove();
+              cursorSquare.remove();
             }, 200);
           }
         }, 200);
       }, 200);
-    }, 1000);
+    }, 800);
   }
 
   const handleMouseDown = (event: any) => {

@@ -49,10 +49,24 @@ const DraggableBox: React.FC = () => {
       }
     };
 
+    const handleKeyDown = (event: any) => {
+      if (event.ctrlKey && event.key === 'a') {
+        event.preventDefault();
+        setSelectedImageIds(images.map(img => img.id));
+      }
+      
+      if(event.key === 'Escape') {
+        setSelectedImageIds([]);
+        setCurrentSelectedIndex(null);
+      }
+    };
+
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -97,9 +111,6 @@ const DraggableBox: React.FC = () => {
   const squareSelection = (event: any) => {
     const square = document.createElement('div');
     square.id = 'mouse-square';
-    square.style.position = 'absolute';
-    square.style.border = '2px solid blue';
-    square.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';
     square.style.left = `${event.clientX}px`;
     square.style.top = `${event.clientY}px`;
     square.onmousemove = (e) => handleMouseMove(e, { x: event.clientX, y: event.clientY });
@@ -249,18 +260,10 @@ const DraggableBox: React.FC = () => {
     <div 
       id='main-element'
       style={{
-        backgroundColor: 'black',
-        color: 'white',
-        width: firstRowWidth + 'px',
-        display: 'inline-flex',
-        flexWrap: 'wrap',
         gap: columnGap + 'px',
         padding: padding + 'px',
-        boxSizing: 'border-box',
-        transform: 'matrix(1, 0, 0, 0, 0, 0)', // Scale down to 0
-        transition: 'transform 0.2s ease-out',
+        width: firstRowWidth + 'px',
         transformOrigin: origin, // Dynamic transform-origin based on mouse position
-        userSelect: 'none',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
@@ -272,7 +275,7 @@ const DraggableBox: React.FC = () => {
             id={`image-${image.id}`}
             src={image.path}
             alt={`Image ${index}`}
-            className="no-drag"
+            className="img no-drag"
             onTouchEnd={(event) => {  
               return !isDragging ? handleImageClick(image.id, index, event) : null
             }}
@@ -280,26 +283,16 @@ const DraggableBox: React.FC = () => {
               return !isDragging ? handleImageClick(image.id, index, event) : null
             }}
             style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              color: 'white',
-              fontSize: '0.8em',
-              border: '4px solid rgba(255, 255, 255, 0.5)',
               borderColor: currentSelectedIndex === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
               opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
-              height: defaultRowHeight + 'px',
-              width: 'fit-content',
-              userSelect: 'none',
-              display: 'flex',
+              height: defaultRowHeight + 'px'
             }}
           />
-          <div className='no-selection-removal-on-click' style={{ display: 'flex', flexWrap: 'wrap' }}>
+          <div className='image-tool-area-container no-selection-removal-on-click' style={{ display: 'flex', flexWrap: 'wrap' }}>
             <button 
               id={`delete-button-${image.id}`} 
               type="button" 
               className={`btn btn-dark py-1.5 my-1 ${image.isKept ? ' disabled' : ''}`}
-              style={{
-                flex: 'none',
-              }}
               onMouseUp={(e) => {
                 handleDeleteOnClick(e, image, index);
               }}
@@ -309,9 +302,6 @@ const DraggableBox: React.FC = () => {
               <i
                 id={`delete-icon-${image.id}`} 
                 style={{
-                  fontSize: '1.2em',
-                  zIndex: 10,
-                  transition: 'color 0.5s ease, transform 0.2s ease', // Add smooth transition
                   transform: image.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
                 }} 
                 className={`bi bi-trash3-fill pointer${image.deleteClickedOnce ? ' clicked' : ''}`}
@@ -324,7 +314,6 @@ const DraggableBox: React.FC = () => {
               id={`keep-button-${image.id}`}
               type="button" 
               className="btn btn-dark py-1.5 m-2 my-1"
-              style={{flex: 'none'}}
               onMouseUp={(e) => {
                 handleKeepOnClick(e, image);
               }}
@@ -333,11 +322,6 @@ const DraggableBox: React.FC = () => {
               }}>
               <i 
               id={`keep-icon-${image.id}`}
-              style={{
-                fontSize: '1.2em',
-                zIndex: 10,
-                transition: 'color 0.5s ease, transform 0.3s ease', // Add smooth transition
-              }} 
               className={`bi bi-bag-plus-fill pointer${image.isKept ? ' clicked' : ''}`}
               data-bs-toggle="tooltip"
               data-bs-placement="top" 
@@ -345,16 +329,7 @@ const DraggableBox: React.FC = () => {
               ></i>
             </button>
             <span 
-              style={{
-                flex: 'auto', 
-                textAlign: 'right', 
-                alignSelf: 'center', 
-                marginRight: '15px', 
-                whiteSpace: 'nowrap', 
-                overflow: 'hidden', 
-                textOverflow: 'ellipsis',
-                marginLeft: 'auto',
-              }}
+              className='image-tool-area-gap'
               data-bs-toggle="tooltip"
               data-bs-placement="top"
               title={image.fileName}
