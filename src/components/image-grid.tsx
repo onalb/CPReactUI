@@ -6,6 +6,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import { createParticles } from './create-particles';
 import applyMouseAndTouchEvents from './mouse-and-touch-events';
 import  { startTimer, stopTimer} from './timer-functions';
+import PhotoGalleria from './photo-galleria';
 
 const DraggableBox: React.FC = () => {
   //User Editable Paramters
@@ -27,6 +28,7 @@ const DraggableBox: React.FC = () => {
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
   const [currentSelectedIndex, setCurrentSelectedIndex] = useState<number | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
+  const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean>(true);
   const squareRef = useRef<HTMLDivElement | null>(null);
 
   // Side Effects
@@ -53,6 +55,11 @@ const DraggableBox: React.FC = () => {
       if (event.ctrlKey && event.key === 'a') {
         event.preventDefault();
         setSelectedImageIds(images.map(img => img.id));
+      }
+
+      if (event.ctrlKey && event.key === 'g') {
+        event.preventDefault();
+        setIsGalleriaClosed(false);
       }
       
       if(event.key === 'Escape') {
@@ -257,7 +264,7 @@ const DraggableBox: React.FC = () => {
   }, [handleMouseUp]);
 
   return (
-    <div 
+    <><div
       id='main-element'
       style={{
         gap: columnGap + 'px',
@@ -276,72 +283,73 @@ const DraggableBox: React.FC = () => {
             src={image.path}
             alt={`Image ${index}`}
             className="img no-drag"
-            onTouchEnd={(event) => {  
-              return !isDragging ? handleImageClick(image.id, index, event) : null
-            }}
-            onMouseUp={(event) => {  
-              return !isDragging ? handleImageClick(image.id, index, event) : null
-            }}
+            onTouchEnd={(event) => {
+              return !isDragging ? handleImageClick(image.id, index, event) : null;
+            } }
+            onMouseUp={(event) => {
+              return !isDragging ? handleImageClick(image.id, index, event) : null;
+            } }
             style={{
               borderColor: currentSelectedIndex === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
               opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
               height: defaultRowHeight + 'px'
-            }}
-          />
+            }} />
           <div className='image-tool-area-container no-selection-removal-on-click' style={{ display: 'flex', flexWrap: 'wrap' }}>
-            <button 
-              id={`delete-button-${image.id}`} 
-              type="button" 
+            <button
+              id={`delete-button-${image.id}`}
+              type="button"
               className={`btn btn-dark py-1.5 my-1 ${image.isKept ? ' disabled' : ''}`}
               onMouseUp={(e) => {
                 handleDeleteOnClick(e, image, index);
-              }}
+              } }
               onTouchEnd={(e) => {
                 handleDeleteOnClick(e, image, index);
-              }}>
+              } }>
               <i
-                id={`delete-icon-${image.id}`} 
+                id={`delete-icon-${image.id}`}
                 style={{
                   transform: image.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
-                }} 
+                }}
                 className={`bi bi-trash3-fill pointer${image.deleteClickedOnce ? ' clicked' : ''}`}
                 data-bs-toggle="tooltip"
-                data-bs-placement="top" 
+                data-bs-placement="top"
                 title='DELETE'
               ></i>
-            </button>   
-            <button 
+            </button>
+            <button
               id={`keep-button-${image.id}`}
-              type="button" 
+              type="button"
               className="btn btn-dark py-1.5 m-2 my-1"
               onMouseUp={(e) => {
                 handleKeepOnClick(e, image);
-              }}
+              } }
               onTouchEnd={(e) => {
                 handleKeepOnClick(e, image);
-              }}>
-              <i 
-              id={`keep-icon-${image.id}`}
-              className={`bi bi-bag-plus-fill pointer${image.isKept ? ' clicked' : ''}`}
-              data-bs-toggle="tooltip"
-              data-bs-placement="top" 
-              title='KEEP'
+              } }>
+              <i
+                id={`keep-icon-${image.id}`}
+                className={`bi bi-bag-plus-fill pointer${image.isKept ? ' clicked' : ''}`}
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title='KEEP'
               ></i>
             </button>
-            <span 
+            <span
               className='image-tool-area-gap'
               data-bs-toggle="tooltip"
               data-bs-placement="top"
               title={image.fileName}
             >
-              <span className='no-selection-removal-on-click'>{image.fileName.length > 10 
-                ? `${image.fileName.slice(0, 5)}...${image.fileName.slice(-5)}` 
+              <span className='no-selection-removal-on-click'>{image.fileName.length > 10
+                ? `${image.fileName.slice(0, 5)}...${image.fileName.slice(-5)}`
                 : image.fileName}</span>
             </span>
           </div>
         </div>
       ))}
     </div>
+    {!isGalleriaClosed && <PhotoGalleria images={images} setIsGalleriaClosed={setIsGalleriaClosed} />}
+    </>
   );
 };
 
