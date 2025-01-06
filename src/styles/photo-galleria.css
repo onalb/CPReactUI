@@ -8,6 +8,10 @@
   --thumbnail-margin-right: 10px;
 }
 
+.btn {
+  transition: transform 0.3s ease-in-out;
+}
+
 .galleria-overlay {
   position: fixed;
   top: 0;

@@ -1,4 +1,13 @@
-export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, setIsZooming: any, setIsLongTouch: any, squareRef: any, handleClientMouseUp: any, squareSelection: any) => {
+import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-event-handler';
+
+const applyMouseAndTouchEvents = (
+setZoomScale: any, 
+setIsDragging: any, 
+setIsZooming: any, 
+setIsLongTouch: any, 
+squareRef: any, 
+handleClientMouseUp: any, 
+squareSelection: any) => {
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
@@ -245,22 +254,22 @@ export const applyMouseAndTouchEvents = (setZoomScale: any, setIsDragging: any, 
     }
   });
 
-  document.addEventListener('mousedown', handleMouseDown);
-  document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('mouseup', handleMouseUp);
-  document.addEventListener('wheel', handleWheel, { passive: false });
-  document.addEventListener('touchstart', handleTouchStart, { passive: false });
-  document.addEventListener('touchmove', handleTouchMove, { passive: false });
-  document.addEventListener('touchend', handleTouchEnd, { passive: false });
+  addTrackedEventListener(window, 'mousedown', handleMouseDown);
+  addTrackedEventListener(window, 'mousemove', handleMouseMove);
+  addTrackedEventListener(window, 'mouseup', handleMouseUp);
+  addTrackedEventListener(window, 'wheel', handleWheel);
+  addTrackedEventListener(window, 'touchstart', handleTouchStart as EventListener, { passive: false });
+  addTrackedEventListener(window, 'touchmove', handleTouchMove as EventListener, { passive: false });
+  addTrackedEventListener(window, 'touchend', handleTouchEnd as EventListener, { passive: false });
 
   return () => {
-    document.removeEventListener('mousedown', handleMouseDown);
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-    document.removeEventListener('wheel', handleWheel);
-    document.removeEventListener('touchstart', handleTouchStart);
-    document.removeEventListener('touchmove', handleTouchMove);
-    document.removeEventListener('touchend', handleTouchEnd);
+    removeTrackedEventListeners(window, 'mousedown');
+    removeTrackedEventListeners(window, 'mousemove');
+    removeTrackedEventListeners(window, 'mouseup');
+    removeTrackedEventListeners(window, 'wheel');
+    removeTrackedEventListeners(window, 'touchstart');
+    removeTrackedEventListeners(window, 'touchmove');
+    removeTrackedEventListeners(window, 'touchend');
   };
 };
 

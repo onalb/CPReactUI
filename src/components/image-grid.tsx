@@ -5,6 +5,7 @@ import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { createParticles } from './create-particles';
 import applyMouseAndTouchEvents from './mouse-and-touch-events';
+import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-event-handler';
 import  { startTimer, stopTimer} from './timer-functions';
 import PhotoGalleria from './photo-galleria';
 
@@ -26,14 +27,24 @@ const DraggableBox: React.FC = () => {
   const [isZooming, setIsZooming] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
-  const [currentSelectedIndex, setCurrentSelectedIndex] = useState<number | null>(null);
+  const [currentSelectedImage, setCurrentSelectedImage] = useState<number | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
-  const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean>(true);
+  const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean | null>(null);
   const squareRef = useRef<HTMLDivElement | null>(null);
 
   // Side Effects
   useEffect(() => {
-    const cleanup = applyMouseAndTouchEvents(setZoomScale, setIsDragging, setIsZooming, setIsLongTouch, squareRef, handleMouseUp, squareSelection);
+    addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
+    addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
+
+    const cleanup = applyMouseAndTouchEvents(
+      setZoomScale, 
+      setIsDragging, 
+      setIsZooming, 
+      setIsLongTouch, 
+      squareRef, 
+      handleMouseUp, 
+      squareSelection);
     return cleanup;
   }, []);
 
@@ -42,60 +53,87 @@ const DraggableBox: React.FC = () => {
   }, [selectedImageIds]);
 
   useEffect(() => {
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.key === 'Control') {
-        if (squareRef.current) {
-          document.body.removeChild(squareRef.current);
-          squareRef.current = null;
-        }
-      }
-    };
-
-    const handleKeyDown = (event: any) => {
-      if (event.ctrlKey && event.key === 'a') {
-        event.preventDefault();
-        setSelectedImageIds(images.map(img => img.id));
-      }
-
-      if (event.ctrlKey && event.key === 'g') {
-        event.preventDefault();
-        setIsGalleriaClosed(false);
-      }
-      
-      if(event.key === 'Escape') {
-        setSelectedImageIds([]);
-        setCurrentSelectedIndex(null);
-      }
-    };
-
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('keydown', handleKeyDown);
+    if (isGalleriaClosed) {
+      addTrackedEventListener(window, 'click', handleClickOutside);
+      addTrackedEventListener(window, 'touchend', handleClickOutside);
+      const cleanup = applyMouseAndTouchEvents(
+        setZoomScale, 
+        setIsDragging, 
+        setIsZooming, 
+        setIsLongTouch, 
+        squareRef, 
+        handleMouseUp, 
+        squareSelection);
+        addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
+        addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
+      return cleanup;
+    } else if (isGalleriaClosed === false) {
+      removeTrackedEventListeners(window, 'mousedown');
+      removeTrackedEventListeners(window, 'mousemove');
+      removeTrackedEventListeners(window, 'mouseup');
+      removeTrackedEventListeners(window, 'wheel');
+      removeTrackedEventListeners(window, 'touchstart');
+      removeTrackedEventListeners(window, 'touchmove');
+      removeTrackedEventListeners(window, 'touchend');
+      removeTrackedEventListeners(window, 'click');
+      removeTrackedEventListeners(window, 'touchend');
+    }
 
     return () => {
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('keydown', handleKeyDown);
+      removeTrackedEventListeners(window, 'keyup');
+      removeTrackedEventListeners(window, 'keydown');
     };
-  }, []);
+  }, [setIsGalleriaClosed, isGalleriaClosed]);
 
   useEffect(() => {
-    const handleClickOutside = (event: any) => {
-      if (!event.ctrlKey && !isDragging && !isLongTouch && ((event.pointerType && event.pointerType === 'mouse') || (event.type === 'touchend'))) {
-        const target = event.target as HTMLElement;
-        if (target.tagName !== 'IMG' && target.tagName !== 'BUTTON' && target.tagName !== 'I' && !target.classList.contains('no-selection-removal-on-click')) {
-          setSelectedImageIds([]);
-          setCurrentSelectedIndex(null);
-        }
-      };
-    }
-    document.addEventListener('click', handleClickOutside);
-    document.addEventListener('touchend', handleClickOutside);
+    addTrackedEventListener(window, 'click', handleClickOutside);
+    addTrackedEventListener(window, 'touchend', handleClickOutside);
     return () => {
-      document.removeEventListener('click', handleClickOutside);
-      document.removeEventListener('touchend', handleClickOutside);
+      removeTrackedEventListeners(window, 'click');
+      removeTrackedEventListeners(window,'touchend');
     };
   }, [isDragging, isLongTouch]);
 
   // Functions
+  const handleKeyDown = (event: any) => {
+    if (event.ctrlKey && event.key === 'a') {
+      event.preventDefault();
+      setSelectedImageIds(images.map(img => img.id));
+    }
+
+    if (event.ctrlKey && event.key === 'g') {
+      event.preventDefault();
+      setIsGalleriaClosed(false);
+    }
+    
+    if (event.key === 'Escape') {
+      console.log(isGalleriaClosed);
+      if(!isGalleriaClosed) {
+        const container = document.querySelector('.container-fluid') as HTMLDivElement;
+        if (container) {
+            container.style.transition = 'opacity 0.2s ease-out';
+            container.style.opacity = '0';
+            setTimeout(() => {
+            setIsGalleriaClosed(true);
+            console.log('Close button clicked');
+            }, 200);
+        }
+      } else {
+        setSelectedImageIds([]);
+        setCurrentSelectedImage(null);
+      }
+    }
+  };
+
+  const handleKeyUp = (event: KeyboardEvent) => {
+    if (event.key === 'Control') {
+      if (squareRef.current) {
+        document.body.removeChild(squareRef.current);
+        squareRef.current = null;
+      }
+    }
+  };
+
   function calculateFirstRowWidth () {
     let result = padding; 
     const ratio = defaultRowHeight / images[0]!.height;
@@ -108,6 +146,16 @@ const DraggableBox: React.FC = () => {
 
     result -= columnGap;
     return result;
+  }
+
+  const handleClickOutside = (event: any) => {
+    if (!event.ctrlKey && !isDragging && !isLongTouch && ((event.pointerType && event.pointerType === 'mouse') || (event.type === 'touchend'))) {
+      const target = event.target as HTMLElement;
+      if (target.tagName !== 'IMG' && target.tagName !== 'BUTTON' && target.tagName !== 'I' && !target.classList.contains('no-selection-removal-on-click')) {
+        setSelectedImageIds([]);
+        setCurrentSelectedImage(null);
+      }
+    };
   }
 
   const updateImages = (images: any[]) => {
@@ -128,20 +176,20 @@ const DraggableBox: React.FC = () => {
   // User-Event handlers
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging && !isZooming) {
-      if (event.shiftKey && currentSelectedIndex !== null) {
-        const start = Math.min(currentSelectedIndex, index);
-        const end = Math.max(currentSelectedIndex, index);
+      if (event.shiftKey && currentSelectedImage !== null) {
+        const start = Math.min(currentSelectedImage, index);
+        const end = Math.max(currentSelectedImage, index);
         const newSelectedImageIds = images.slice(start, end + 1).map(img => img.id);
         setSelectedImageIds(prevIds => Array.from(new Set([...prevIds, ...newSelectedImageIds])));
-        setCurrentSelectedIndex(index);
-      } else if(event.shiftKey && currentSelectedIndex === null) {
-        setCurrentSelectedIndex(index);
+        setCurrentSelectedImage(index);
+      } else if (event.shiftKey && currentSelectedImage === null) {
+        setCurrentSelectedImage(index);
         setSelectedImageIds(prevIds =>  [...prevIds, imageId]);
       } else {
-        if (currentSelectedIndex === index || selectedImageIds.includes(imageId)) {
-          setCurrentSelectedIndex(null);
+        if (currentSelectedImage === index || selectedImageIds.includes(imageId)) {
+          setCurrentSelectedImage(null);
         } else {
-          setCurrentSelectedIndex(index);
+          setCurrentSelectedImage(index);
         }
 
         setSelectedImageIds(prevIds =>
@@ -180,7 +228,7 @@ const DraggableBox: React.FC = () => {
         setImages(images.filter(img => img.id !== image.id)); // removes the deleted image from the array
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
         setSelectedImageIds(prevIds => prevIds.filter(id => id !== image.id));
-        setCurrentSelectedIndex((prevIndex: number | null) => { 
+        setCurrentSelectedImage((prevIndex: number | null) => { 
            if (prevIndex === index || prevIndex === null) {
              return null;
            } else if (prevIndex! > index) {
@@ -189,8 +237,8 @@ const DraggableBox: React.FC = () => {
               return prevIndex + 1;
            }
         });
-        if(currentSelectedIndex === images.findIndex(img => img.id === image.id)) {
-          setCurrentSelectedIndex(null);
+        if(currentSelectedImage === images.findIndex(img => img.id === image.id)) {
+          setCurrentSelectedImage(null);
         }
       }
     }
@@ -233,15 +281,15 @@ const DraggableBox: React.FC = () => {
           );
 
           if (isIntersecting) {
-            if (isAClick && selectedImageIds.includes(image.id) && currentSelectedIndex === index) {
-              setCurrentSelectedIndex(null);
+            if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImage === index) {
+              setCurrentSelectedImage(null);
               deselectedImages.push(image.id);
               return false;
-            } else if (isAClick && selectedImageIds.includes(image.id) && currentSelectedIndex !== index) {
+            } else if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImage !== index) {
               deselectedImages.push(image.id);
               return false;
             } else {
-              setCurrentSelectedIndex(index);
+              setCurrentSelectedImage(index);
             }
 
             return true;
@@ -290,7 +338,7 @@ const DraggableBox: React.FC = () => {
               return !isDragging ? handleImageClick(image.id, index, event) : null;
             } }
             style={{
-              borderColor: currentSelectedIndex === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
+              borderColor: currentSelectedImage === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
               opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
               height: defaultRowHeight + 'px'
             }} />
@@ -348,7 +396,11 @@ const DraggableBox: React.FC = () => {
         </div>
       ))}
     </div>
-    {!isGalleriaClosed && <PhotoGalleria images={images} setIsGalleriaClosed={setIsGalleriaClosed} />}
+    {isGalleriaClosed === false && 
+    <PhotoGalleria images={images} 
+      setIsGalleriaClosed={setIsGalleriaClosed} 
+      setCurrentSelectedImage={setCurrentSelectedImage} 
+      currentSelectedImage={currentSelectedImage} />}
     </>
   );
 };
