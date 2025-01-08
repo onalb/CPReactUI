@@ -82,6 +82,83 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
     target.querySelector('i')!.classList.remove('text-white');
   }
 
+  const handleReelOnMouseDown = (e: any) => {
+    e.preventDefault();
+    const reel = thumbnailReelRef.current;
+    if (reel) {
+      reel.style.cursor = 'grabbing';
+      reel.style.userSelect = 'none';
+      const startX = e.pageX || e.touches[0].pageX;
+      const scrollLeft = reel.scrollLeft;
+      let velocity = 0;
+      let lastX = startX;
+
+      const onMove = (moveEvent: MouseEvent | TouchEvent) => {
+        setIsDraggingReel(true);
+        const x = (moveEvent instanceof MouseEvent ? moveEvent.pageX : moveEvent.touches[0].pageX) - startX;
+        velocity = (moveEvent instanceof MouseEvent ? moveEvent.pageX : moveEvent.touches[0].pageX) - lastX;
+        lastX = moveEvent instanceof MouseEvent ? moveEvent.pageX : moveEvent.touches[0].pageX;
+        reel.scrollLeft = scrollLeft - x;
+      };
+
+      const onEnd = () => {
+        reel.style.cursor = 'grab';
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onEnd);
+        window.removeEventListener('touchmove', onMove);
+        window.removeEventListener('touchend', onEnd);
+        setTimeout(() => setIsDraggingReel(false), 0); // Delay to ensure click event is not triggered
+
+        // Continue dragging for a while with decreasing velocity
+        const continueDragging = () => {
+          if (Math.abs(velocity) > 0.1) {
+            reel.scrollLeft -= velocity;
+            velocity *= 0.95; // Decrease velocity
+            requestAnimationFrame(continueDragging);
+          }
+        };
+        continueDragging();
+      };
+
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchmove', onMove);
+      window.addEventListener('touchend', onEnd);
+    }
+  };
+
+  const handleGalleriaClose = () => {
+    const container = document.querySelector('.container-fluid') as HTMLDivElement;
+    if (container) {
+        container.style.transition = 'opacity 0.2s ease-out';
+        container.style.opacity = '0';
+        setTimeout(() => {
+          setIsGalleriaClosed(true);
+        }, 200);
+    }
+    console.log('Close button clicked');
+  }
+
+  const handleThumbnailMouseEnter = (e: any) => {
+    const target = e.currentTarget as HTMLImageElement;
+    target.style.transform = 'scale(1)';
+    target.style.zIndex = '10';
+    if (selectedImage !== target.src) {
+      target.style.border = '4px solid grey';
+    }
+  }
+
+  const handleThumbnailMouseLeave = (e: any) => {
+    const target = e.currentTarget as HTMLImageElement;
+    target.style.transform = 'scale(1)';
+    target.style.zIndex = '0';
+    setTimeout(() => {
+      if (selectedImage !== target.src) {
+        target.style.border = '4px solid rgba(0, 0, 0, 0.70)';
+      }
+    }, 300); // Delay border change to match the transition duration
+  }
+  
   return (
     <div className="container-fluid position-absolute vh-100 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 p-0" 
       style={{ zIndex: 9999, backdropFilter: 'blur(10px)', opacity: 0 }}>
@@ -90,17 +167,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
         aria-label="Close" 
         onMouseEnter={handleOnMouseEnter}
         onMouseLeave={handleOnMouseLeave}
-        onClick={() => {
-          const container = document.querySelector('.container-fluid') as HTMLDivElement;
-          if (container) {
-              container.style.transition = 'opacity 0.2s ease-out';
-              container.style.opacity = '0';
-              setTimeout(() => {
-                setIsGalleriaClosed(true);
-              }, 200);
-          }
-          console.log('Close button clicked');
-          }}
+        onClick={handleGalleriaClose}
       >
         <i className="bi bi-x text-secondary" style={{ fontSize: '3em' }}></i>
       </button>
@@ -108,7 +175,8 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
       <button className="col nav-button left btn rounded-circle w-1 d-inline-block position-fixed start-0 me-3"                
         onMouseEnter={handleOnMouseEnter}
         onMouseLeave={handleOnMouseLeave}
-        onClick={() => scrollThumbnails('left', 1)}>
+        onClick={() => scrollThumbnails('left', 1)}
+        >
           <i className="bi bi-chevron-compact-left text-secondary" style={{ fontSize: '3em' }}></i>
       </button>
       <div className="row">
@@ -134,38 +202,8 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
         <div 
           className="col-10 d-flex overflow-hidden thumbnail-reel p-0" 
           ref={thumbnailReelRef}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            const reel = thumbnailReelRef.current;
-            if (reel) {
-              reel.style.cursor = 'grabbing';
-              reel.style.userSelect = 'none';
-              const startX = e.pageX;
-              const scrollLeft = reel.scrollLeft;
-
-              const onMouseMove = (moveEvent: MouseEvent) => {
-                setIsDraggingReel(true);
-                const x = moveEvent.pageX - startX;
-                reel.scrollLeft = scrollLeft - x;
-              };
-
-              const onMouseUp = () => {
-                reel.style.cursor = 'grab';
-                window.removeEventListener('mousemove', onMouseMove);
-                window.removeEventListener('mouseup', onMouseUp);
-                setTimeout(() => setIsDraggingReel(false), 0); // Delay to ensure click event is not triggered
-              };
-
-              window.addEventListener('mousemove', onMouseMove);
-              window.addEventListener('mouseup', onMouseUp);
-            }
-          }}
-          onMouseEnter={(e) => {
-            const reel = thumbnailReelRef.current;
-            if (reel) {
-              reel.style.cursor = 'grab';
-            }
-          }}
+          onMouseDown={handleReelOnMouseDown}
+          onTouchStart={handleReelOnMouseDown}
         >
           {images.map((image, index) => (
             <img
@@ -183,24 +221,8 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
                 transform: 'scale(1)',
                 transition: 'transform 0.3s ease-in-out, border 0.3s ease-in-out',
               }}
-              onMouseEnter={(e) => {
-                const target = e.currentTarget as HTMLImageElement;
-                target.style.transform = 'scale(1)';
-                target.style.zIndex = '10';
-                if (selectedImage !== target.src) {
-                  target.style.border = '4px solid grey';
-                }
-              }}
-              onMouseLeave={(e) => {
-              const target = e.currentTarget as HTMLImageElement;
-              target.style.transform = 'scale(1)';
-              target.style.zIndex = '0';
-              setTimeout(() => {
-                if (selectedImage !== target.src) {
-                  target.style.border = '4px solid rgba(0, 0, 0, 0.70)';
-                }
-              }, 300); // Delay border change to match the transition duration
-              }}
+              onMouseEnter={handleThumbnailMouseEnter}
+              onMouseLeave={handleThumbnailMouseLeave}
             />
           ))}
         </div>

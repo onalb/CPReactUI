@@ -76,7 +76,6 @@ const DraggableBox: React.FC = () => {
       removeTrackedEventListeners(window, 'touchmove');
       removeTrackedEventListeners(window, 'touchend');
       removeTrackedEventListeners(window, 'click');
-      removeTrackedEventListeners(window, 'touchend');
     }
 
     return () => {
@@ -90,7 +89,7 @@ const DraggableBox: React.FC = () => {
     addTrackedEventListener(window, 'touchend', handleClickOutside);
     return () => {
       removeTrackedEventListeners(window, 'click');
-      removeTrackedEventListeners(window,'touchend');
+      // removeTrackedEventListeners(window,'touchend');
     };
   }, [isDragging, isLongTouch]);
 
