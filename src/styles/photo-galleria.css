@@ -10,6 +10,7 @@
 
 .btn {
   transition: transform 0.3s ease-in-out;
+  z-index: 1;
 }
 
 .galleria-overlay {

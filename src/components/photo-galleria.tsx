@@ -12,6 +12,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   const currentSelectedImageOnGalleria = currentSelectedImage || 0;
   const [selectedImage, setSelectedImage] = useState<string>(images[currentSelectedImageOnGalleria].path);
   const [isDraggingReel, setIsDraggingReel] = useState<boolean>(false);
+  const [scale, setScale] = useState<number>(1);
   const thumbnailReelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const container = document.querySelector('.container-fluid') as HTMLDivElement;
@@ -37,19 +38,15 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
     if ( direction === 'left' ) {
       if (currentSelectedImageOnGalleria > 0) {
         if (currentSelectedImageOnGalleria - increment < 0) {
-          setCurrentSelectedImage(0);
           handleThumbnailClick(images[0].path, 0);
         } else {
-          setCurrentSelectedImage(currentSelectedImageOnGalleria - increment);
           handleThumbnailClick(images[currentSelectedImageOnGalleria - increment].path, currentSelectedImageOnGalleria - increment);
         }
       }
     } else { 
       if (currentSelectedImageOnGalleria + increment >= images.length) {
-        setCurrentSelectedImage(images.length - 1);
         handleThumbnailClick(images[images.length - 1].path, images.length - 1);
       } else if (currentSelectedImageOnGalleria < images.length - increment && currentSelectedImageOnGalleria + increment < images.length) {
-        setCurrentSelectedImage(currentSelectedImageOnGalleria + increment);
         handleThumbnailClick(images[currentSelectedImageOnGalleria + increment].path, currentSelectedImageOnGalleria + increment);
       }
     }
@@ -77,7 +74,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
 
   const handleOnMouseLeave = (e: any) => {
     const target = e.currentTarget as HTMLButtonElement;
-    target.style.zIndex = '0';
+    target.style.zIndex = '1';
     target.style.transform = 'scale(1)';
     target.querySelector('i')!.classList.remove('text-white');
   }
@@ -158,7 +155,72 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
       }
     }, 300); // Delay border change to match the transition duration
   }
+
+  const handleSelectedImageOnWheel = (e: React.WheelEvent<HTMLImageElement>) => {
+    const img = e.currentTarget as HTMLImageElement;
+    const rect = img.getBoundingClientRect();
+    const scaleRatio = 0.003;
+    let newScale = scale;
+    if (!(scale + e.deltaY * -scaleRatio < 1 || scale + e.deltaY * -scaleRatio > 3)) {
+      newScale = scale + e.deltaY * -scaleRatio;
+      setScale(newScale);
+    }
+  };
+
+  const handleReelOnWheel = (e: any) => {
+    if (thumbnailReelRef.current) {
+      const reel = thumbnailReelRef.current;
+      const scrollAmount = -8 * e.deltaY;
+      const startScrollLeft = reel.scrollLeft;
+      const endScrollLeft = startScrollLeft + scrollAmount;
+      const duration = 300; // duration of the animation in ms
+      const startTime = performance.now();
+
+      const animateScroll = (currentTime: number) => {
+        const elapsedTime = currentTime - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+        const easeInOutQuad = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        reel.scrollLeft = startScrollLeft + (endScrollLeft - startScrollLeft) * easeInOutQuad(progress);
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        }
+      };
+
+      requestAnimationFrame(animateScroll);
+    }
+  }
+
+  const handleSelectedImageOnMouseDown = (e: any) => {
+    e.preventDefault();
+    const img = e.currentTarget as HTMLImageElement;
+    img.style.cursor = 'grabbing';
+    const startX = e.pageX;
+    const startY = e.pageY;
+    const startLeft = img.offsetLeft;
+    const startTop = img.offsetTop;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.pageX - startX;
+      const deltaY = moveEvent.pageY - startY;
+      img.style.left = `${startLeft + deltaX}px`;
+      img.style.top = `${startTop + deltaY}px`;
+    };
+
+    const onMouseUp = () => {
+      img.style.cursor = 'grab';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }
   
+  const handleThumbnailImageClick = (image: any, index: any) => {
+    if (!isDraggingReel) {
+      handleThumbnailClick(image.path, index)
+    }
+  }
   return (
     <div className="container-fluid position-absolute vh-100 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 p-0" 
       style={{ zIndex: 9999, backdropFilter: 'blur(10px)', opacity: 0 }}>
@@ -171,27 +233,42 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
       >
         <i className="bi bi-x text-secondary" style={{ fontSize: '3em' }}></i>
       </button>
-
-      <button className="col nav-button left btn rounded-circle w-1 d-inline-block position-fixed start-0 me-3"                
-        onMouseEnter={handleOnMouseEnter}
-        onMouseLeave={handleOnMouseLeave}
-        onClick={() => scrollThumbnails('left', 1)}
-        >
-          <i className="bi bi-chevron-compact-left text-secondary" style={{ fontSize: '3em' }}></i>
-      </button>
-      <div className="row">
-        <img src={selectedImage} 
-        alt="Selected" 
-        className="col p-0" 
-        style={{ minWidth:'50vh', maxWidth: '70vw', minHeight: '50vh', maxHeight: '70vh', border: '15px solid rgba(0, 0, 0, 0.70)' }}/>
+      <div className='row'>
+        <button className="col nav-button left btn rounded-circle w-1 d-inline-block position-fixed start-0 me-3 d-flex justify-content-center align-items-center"                
+          onMouseEnter={handleOnMouseEnter}
+          onMouseLeave={handleOnMouseLeave}
+          onClick={() => scrollThumbnails('left', 1)}
+          >
+            <i className="bi bi-chevron-compact-left text-secondary" style={{ fontSize: '3em' }}></i>
+        </button>
+        <div className='col'>
+          <img 
+            src={selectedImage} 
+            alt="Selected" 
+            className="col p-0 position-absolute" 
+            style={{ 
+              maxWidth: '70vw', 
+              maxHeight: '70vh', 
+              border: '15px solid rgba(0, 0, 0, 0.70)',
+              transition: 'transform 0.3s ease-in-out',
+              cursor: 'grab',
+              transform: `translate(-50%, -50%) scale(${scale})`,
+              objectFit: 'contain',
+            }}
+            onWheel={handleSelectedImageOnWheel}
+            onMouseDown={handleSelectedImageOnMouseDown}
+          />
+        </div>
+        <button className="col nav-button right btn rounded-circle w-1 d-inline-block position-fixed end-0 me-3 d-flex justify-content-center align-items-center"           
+          onMouseEnter={handleOnMouseEnter}
+          onMouseLeave={handleOnMouseLeave}
+          onClick={() => scrollThumbnails('right', 1)}>
+            <i className="bi bi-chevron-compact-right text-secondary" style={{ fontSize: '3em' }}></i>
+        </button>
       </div>
-      <button className="col nav-button right btn rounded-circle w-1 d-inline-block position-fixed end-0 me-3"           
-        onMouseEnter={handleOnMouseEnter}
-        onMouseLeave={handleOnMouseLeave}
-        onClick={() => scrollThumbnails('right', 1)}>
-          <i className="bi bi-chevron-compact-right text-secondary" style={{ fontSize: '3em' }}></i>
-      </button>
-
+      <div className='row'>
+        
+      </div>
       <div className="row position-absolute bottom-0 start-50 translate-middle-x m-0 my-4" style={{ width: '100%' }}>
         <button className="col nav-button left btn rounded-circle w-50 d-inline-block"              
           onMouseEnter={handleOnMouseEnter}
@@ -200,10 +277,11 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
           <i className="pi bi-arrow-left-circle-fill text-secondary"></i>
         </button>
         <div 
-          className="col-10 d-flex overflow-hidden thumbnail-reel p-0" 
+          className="col-10 d-flex overflow-hidden thumbnail-reel p-0"
           ref={thumbnailReelRef}
           onMouseDown={handleReelOnMouseDown}
           onTouchStart={handleReelOnMouseDown}
+          onWheel={handleReelOnWheel}
         >
           {images.map((image, index) => (
             <img
@@ -211,11 +289,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
               src={image.path}
               alt={`Thumbnail ${index}`}
               className="thumbnail mx-1 cursor-pointer"
-              onClick={() => {
-                if (!isDraggingReel) {
-                  handleThumbnailClick(image.path, index)
-                }
-              }}
+              onClick={() => handleThumbnailImageClick(image, index)}
               style={{ 
                 border: index === currentSelectedImage ? '4px solid deeppink' : '4px solid rgba(0, 0, 0, 0.70)',
                 transform: 'scale(1)',
