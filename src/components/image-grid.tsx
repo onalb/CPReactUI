@@ -27,7 +27,7 @@ const DraggableBox: React.FC = () => {
   const [isZooming, setIsZooming] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
-  const [currentSelectedImage, setCurrentSelectedImage] = useState<number | null>(null);
+  const [currentSelectedImageId, setCurrentSelectedImageId] = useState<number | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
   const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean | null>(null);
   const squareRef = useRef<HTMLDivElement | null>(null);
@@ -119,7 +119,7 @@ const DraggableBox: React.FC = () => {
         }
       } else {
         setSelectedImageIds([]);
-        setCurrentSelectedImage(null);
+        setCurrentSelectedImageId(null);
       }
     }
   };
@@ -152,7 +152,7 @@ const DraggableBox: React.FC = () => {
       const target = event.target as HTMLElement;
       if (target.tagName !== 'IMG' && target.tagName !== 'BUTTON' && target.tagName !== 'I' && !target.classList.contains('no-selection-removal-on-click')) {
         setSelectedImageIds([]);
-        setCurrentSelectedImage(null);
+        setCurrentSelectedImageId(null);
       }
     };
   }
@@ -175,20 +175,20 @@ const DraggableBox: React.FC = () => {
   // User-Event handlers
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging && !isZooming) {
-      if (event.shiftKey && currentSelectedImage !== null) {
-        const start = Math.min(currentSelectedImage, index);
-        const end = Math.max(currentSelectedImage, index);
+      if (event.shiftKey && currentSelectedImageId !== null) {
+        const start = Math.min(currentSelectedImageId, index);
+        const end = Math.max(currentSelectedImageId, index);
         const newSelectedImageIds = images.slice(start, end + 1).map(img => img.id);
         setSelectedImageIds(prevIds => Array.from(new Set([...prevIds, ...newSelectedImageIds])));
-        setCurrentSelectedImage(index);
-      } else if (event.shiftKey && currentSelectedImage === null) {
-        setCurrentSelectedImage(index);
+        setCurrentSelectedImageId(index);
+      } else if (event.shiftKey && currentSelectedImageId === null) {
+        setCurrentSelectedImageId(index);
         setSelectedImageIds(prevIds =>  [...prevIds, imageId]);
       } else {
-        if (currentSelectedImage === index || selectedImageIds.includes(imageId)) {
-          setCurrentSelectedImage(null);
+        if (currentSelectedImageId === index || selectedImageIds.includes(imageId)) {
+          setCurrentSelectedImageId(null);
         } else {
-          setCurrentSelectedImage(index);
+          setCurrentSelectedImageId(index);
         }
 
         setSelectedImageIds(prevIds =>
@@ -214,20 +214,20 @@ const DraggableBox: React.FC = () => {
     }
   }
 
-  const handleDeleteOnClick = (e: any, image: any, index: number) => {
-    if (isZooming) return;
-    const deleteIcon = e.currentTarget.querySelector(`i#delete-icon-${image.id}`);
-    if(deleteIcon) {
+  const handleDeleteOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
+    if (isZooming) return false;
+    if (deleteIcon) {
       if(!image.deleteClickedOnce) {
         image.deleteClickedOnce = true;
         setImages(images.map(img => img.id === image.id ? image : img)); // updates the deleteClickedOnce property of the current image
         startTimer(image, setImages);
+        return false;
       } else {
         stopTimer(image);
         setImages(images.filter(img => img.id !== image.id)); // removes the deleted image from the array
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
         setSelectedImageIds(prevIds => prevIds.filter(id => id !== image.id));
-        setCurrentSelectedImage((prevIndex: number | null) => { 
+        setCurrentSelectedImageId((prevIndex: number | null) => { 
            if (prevIndex === index || prevIndex === null) {
              return null;
            } else if (prevIndex! > index) {
@@ -236,11 +236,14 @@ const DraggableBox: React.FC = () => {
               return prevIndex + 1;
            }
         });
-        if(currentSelectedImage === images.findIndex(img => img.id === image.id)) {
-          setCurrentSelectedImage(null);
+
+        if (currentSelectedImageId === images.findIndex(img => img.id === image.id)) {
+          setCurrentSelectedImageId(null);
         }
+        return true;
       }
     }
+    return false;
   }
 
   const handleMouseDown = (event: React.MouseEvent) => {
@@ -280,15 +283,15 @@ const DraggableBox: React.FC = () => {
           );
 
           if (isIntersecting) {
-            if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImage === index) {
-              setCurrentSelectedImage(null);
+            if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImageId === index) {
+              setCurrentSelectedImageId(null);
               deselectedImages.push(image.id);
               return false;
-            } else if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImage !== index) {
+            } else if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImageId !== index) {
               deselectedImages.push(image.id);
               return false;
             } else {
-              setCurrentSelectedImage(index);
+              setCurrentSelectedImageId(index);
             }
 
             return true;
@@ -337,7 +340,7 @@ const DraggableBox: React.FC = () => {
               return !isDragging ? handleImageClick(image.id, index, event) : null;
             } }
             style={{
-              borderColor: currentSelectedImage === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
+              borderColor: currentSelectedImageId === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
               opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
               height: defaultRowHeight + 'px'
             }} />
@@ -347,10 +350,10 @@ const DraggableBox: React.FC = () => {
               type="button"
               className={`btn btn-dark py-1.5 my-1 ${image.isKept ? ' disabled' : ''}`}
               onMouseUp={(e) => {
-                handleDeleteOnClick(e, image, index);
+                handleDeleteOnClick(e, image, index, e.currentTarget.querySelector(`i#delete-icon-${image.id}`));
               } }
               onTouchEnd={(e) => {
-                handleDeleteOnClick(e, image, index);
+                handleDeleteOnClick(e, image, index, e.currentTarget.querySelector(`i#delete-icon-${image.id}`));
               } }>
               <i
                 id={`delete-icon-${image.id}`}
@@ -398,8 +401,9 @@ const DraggableBox: React.FC = () => {
     {isGalleriaClosed === false && 
     <PhotoGalleria images={images} 
       setIsGalleriaClosed={setIsGalleriaClosed} 
-      setCurrentSelectedImage={setCurrentSelectedImage} 
-      currentSelectedImage={currentSelectedImage} />}
+      setCurrentSelectedImageId={setCurrentSelectedImageId} 
+      currentSelectedImageId={currentSelectedImageId}
+      handleDeleteOnClick={handleDeleteOnClick} />}
     </>
   );
 };

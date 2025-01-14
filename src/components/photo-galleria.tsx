@@ -4,16 +4,19 @@ import '../styles/photo-galleria.css'; // Import the CSS file
 interface PhotoGalleriaProps {
   images: any[];
   setIsGalleriaClosed: React.Dispatch<React.SetStateAction<boolean | null>>;
-  setCurrentSelectedImage: React.Dispatch<React.SetStateAction<number | null>>;
-  currentSelectedImage: number | null;
+  setCurrentSelectedImageId: React.Dispatch<React.SetStateAction<number | null>>;
+  currentSelectedImageId: number | null;
+  handleDeleteOnClick: (e: any, image: any, index: number, deleteIcon: any) => boolean;
 }
 
-const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClosed, setCurrentSelectedImage, currentSelectedImage}) => {
-  const currentSelectedImageOnGalleria = currentSelectedImage || 0;
-  const [selectedImage, setSelectedImage] = useState<string>(images[currentSelectedImageOnGalleria].path);
+const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClosed, setCurrentSelectedImageId, currentSelectedImageId, handleDeleteOnClick}) => {
+  const currentSelectedImageIndexOnGalleria = currentSelectedImageId || 0;
+  const currentSelectedImageOnGalleria = images[currentSelectedImageIndexOnGalleria];
+  const [selectedImage, setSelectedImage] = useState<string>(images[currentSelectedImageIndexOnGalleria].path);
   const [isDraggingReel, setIsDraggingReel] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(1);
   const thumbnailReelRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const container = document.querySelector('.container-fluid') as HTMLDivElement;
     if (container) {
@@ -22,34 +25,34 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
         container.style.opacity = '1';
       }, 150);
     }
-    if (currentSelectedImage === null) {
-      setCurrentSelectedImage(0);
+    if (currentSelectedImageId === null) {
+      setCurrentSelectedImageId(0);
     }
-    centerThumbnail(currentSelectedImageOnGalleria);
+    centerThumbnail(currentSelectedImageIndexOnGalleria);
   }, []);
-
-  const handleThumbnailClick = (path: string, index: number) => {
-    setSelectedImage(path);
-    setCurrentSelectedImage(index);
-    centerThumbnail(index);
-  };
 
   const scrollThumbnails = (direction: 'left' | 'right', increment: number) => {
     if ( direction === 'left' ) {
-      if (currentSelectedImageOnGalleria > 0) {
-        if (currentSelectedImageOnGalleria - increment < 0) {
+      if (currentSelectedImageIndexOnGalleria > 0) {
+        if (currentSelectedImageIndexOnGalleria - increment < 0) {
           handleThumbnailClick(images[0].path, 0);
         } else {
-          handleThumbnailClick(images[currentSelectedImageOnGalleria - increment].path, currentSelectedImageOnGalleria - increment);
+          handleThumbnailClick(images[currentSelectedImageIndexOnGalleria - increment].path, currentSelectedImageIndexOnGalleria - increment);
         }
       }
     } else { 
-      if (currentSelectedImageOnGalleria + increment >= images.length) {
+      if (currentSelectedImageIndexOnGalleria + increment >= images.length) {
         handleThumbnailClick(images[images.length - 1].path, images.length - 1);
-      } else if (currentSelectedImageOnGalleria < images.length - increment && currentSelectedImageOnGalleria + increment < images.length) {
-        handleThumbnailClick(images[currentSelectedImageOnGalleria + increment].path, currentSelectedImageOnGalleria + increment);
+      } else if (currentSelectedImageIndexOnGalleria < images.length - increment && currentSelectedImageIndexOnGalleria + increment < images.length) {
+        handleThumbnailClick(images[currentSelectedImageIndexOnGalleria + increment].path, currentSelectedImageIndexOnGalleria + increment);
       }
     }
+  };
+
+  const handleThumbnailClick = (path: string, index: number) => {
+    setSelectedImage(path);
+    setCurrentSelectedImageId(index);
+    centerThumbnail(index);
   };
 
   const centerThumbnail = (index: number) => {
@@ -215,6 +218,18 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
   }
+
+  const handleDeleteOnClickOnGalleria = (e: any, image: any, index: number, deleteIcon: any) => {
+    // setCurrentSelectedImageId((prev) => images[index + 1] ? index + 1 : index - 1);
+    if (handleDeleteOnClick(e, image, index, deleteIcon)) {
+      // setIsGalleriaClosed(true);
+      const nextImage = images.find((img, idx) => idx > index && img.id !== image.id);
+      if (nextImage) {
+        console.log('Next image:', nextImage);
+        setCurrentSelectedImageId(index);
+      }
+    }
+  }
   
   const handleThumbnailImageClick = (image: any, index: any) => {
     if (!isDraggingReel) {
@@ -267,7 +282,27 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
         </button>
       </div>
       <div className='row'>
-        
+        <button
+          id={`delete-button-${currentSelectedImageOnGalleria.id}`}
+          type="button"
+          className={`btn btn-dark py-1.5 my-1 ${currentSelectedImageOnGalleria.isKept ? ' disabled' : ''}`}
+          onMouseUp={(e) => {
+            handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndexOnGalleria, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
+          } }
+          onTouchEnd={(e) => {
+            handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndexOnGalleria, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
+          } }>
+          <i
+            id={`delete-icon-${currentSelectedImageOnGalleria.id}`}
+            style={{
+              transform: currentSelectedImageOnGalleria.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
+            }}
+            className={`bi bi-trash3-fill pointer${currentSelectedImageOnGalleria.deleteClickedOnce ? ' clicked' : ''}`}
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title='DELETE'
+          ></i>
+        </button>
       </div>
       <div className="row position-absolute bottom-0 start-50 translate-middle-x m-0 my-4" style={{ width: '100%' }}>
         <button className="col nav-button left btn rounded-circle w-50 d-inline-block"              
@@ -291,7 +326,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
               className="thumbnail mx-1 cursor-pointer"
               onClick={() => handleThumbnailImageClick(image, index)}
               style={{ 
-                border: index === currentSelectedImage ? '4px solid deeppink' : '4px solid rgba(0, 0, 0, 0.70)',
+                border: index === currentSelectedImageId ? '4px solid deeppink' : '4px solid rgba(0, 0, 0, 0.70)',
                 transform: 'scale(1)',
                 transition: 'transform 0.3s ease-in-out, border 0.3s ease-in-out',
               }}
