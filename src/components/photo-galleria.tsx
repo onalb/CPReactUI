@@ -7,13 +7,15 @@ interface PhotoGalleriaProps {
   setCurrentSelectedImageId: React.Dispatch<React.SetStateAction<number | null>>;
   currentSelectedImageId: number | null;
   handleDeleteOnClick: (e: any, image: any, index: number, deleteIcon: any) => boolean;
+  handleKeepOnClick: (e: any, image: any ) => boolean;
 }
 
-const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClosed, setCurrentSelectedImageId, currentSelectedImageId, handleDeleteOnClick}) => {
+const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClosed, setCurrentSelectedImageId, currentSelectedImageId, handleDeleteOnClick, handleKeepOnClick}) => {
   const currentSelectedImageIndexOnGalleria = currentSelectedImageId || 0;
   const currentSelectedImageOnGalleria = images[currentSelectedImageIndexOnGalleria];
   const [selectedImage, setSelectedImage] = useState<string>(images[currentSelectedImageIndexOnGalleria].path);
   const [isDraggingReel, setIsDraggingReel] = useState<boolean>(false);
+  const [isAutoNextOn, setIsAutoNextOn] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(1);
   const thumbnailReelRef = useRef<HTMLDivElement | null>(null);
 
@@ -77,7 +79,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
 
   const handleOnMouseLeave = (e: any) => {
     const target = e.currentTarget as HTMLButtonElement;
-    target.style.zIndex = '1';
+    // target.style.zIndex = '1';
     target.style.transform = 'scale(1)';
     target.querySelector('i')!.classList.remove('text-white');
   }
@@ -142,7 +144,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   const handleThumbnailMouseEnter = (e: any) => {
     const target = e.currentTarget as HTMLImageElement;
     target.style.transform = 'scale(1)';
-    target.style.zIndex = '10';
+    // target.style.zIndex = '10';
     if (selectedImage !== target.src) {
       target.style.border = '4px solid grey';
     }
@@ -151,7 +153,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   const handleThumbnailMouseLeave = (e: any) => {
     const target = e.currentTarget as HTMLImageElement;
     target.style.transform = 'scale(1)';
-    target.style.zIndex = '0';
+    // target.style.zIndex = '0';
     setTimeout(() => {
       if (selectedImage !== target.src) {
         target.style.border = '4px solid rgba(0, 0, 0, 0.70)';
@@ -220,13 +222,14 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   }
 
   const handleDeleteOnClickOnGalleria = (e: any, image: any, index: number, deleteIcon: any) => {
-    // setCurrentSelectedImageId((prev) => images[index + 1] ? index + 1 : index - 1);
+
     if (handleDeleteOnClick(e, image, index, deleteIcon)) {
       // setIsGalleriaClosed(true);
       const nextImage = images.find((img, idx) => idx > index && img.id !== image.id);
       if (nextImage) {
         console.log('Next image:', nextImage);
         setCurrentSelectedImageId(index);
+        setSelectedImage(nextImage.path);
       }
     }
   }
@@ -236,9 +239,10 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
       handleThumbnailClick(image.path, index)
     }
   }
+
   return (
     <div className="container-fluid position-absolute vh-100 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 p-0" 
-      style={{ zIndex: 9999, backdropFilter: 'blur(10px)', opacity: 0 }}>
+      style={{ zIndex: 2, backdropFilter: 'blur(10px)', opacity: 0 }}>
       <button
         className="position-absolute top-0 end-0 m-4 btn"
         aria-label="Close" 
@@ -248,14 +252,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
       >
         <i className="bi bi-x text-secondary" style={{ fontSize: '3em' }}></i>
       </button>
-      <div className='row'>
-        <button className="col nav-button left btn rounded-circle w-1 d-inline-block position-fixed start-0 me-3 d-flex justify-content-center align-items-center"                
-          onMouseEnter={handleOnMouseEnter}
-          onMouseLeave={handleOnMouseLeave}
-          onClick={() => scrollThumbnails('left', 1)}
-          >
-            <i className="bi bi-chevron-compact-left text-secondary" style={{ fontSize: '3em' }}></i>
-        </button>
+      <div className='row h-25 mt-8'>
         <div className='col'>
           <img 
             src={selectedImage} 
@@ -274,73 +271,125 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
             onMouseDown={handleSelectedImageOnMouseDown}
           />
         </div>
-        <button className="col nav-button right btn rounded-circle w-1 d-inline-block position-fixed end-0 me-3 d-flex justify-content-center align-items-center"           
-          onMouseEnter={handleOnMouseEnter}
-          onMouseLeave={handleOnMouseLeave}
-          onClick={() => scrollThumbnails('right', 1)}>
-            <i className="bi bi-chevron-compact-right text-secondary" style={{ fontSize: '3em' }}></i>
-        </button>
       </div>
-      <div className='row'>
-        <button
-          id={`delete-button-${currentSelectedImageOnGalleria.id}`}
-          type="button"
-          className={`btn btn-dark py-1.5 my-1 ${currentSelectedImageOnGalleria.isKept ? ' disabled' : ''}`}
-          onMouseUp={(e) => {
-            handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndexOnGalleria, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
-          } }
-          onTouchEnd={(e) => {
-            handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndexOnGalleria, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
-          } }>
-          <i
-            id={`delete-icon-${currentSelectedImageOnGalleria.id}`}
-            style={{
-              transform: currentSelectedImageOnGalleria.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
-            }}
-            className={`bi bi-trash3-fill pointer${currentSelectedImageOnGalleria.deleteClickedOnce ? ' clicked' : ''}`}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title='DELETE'
-          ></i>
-        </button>
-      </div>
-      <div className="row position-absolute bottom-0 start-50 translate-middle-x m-0 my-4" style={{ width: '100%' }}>
-        <button className="col nav-button left btn rounded-circle w-50 d-inline-block"              
-          onMouseEnter={handleOnMouseEnter}
-          onMouseLeave={handleOnMouseLeave}
-          onClick={() => scrollThumbnails('left', 10)}>
-          <i className="pi bi-arrow-left-circle-fill text-secondary"></i>
-        </button>
-        <div 
-          className="col-10 d-flex overflow-hidden thumbnail-reel p-0"
-          ref={thumbnailReelRef}
-          onMouseDown={handleReelOnMouseDown}
-          onTouchStart={handleReelOnMouseDown}
-          onWheel={handleReelOnWheel}
-        >
-          {images.map((image, index) => (
-            <img
-              key={index}
-              src={image.path}
-              alt={`Thumbnail ${index}`}
-              className="thumbnail mx-1 cursor-pointer"
-              onClick={() => handleThumbnailImageClick(image, index)}
-              style={{ 
-                border: index === currentSelectedImageId ? '4px solid deeppink' : '4px solid rgba(0, 0, 0, 0.70)',
-                transform: 'scale(1)',
-                transition: 'transform 0.3s ease-in-out, border 0.3s ease-in-out',
+      <div id="reel" className="row position-absolute bottom-0 start-50 translate-middle-x m-0 my-4" style={{ width: '100%' }}>
+        <div className="container">
+          <div className="row justify-content-center">
+            <button className="col-1 btn py-1.5 my-2 fs-3 me-auto no-focus-border"              
+              onMouseEnter={handleOnMouseEnter}
+              onMouseLeave={handleOnMouseLeave}
+              onClick={() => scrollThumbnails('left', 10)}>
+              <i className="pi bi-arrow-left-circle-fill text-secondary"></i>
+            </button>
+            <button className="col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center"                
+              onMouseEnter={handleOnMouseEnter}
+              onMouseLeave={handleOnMouseLeave}
+              onClick={() => scrollThumbnails('left', 1)}
+              >
+                <i className="bi bi-chevron-compact-left text-secondary" style={{ fontSize: '3em' }}></i>
+            </button> 
+            <button
+              id={`delete-button-${currentSelectedImageOnGalleria.id}`}
+              type="button"
+              style={{ height: '8vh', width: '8vh' }}
+              className={`col-1 btn btn-dark align-self-center mx-1 ${currentSelectedImageOnGalleria.isKept ? ' disabled' : ''}`}
+              onMouseUp={(e) => {
+                handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndexOnGalleria, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
+              } }
+              onTouchEnd={(e) => {
+                handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndexOnGalleria, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
+              } }>
+                <i 
+                id={`delete-icon-${currentSelectedImageOnGalleria.id}`}
+                style={{
+                  fontSize: '3vh'
+                }}
+                className={`bi bi-trash3-fill pointer${currentSelectedImageOnGalleria.deleteClickedOnce ? ' clicked' : ''}`}
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title='DELETE'
+                ></i>
+            </button>
+            <div className="col-1 align-self-center ml-2 d-flex justify-content-center align-items-center form-check form-switch p-0"
+              style={{ height: '8vh', width: '8vh' }}>
+              <input className="form-check-input m-0"
+              style={{
+                // fontSize: '3vh',
+                width: '6vh',
+                height: '6vh',
+                // backgroundColor: 'white',
+                // borderColor: 'grey'
+              }} 
+              type="checkbox" 
+              id="flexSwitchCheckDefault" 
+              checked={isAutoNextOn} 
+              onChange={() => setIsAutoNextOn(!isAutoNextOn)} />
+            </div>
+            <button
+              id={`keep-button-${currentSelectedImageOnGalleria.id}`}
+              type="button"
+              style={{ height: '8vh', width: '8vh'}}
+              className="col-1 btn btn-dark align-self-center ml-2"
+              onMouseDown={(e) => handleKeepOnClick(e, currentSelectedImageOnGalleria) }
+              onMouseUp={(e) => {
+                isAutoNextOn && scrollThumbnails('right', 1);
               }}
-              onMouseEnter={handleThumbnailMouseEnter}
-              onMouseLeave={handleThumbnailMouseLeave}
-            />
-          ))}
+              onTouchStart={(e) => handleKeepOnClick(e, currentSelectedImageOnGalleria) }
+              onTouchEnd={(e) => {
+                isAutoNextOn && scrollThumbnails('right', 1);
+              }}
+              >
+              <i
+                id={`keep-icon-${currentSelectedImageOnGalleria.id}`}
+                style={{
+                  fontSize: '3vh'
+                }}
+                className={`bi ${currentSelectedImageOnGalleria.isKept ? 'bi-bag-dash-fill' : 'bi-bag-plus-fill'} pointer${currentSelectedImageOnGalleria.isKept ? ' clicked' : ''}`}
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title={`${currentSelectedImageOnGalleria.isKept ? 'UNKEEP' : 'KEEP'}`}
+              ></i>
+            </button>
+            <button className="col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center"           
+              onMouseEnter={handleOnMouseEnter}
+              onMouseLeave={handleOnMouseLeave}
+              onClick={() => scrollThumbnails('right', 1)}>
+                <i className="bi bi-chevron-compact-right text-secondary" style={{ fontSize: '3em' }}></i>
+            </button>
+            <button className="col-1 btn py-1.5 my-2 fs-3 ms-auto"            
+              onMouseEnter={handleOnMouseEnter}
+              onMouseLeave={handleOnMouseLeave}
+              onClick={() => scrollThumbnails('right', 10)}>
+              <i className="pi bi-arrow-right-circle-fill text-secondary"></i>
+            </button>
+          </div>
+          <div className="row">
+            <div 
+              className="col-10 d-flex overflow-hidden thumbnail-reel p-0 w-100"
+              ref={thumbnailReelRef}
+              onMouseDown={handleReelOnMouseDown}
+              onTouchStart={handleReelOnMouseDown}
+              onWheel={handleReelOnWheel}
+            >
+              {images.map((image, index) => (
+                <img
+                  key={index}
+                  src={image.path}
+                  alt={`Thumbnail ${index}`}
+                  className="thumbnail mx-1 cursor-pointer"
+                  onClick={() => handleThumbnailImageClick(image, index)}
+                  style={{ 
+                    border: index === currentSelectedImageId ? '4px solid deeppink' : image.isKept ? '4px solid orange' : '4px solid rgba(0, 0, 0, 0.70)',
+                    transform: 'scale(1)',
+                    transition: 'transform 0.3s ease-in-out, border 0.3s ease-in-out',
+                  }}
+                  onMouseEnter={handleThumbnailMouseEnter}
+                  onMouseLeave={handleThumbnailMouseLeave}
+                />
+              ))}
+            </div>
+          </div>
         </div>
-        <button className="col nav-button right btn rounded-circle w-50 d-inline-block"           
-          onMouseEnter={handleOnMouseEnter}
-          onMouseLeave={handleOnMouseLeave}
-          onClick={() => scrollThumbnails('right', 10)}>
-          <i className="pi bi-arrow-right-circle-fill text-secondary"></i>
-        </button>
       </div>
     </div>
   );

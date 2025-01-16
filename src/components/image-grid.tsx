@@ -201,7 +201,7 @@ const DraggableBox: React.FC = () => {
   };
 
   const handleKeepOnClick = (e: any, image: any) => {
-    if (isZooming) return;
+    if (isZooming) return false;
     const isKept: boolean = image.isKept ? false : true;
     const updatedImage = { ...image, isKept };
     const updatedImages: any[] = images.map(img => img.id === updatedImage.id ? updatedImage : img);
@@ -212,6 +212,8 @@ const DraggableBox: React.FC = () => {
     if (!image.isKept) {
       createParticles(e.clientX, e.clientY, zoomScale, 'keep');
     }
+
+    return true;
   }
 
   const handleDeleteOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
@@ -378,10 +380,10 @@ const DraggableBox: React.FC = () => {
               } }>
               <i
                 id={`keep-icon-${image.id}`}
-                className={`bi bi-bag-plus-fill pointer${image.isKept ? ' clicked' : ''}`}
+                className={`bi ${image.isKept ? 'bi-bag-dash-fill' : 'bi-bag-plus-fill'} pointer${image.isKept ? ' clicked' : ''}`}
                 data-bs-toggle="tooltip"
                 data-bs-placement="top"
-                title='KEEP'
+                title={`${image.isKept ? 'UNKEEP' : 'KEEP'}`}
               ></i>
             </button>
             <span
@@ -403,7 +405,8 @@ const DraggableBox: React.FC = () => {
       setIsGalleriaClosed={setIsGalleriaClosed} 
       setCurrentSelectedImageId={setCurrentSelectedImageId} 
       currentSelectedImageId={currentSelectedImageId}
-      handleDeleteOnClick={handleDeleteOnClick} />}
+      handleDeleteOnClick={handleDeleteOnClick}
+      handleKeepOnClick={handleKeepOnClick} />}
     </>
   );
 };
