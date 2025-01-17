@@ -84,14 +84,13 @@ container-fluid {
   margin-right: 0;
 }
 
+.delete-btn, 
+.keep-btn {
+  z-index: 1;
+}
+
 .nav-button {
-  background: none;
-  border: none;
-  padding: 10px;
-  cursor: pointer;
-  font-size: 1.5em;
-  user-select: none;
-  width: 20px;
+  z-index: 0;
 }
 
 .nav-button.left {

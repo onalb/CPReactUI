@@ -79,7 +79,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
 
   const handleOnMouseLeave = (e: any) => {
     const target = e.currentTarget as HTMLButtonElement;
-    // target.style.zIndex = '1';
+    target.style.zIndex = '0';
     target.style.transform = 'scale(1)';
     target.querySelector('i')!.classList.remove('text-white');
   }
@@ -145,7 +145,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
     const target = e.currentTarget as HTMLImageElement;
     target.style.transform = 'scale(1)';
     // target.style.zIndex = '10';
-    if (selectedImage !== target.src) {
+    if (target.src !== selectedImage) {
       target.style.border = '4px solid grey';
     }
   }
@@ -155,8 +155,8 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
     target.style.transform = 'scale(1)';
     // target.style.zIndex = '0';
     setTimeout(() => {
-      if (selectedImage !== target.src) {
-        target.style.border = '4px solid rgba(0, 0, 0, 0.70)';
+      if (Number(target.id) !== currentSelectedImageIndexOnGalleria) { //get image index from the target element and compare with currentSelectedImageIndexOnGalleria
+        target.style.border = `4px solid ${images.find(img => img.id === Number(target.id))?.isKept ? 'orange' : 'rgba(0, 0, 0, 0.70)'}`;
       }
     }, 300); // Delay border change to match the transition duration
   }
@@ -281,7 +281,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
               onClick={() => scrollThumbnails('left', 10)}>
               <i className="pi bi-arrow-left-circle-fill text-secondary"></i>
             </button>
-            <button className="col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center"                
+            <button className="nav-button col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center"                
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
               onClick={() => scrollThumbnails('left', 1)}
@@ -292,7 +292,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
               id={`delete-button-${currentSelectedImageOnGalleria.id}`}
               type="button"
               style={{ height: '8vh', width: '8vh' }}
-              className={`col-1 btn btn-dark align-self-center mx-1 ${currentSelectedImageOnGalleria.isKept ? ' disabled' : ''}`}
+              className={`delete-btn col-1 btn btn-dark align-self-center mx-1 ${currentSelectedImageOnGalleria.isKept ? ' disabled' : ''}`}
               onMouseUp={(e) => {
                 handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndexOnGalleria, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
               } }
@@ -329,7 +329,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
               id={`keep-button-${currentSelectedImageOnGalleria.id}`}
               type="button"
               style={{ height: '8vh', width: '8vh'}}
-              className="col-1 btn btn-dark align-self-center ml-2"
+              className="keep-btn col-1 btn btn-dark align-self-center ml-2"
               onMouseDown={(e) => handleKeepOnClick(e, currentSelectedImageOnGalleria) }
               onMouseUp={(e) => {
                 isAutoNextOn && scrollThumbnails('right', 1);
@@ -350,7 +350,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
                 title={`${currentSelectedImageOnGalleria.isKept ? 'UNKEEP' : 'KEEP'}`}
               ></i>
             </button>
-            <button className="col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center"           
+            <button className="nav-button col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center"           
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
               onClick={() => scrollThumbnails('right', 1)}>
@@ -373,6 +373,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
             >
               {images.map((image, index) => (
                 <img
+                  id={index.toString()}
                   key={index}
                   src={image.path}
                   alt={`Thumbnail ${index}`}
