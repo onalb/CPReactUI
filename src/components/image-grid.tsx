@@ -94,7 +94,38 @@ const DraggableBox: React.FC = () => {
   }, [isDragging, isLongTouch]);
 
   // Functions
+  function calculateFirstRowWidth () {
+    let result = padding; 
+    const ratio = defaultRowHeight / images[0]!.height;
+
+    for (let i = 0; i < numberOfColumns; i++) {
+      if (images[i]) {
+        result += images[i]!.width * ratio + columnGap;
+      }
+    }
+
+    result -= columnGap;
+    return result;
+  }
+
+  const updateImages = (images: any[]) => {
+    // Here we will make a call to DB. 
+    // If the call is successful, we will keep the state as updated if wrong we will invalidate the query for images.
+  }
+
+  const squareSelection = (event: any) => {
+    const square = document.createElement('div');
+    square.id = 'mouse-square';
+    square.style.left = `${event.clientX}px`;
+    square.style.top = `${event.clientY}px`;
+    square.onmousemove = (e) => handleMouseMove(e, { x: event.clientX, y: event.clientY });
+    squareRef.current = square;
+    document.body.appendChild(square);
+  }
+
+  // User-Event handlers
   const handleKeyDown = (event: any) => {
+    console.log('Key pressed:', event.key);
     if (event.ctrlKey && event.key === 'a') {
       event.preventDefault();
       setSelectedImageIds(images.map(img => img.id));
@@ -108,7 +139,7 @@ const DraggableBox: React.FC = () => {
     if (event.key === 'Escape') {
       console.log(isGalleriaClosed);
       if(!isGalleriaClosed) {
-        const container = document.querySelector('.container-fluid') as HTMLDivElement;
+        const container = document.querySelector('.photo-galleria') as HTMLDivElement;
         if (container) {
             container.style.transition = 'opacity 0.2s ease-out';
             container.style.opacity = '0';
@@ -133,20 +164,6 @@ const DraggableBox: React.FC = () => {
     }
   };
 
-  function calculateFirstRowWidth () {
-    let result = padding; 
-    const ratio = defaultRowHeight / images[0]!.height;
-
-    for (let i = 0; i < numberOfColumns; i++) {
-      if (images[i]) {
-        result += images[i]!.width * ratio + columnGap;
-      }
-    }
-
-    result -= columnGap;
-    return result;
-  }
-
   const handleClickOutside = (event: any) => {
     if (!event.ctrlKey && !isDragging && !isLongTouch && ((event.pointerType && event.pointerType === 'mouse') || (event.type === 'touchend'))) {
       const target = event.target as HTMLElement;
@@ -155,24 +172,8 @@ const DraggableBox: React.FC = () => {
         setCurrentSelectedImageId(null);
       }
     };
-  }
+  };
 
-  const updateImages = (images: any[]) => {
-    // Here we will make a call to DB. 
-    // If the call is successful, we will keep the state as updated if wrong we will invalidate the query for images.
-  }
-
-  const squareSelection = (event: any) => {
-    const square = document.createElement('div');
-    square.id = 'mouse-square';
-    square.style.left = `${event.clientX}px`;
-    square.style.top = `${event.clientY}px`;
-    square.onmousemove = (e) => handleMouseMove(e, { x: event.clientX, y: event.clientY });
-    squareRef.current = square;
-    document.body.appendChild(square);
-  }
-
-  // User-Event handlers
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging && !isZooming) {
       if (event.shiftKey && currentSelectedImageId !== null) {
@@ -308,6 +309,14 @@ const DraggableBox: React.FC = () => {
     }
   };
 
+  const handleMouseEnterHeader = (e: any) => {
+    e.currentTarget.style.transform = 'translateY(0%)';
+  };
+
+  const handleMouseLeaveHeader = (e: any) => {
+    e.currentTarget.style.transform = 'translateY(-90%)';
+  };
+
   useEffect(() => {
     window.addEventListener('mouseup', handleMouseUp);
     return () => {
@@ -316,7 +325,89 @@ const DraggableBox: React.FC = () => {
   }, [handleMouseUp]);
 
   return (
-    <><div
+    <>        
+    <div
+      className='header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0'
+      style={{
+        backgroundColor: 'rgba(32, 32, 32, 0.65)',
+        width: '100%',
+        height: '100px',
+        position: 'absolute',
+        zIndex: 2,
+        transition: 'transform 0.3s ease-in-out', 
+        transform: 'translateY(-90%)',
+      }}
+      onMouseEnter={handleMouseEnterHeader}
+      onMouseLeave={handleMouseLeaveHeader}
+    >
+      <div className='row align-self-center w-100'>
+        <div className='col-10 d-flex align-items-center' 
+          style={{ justifyContent: 'flex-start' }}>
+          <div
+            className='px-3'
+            style={{
+              display: 'flex', fontSize: '25px', color: 'white', 
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center', // Center horizontally
+              height: '100%', // Make height as much as the parent
+              alignItems: 'center', // Center vertically
+              justifyContent: 'center' // Center horizontally
+            }}
+            data-bs-placement="top"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            >
+            SELECT FOLDER
+          </div>
+        </div>
+        <div className='col-1 d-flex justify-content-center align-items-center'>
+          <i
+            className={`col bi bi-trash3-fill`}
+            style={{        
+              display: 'block', fontSize: '45px', color: 'white',
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center' // Center horizontally
+            }}
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title='DELETE SELECTED'
+            onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          ></i>
+        </div>
+        <div className='col-1 d-flex justify-content-center align-items-center'>
+          <i
+            className={`col bi bi-bag-check`}
+            style={{        
+              display: 'block', fontSize: '45px', color: 'white',
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center',
+            }}
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title='OPEN KEPT'
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          ></i>
+        </div>
+      </div>
+    </div>
+  <div
       id='main-element'
       style={{
         gap: columnGap + 'px',
@@ -401,7 +492,8 @@ const DraggableBox: React.FC = () => {
       ))}
     </div>
     {isGalleriaClosed === false && 
-    <PhotoGalleria images={images} 
+    <PhotoGalleria 
+      images={images} 
       setIsGalleriaClosed={setIsGalleriaClosed} 
       setCurrentSelectedImageId={setCurrentSelectedImageId} 
       currentSelectedImageId={currentSelectedImageId}

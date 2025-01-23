@@ -130,7 +130,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   };
 
   const handleGalleriaClose = () => {
-    const container = document.querySelector('.container-fluid') as HTMLDivElement;
+    const container = document.querySelector('.photo-galleria') as HTMLDivElement;
     if (container) {
         container.style.transition = 'opacity 0.2s ease-out';
         container.style.opacity = '0';
@@ -241,7 +241,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   }
 
   return (
-    <div className="container-fluid position-absolute vh-100 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 p-0" 
+    <div className="photo-galleria container-fluid position-absolute vh-100 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 p-0" 
       style={{ zIndex: 2, backdropFilter: 'blur(10px)', opacity: 0 }}>
       <button
         className="position-absolute top-0 end-0 m-4 btn"
