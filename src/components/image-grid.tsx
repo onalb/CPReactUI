@@ -8,6 +8,7 @@ import applyMouseAndTouchEvents from './mouse-and-touch-events';
 import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-event-handler';
 import  { startTimer, stopTimer} from './timer-functions';
 import PhotoGalleria from './photo-galleria';
+import ModalPopup from './model-popup';
 
 const DraggableBox: React.FC = () => {
   //User Editable Paramters
@@ -30,6 +31,7 @@ const DraggableBox: React.FC = () => {
   const [currentSelectedImageId, setCurrentSelectedImageId] = useState<number | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
   const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean | null>(null);
+  const [isDeletePopupVisible, setIsDeletePopupVisible] = useState<boolean>(false);
   const squareRef = useRef<HTMLDivElement | null>(null);
 
   // Side Effects
@@ -317,6 +319,15 @@ const DraggableBox: React.FC = () => {
     e.currentTarget.style.transform = 'translateY(-90%)';
   };
 
+  const handleDeleteImages = () => {
+    const updatedImages = images.filter(image => !selectedImageIds.includes(image.id));
+    setImages(updatedImages);
+    setSelectedImageIds([]);
+    setCurrentSelectedImageId((prevIndex: number | null) => {
+      // return prevIndex !== null && selectedImageIds.includes(prevIndex) ? null : prevIndex;
+      return null;
+  })};
+
   useEffect(() => {
     window.addEventListener('mouseup', handleMouseUp);
     return () => {
@@ -325,7 +336,7 @@ const DraggableBox: React.FC = () => {
   }, [handleMouseUp]);
 
   return (
-    <>        
+    <>
     <div
       className='header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0'
       style={{
@@ -361,23 +372,28 @@ const DraggableBox: React.FC = () => {
               e.currentTarget.style.color = 'white';
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
-            >
+          >
             SELECT FOLDER
           </div>
         </div>
-        <div className='col-1 d-flex justify-content-center align-items-center'>
+        <div 
+          className='col-1 d-flex justify-content-center align-items-center'
+          style={{ pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
+          onClick={() => setIsDeletePopupVisible(true)}
+          data-toggle="modal" data-target="#exampleModalCenter">
           <i
             className={`col bi bi-trash3-fill`}
             style={{        
-              display: 'block', fontSize: '45px', color: 'white',
+              display: 'block', fontSize: '45px', color: `${selectedImageIds.length > 0 ? 'white' : 'gray'}`,
               transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center' // Center horizontally
+              textAlign: 'center',
+              pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}`,
             }}
             data-bs-toggle="tooltip"
             data-bs-placement="top"
             title='DELETE SELECTED'
             onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = 'white';
@@ -407,7 +423,7 @@ const DraggableBox: React.FC = () => {
         </div>
       </div>
     </div>
-  <div
+    <div
       id='main-element'
       style={{
         gap: columnGap + 'px',
@@ -499,6 +515,11 @@ const DraggableBox: React.FC = () => {
       currentSelectedImageId={currentSelectedImageId}
       handleDeleteOnClick={handleDeleteOnClick}
       handleKeepOnClick={handleKeepOnClick} />}
+      <ModalPopup 
+        setIsDeletePopupVisible={setIsDeletePopupVisible}
+        isDeletePopupVisible={isDeletePopupVisible}
+        handleDeleteImages={handleDeleteImages}
+       ></ModalPopup>
     </>
   );
 };

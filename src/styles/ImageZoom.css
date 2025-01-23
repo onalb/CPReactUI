@@ -64,3 +64,43 @@ i {
   height: 1px;
   opacity: 0;
 }
+
+.delete-popup-background {
+  background-color: rgba(25, 25, 25, 0.5);
+  color: rgba(25, 25, 25);
+}
+
+.delete-popup-header {
+  background-color: rgba(25, 25, 25, 0.5);
+  color: rgba(200, 200, 200);
+}
+
+.delete-popup-content {
+  background-color: rgba(25, 25, 25, 0.5);
+  color: rgba(200, 200, 200);;
+}
+
+.delete-popup-footer {
+  background-color: rgba(25, 25, 25, 0.5);
+  color: rgba(200, 200, 200);;
+}
+
+.yes-button {
+  background-color: transparent;
+  color: rgba(175, 225, 175);
+  border: none;
+}
+
+.yes-button:hover {
+  color: white;
+}
+
+.no-button {
+  background-color: transparent;
+  color: rgba(175, 175, 175);
+  border: none;
+}
+
+.no-button:hover {
+  color: white;
+}
