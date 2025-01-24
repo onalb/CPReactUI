@@ -5,7 +5,7 @@ export const pictures: any[] = [
     fileName: "painting-mountain-lake-with-mountain-background_188544-9126",
     height: 789,
     width: 1380,
-    isKept: false,
+    isKept: true,
     deleteClickedOnce: false
   },
   {
@@ -23,7 +23,7 @@ export const pictures: any[] = [
     fileName: "milky-way-2695569_1280",
     height: 720,
     width: 1280,
-    isKept: false,
+    isKept: true,
     deleteClickedOnce: false
   },
   {
@@ -32,7 +32,7 @@ export const pictures: any[] = [
     fileName: "20200429211042-GettyImages-1164615296",
     height: 1040,
     width: 1560,
-    isKept: false
+    isKept: true
   },
   {
     id: 5,

@@ -1,14 +1,17 @@
 import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import DraggableBox from './components/image-grid';
-import { Background } from 'devextreme-react/cjs/range-selector';
 
 const App: React.FC = () => {
   return (
-    <>
+    <Router>
       <div style={styles.container}>
-        <DraggableBox />
+        <Routes>
+        <Route path="/" element={<DraggableBox />} />
+          <Route path="/:isOpenOnlyKept" element={<DraggableBox />} />
+        </Routes>
       </div>
-    </>
+    </Router>
   );
 };
 

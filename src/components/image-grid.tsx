@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { pictures } from './pictures';
 import '../styles/ImageZoom.css';
 import 'bootstrap/dist/css/bootstrap.css';
@@ -11,6 +12,7 @@ import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
 
 const DraggableBox: React.FC = () => {
+  const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
   //User Editable Paramters
   const numberOfColumns = 5;
 
@@ -21,7 +23,9 @@ const DraggableBox: React.FC = () => {
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
-  const [images, setImages] = useState(pictures);
+  const [images, setImages] = useState(() => {
+    return isOpenOnlyKept === 'true' ? pictures.filter(picture => picture.isKept) : pictures;
+  });
   const [zoomScale, setZoomScale] = useState(1);
   const [firstRowWidth, setFirstRowWidth] = useState(calculateFirstRowWidth()); // Initial transform-origin
   const [isDragging, setIsDragging] = useState(false);
@@ -327,6 +331,9 @@ const DraggableBox: React.FC = () => {
       // return prevIndex !== null && selectedImageIds.includes(prevIndex) ? null : prevIndex;
       return null;
   })};
+  const openKeptOnNewTab = () => {
+    window.open('http://localhost:3000/true', '_blank');
+  }
 
   useEffect(() => {
     window.addEventListener('mouseup', handleMouseUp);
@@ -401,7 +408,8 @@ const DraggableBox: React.FC = () => {
             }}
           ></i>
         </div>
-        <div className='col-1 d-flex justify-content-center align-items-center'>
+        <div className='col-1 d-flex justify-content-center align-items-center'
+          onClick={() => openKeptOnNewTab()}>
           <i
             className={`col bi bi-bag-check`}
             style={{        
