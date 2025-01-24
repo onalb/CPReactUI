@@ -37,6 +37,7 @@ const DraggableBox: React.FC = () => {
   const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean | null>(null);
   const [isDeletePopupVisible, setIsDeletePopupVisible] = useState<boolean>(false);
   const squareRef = useRef<HTMLDivElement | null>(null);
+  let numberOfKeptImages = images.filter(image => image.isKept).length;
 
   // Side Effects
   useEffect(() => {
@@ -57,6 +58,11 @@ const DraggableBox: React.FC = () => {
   useEffect(() => {
     console.log('selectedImageIds:', selectedImageIds);
   }, [selectedImageIds]);
+
+  useEffect(() => {
+    debugger;
+    numberOfKeptImages = images.filter(image => image.isKept).length;
+  }, [images]);
 
   useEffect(() => {
     if (isGalleriaClosed) {
@@ -134,7 +140,7 @@ const DraggableBox: React.FC = () => {
     console.log('Key pressed:', event.key);
     if (event.ctrlKey && event.key === 'a') {
       event.preventDefault();
-      setSelectedImageIds(images.map(img => img.id));
+      selectAllImages();
     }
 
     if (event.ctrlKey && event.key === 'g') {
@@ -324,15 +330,19 @@ const DraggableBox: React.FC = () => {
   };
 
   const handleDeleteImages = () => {
-    const updatedImages = images.filter(image => !selectedImageIds.includes(image.id));
+    const updatedImages = images.filter(image => !selectedImageIds.includes(image.id) || image.isKept);
     setImages(updatedImages);
     setSelectedImageIds([]);
     setCurrentSelectedImageId((prevIndex: number | null) => {
-      // return prevIndex !== null && selectedImageIds.includes(prevIndex) ? null : prevIndex;
       return null;
   })};
+
   const openKeptOnNewTab = () => {
     window.open('http://localhost:3000/true', '_blank');
+  }
+
+  const selectAllImages = () => {
+    setSelectedImageIds(images.map(img => img.id))
   }
 
   useEffect(() => {
@@ -359,7 +369,7 @@ const DraggableBox: React.FC = () => {
       onMouseLeave={handleMouseLeaveHeader}
     >
       <div className='row align-self-center w-100'>
-        <div className='col-10 d-flex align-items-center' 
+        <div className='col-9 d-flex align-items-center' 
           style={{ justifyContent: 'flex-start' }}>
           <div
             className='px-3'
@@ -383,6 +393,27 @@ const DraggableBox: React.FC = () => {
             SELECT FOLDER
           </div>
         </div>
+        <div className='col-1 d-flex justify-content-center align-items-center'
+          onClick={() => selectAllImages()}>
+          <i
+            className={`col bi bi-check2-all`}
+            style={{        
+              display: 'block', fontSize: '45px', color: 'white',
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center',
+            }}
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title='SELECT ALL'
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          ></i>
+        </div>
         <div 
           className='col-1 d-flex justify-content-center align-items-center'
           style={{ pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
@@ -394,7 +425,6 @@ const DraggableBox: React.FC = () => {
               display: 'block', fontSize: '45px', color: `${selectedImageIds.length > 0 ? 'white' : 'gray'}`,
               transition: 'color 0.3s ease, background-color 0.3s ease',
               textAlign: 'center',
-              pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}`,
             }}
             data-bs-toggle="tooltip"
             data-bs-placement="top"
@@ -409,11 +439,13 @@ const DraggableBox: React.FC = () => {
           ></i>
         </div>
         <div className='col-1 d-flex justify-content-center align-items-center'
+          style={{ pointerEvents: `${numberOfKeptImages > 0 ? 'auto' : 'none'}` }}
           onClick={() => openKeptOnNewTab()}>
           <i
             className={`col bi bi-bag-check`}
             style={{        
-              display: 'block', fontSize: '45px', color: 'white',
+              fontSize: '45px', 
+              color: `${numberOfKeptImages > 0 ? 'white' : 'gray'}`,
               transition: 'color 0.3s ease, background-color 0.3s ease',
               textAlign: 'center',
             }}
