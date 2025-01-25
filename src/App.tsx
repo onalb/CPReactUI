@@ -1,14 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import DraggableBox from './components/image-grid';
+import ImageGrid from './components/image-grid';
 
 const App: React.FC = () => {
   return (
     <Router>
       <div style={styles.container}>
         <Routes>
-        <Route path="/" element={<DraggableBox />} />
-          <Route path="/:isOpenOnlyKept" element={<DraggableBox />} />
+        <Route path="/" element={<ImageGrid />} />
+          <Route path="/:isOpenOnlyKept" element={<ImageGrid />} />
         </Routes>
       </div>
     </Router>

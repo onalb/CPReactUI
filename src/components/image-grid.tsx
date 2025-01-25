@@ -11,10 +11,10 @@ import  { startTimer, stopTimer} from './timer-functions';
 import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
 
-const DraggableBox: React.FC = () => {
+const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
   //User Editable Paramters
-  const numberOfColumns = 5;
+  const numberOfColumns = 10;
 
   // Constants
   const padding = 10;
@@ -587,4 +587,4 @@ const DraggableBox: React.FC = () => {
   );
 };
 
-export default DraggableBox;
+export default ImageGrid;
