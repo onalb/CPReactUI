@@ -323,10 +323,16 @@ const DraggableBox: React.FC = () => {
 
   const handleMouseEnterHeader = (e: any) => {
     e.currentTarget.style.transform = 'translateY(0%)';
+    e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .65)';
+    const headerHandle: HTMLElement = document.querySelector('.header-handle') as HTMLElement;
+    if (headerHandle) (headerHandle).style.backgroundColor = 'rgba(32, 32, 32, .65)';
   };
 
   const handleMouseLeaveHeader = (e: any) => {
     e.currentTarget.style.transform = 'translateY(-90%)';
+    e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .9)';
+    const headerHandle: HTMLElement = document.querySelector('.header-handle') as HTMLElement;
+    if (headerHandle) (headerHandle).style.backgroundColor = 'rgba(32, 32, 32, .9)';
   };
 
   const handleDeleteImages = () => {
@@ -357,110 +363,127 @@ const DraggableBox: React.FC = () => {
     <div
       className='header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0'
       style={{
-        backgroundColor: 'rgba(32, 32, 32, 0.65)',
+        backgroundColor: 'rgba(32, 32, 32, .9)',
         width: '100%',
         height: '100px',
         position: 'absolute',
         zIndex: 2,
-        transition: 'transform 0.3s ease-in-out', 
+        transition: 'transform 0.3s ease-in-out, background-color 0.3s ease', 
         transform: 'translateY(-90%)',
       }}
       onMouseEnter={handleMouseEnterHeader}
       onMouseLeave={handleMouseLeaveHeader}
     >
+      <div
+        className='header-handle'
+        style={{
+          width: '150px',
+          height: '25px',
+          borderBottomLeftRadius: '400px',
+          borderBottomRightRadius: '400px',
+          borderBottomWidth: '2px', 
+          borderBottomColor: 'rgba(250, 250, 250, 1)',
+          backgroundColor: 'rgba(32, 32, 32, .9)',
+          position: 'absolute',
+          left: '85%',
+          bottom: '-25px',
+          cursor: 'pointer',
+          transition: 'background-color 0.3s ease',
+        }}
+      ></div>
       <div className='row align-self-center w-100'>
-        <div className='col-9 d-flex align-items-center' 
-          style={{ justifyContent: 'flex-start' }}>
-          <div
-            className='px-3'
-            style={{
-              display: 'flex', fontSize: '25px', color: 'white', 
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center', // Center horizontally
-              height: '100%', // Make height as much as the parent
-              alignItems: 'center', // Center vertically
-              justifyContent: 'center' // Center horizontally
-            }}
-            data-bs-placement="top"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
+      <div className='col-9 d-flex align-items-center' 
+        style={{ justifyContent: 'flex-start' }}>
+        <div
+          className='px-3'
+          style={{
+            display: 'flex', fontSize: '25px', color: 'white', 
+            transition: 'color 0.3s ease, background-color 0.3s ease',
+            textAlign: 'center', // Center horizontally
+            height: '100%', // Make height as much as the parent
+            alignItems: 'center', // Center vertically
+            justifyContent: 'center' // Center horizontally
+          }}
+          data-bs-placement="top"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'white';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           >
-            SELECT FOLDER
-          </div>
+          SELECT FOLDER
         </div>
-        <div className='col-1 d-flex justify-content-center align-items-center'
-          onClick={() => selectAllImages()}>
-          <i
-            className={`col bi bi-check2-all`}
-            style={{        
-              display: 'block', fontSize: '45px', color: 'white',
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
-            }}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title='SELECT ALL'
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          ></i>
-        </div>
-        <div 
-          className='col-1 d-flex justify-content-center align-items-center'
-          style={{ pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
-          onClick={() => setIsDeletePopupVisible(true)}
-          data-toggle="modal" data-target="#exampleModalCenter">
-          <i
-            className={`col bi bi-trash3-fill`}
-            style={{        
-              display: 'block', fontSize: '45px', color: `${selectedImageIds.length > 0 ? 'white' : 'gray'}`,
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
-            }}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title='DELETE SELECTED'
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          ></i>
-        </div>
-        <div className='col-1 d-flex justify-content-center align-items-center'
-          style={{ pointerEvents: `${numberOfKeptImages > 0 ? 'auto' : 'none'}` }}
-          onClick={() => openKeptOnNewTab()}>
-          <i
-            className={`col bi bi-bag-check`}
-            style={{        
-              fontSize: '45px', 
-              color: `${numberOfKeptImages > 0 ? 'white' : 'gray'}`,
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
-            }}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title='OPEN KEPT'
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          ></i>
-        </div>
+      </div>
+      <div className='col-1 d-flex justify-content-center align-items-center'
+        onClick={() => selectAllImages()}>
+        <i
+        className={`col bi bi-check2-all`}
+        style={{        
+          display: 'block', fontSize: '45px', color: 'white',
+          transition: 'color 0.3s ease, background-color 0.3s ease',
+          textAlign: 'center',
+        }}
+        data-bs-toggle="tooltip"
+        data-bs-placement="top"
+        title='SELECT ALL'
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'white';
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
+        ></i>
+      </div>
+      <div 
+        className='col-1 d-flex justify-content-center align-items-center'
+        style={{ pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
+        onClick={() => setIsDeletePopupVisible(true)}
+        data-toggle="modal" data-target="#exampleModalCenter">
+        <i
+        className={`col bi bi-trash3-fill`}
+        style={{        
+          display: 'block', fontSize: '45px', color: `${selectedImageIds.length > 0 ? 'white' : 'gray'}`,
+          transition: 'color 0.3s ease, background-color 0.3s ease',
+          textAlign: 'center',
+        }}
+        data-bs-toggle="tooltip"
+        data-bs-placement="top"
+        title='DELETE SELECTED'
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'white';
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
+        ></i>
+      </div>
+      <div className='col-1 d-flex justify-content-center align-items-center'
+        style={{ pointerEvents: `${numberOfKeptImages > 0 ? 'auto' : 'none'}` }}
+        onClick={() => openKeptOnNewTab()}>
+        <i
+        className={`col bi bi-bag-check`}
+        style={{        
+          fontSize: '45px', 
+          color: `${numberOfKeptImages > 0 ? 'white' : 'gray'}`,
+          transition: 'color 0.3s ease, background-color 0.3s ease',
+          textAlign: 'center',
+        }}
+        data-bs-toggle="tooltip"
+        data-bs-placement="top"
+        title='OPEN KEPT'
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'white';
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
+        ></i>
+      </div>
       </div>
     </div>
     <div

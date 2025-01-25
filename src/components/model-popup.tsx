@@ -47,7 +47,7 @@ const ModalPopup: React.FC<ModelPopupProps> = ({ setIsDeletePopupVisible, isDele
                 }}
             >
                 <p className="m-0">
-                    You are about to delete the selected images. Are you sure you want to proceed?
+                    You are about to delete the selected images. KEPT images will retain. Are you sure you want to proceed?
                 </p>
             </Dialog>
         </div>
