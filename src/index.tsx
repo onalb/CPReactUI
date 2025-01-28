@@ -1,4 +1,3 @@
-// filepath: /c:/Users/burak/source/repos/CherryPick/CPReactUI/src/index.tsx
 import 'primereact/resources/themes/saga-blue/theme.css'; // Theme
 import 'primereact/resources/primereact.min.css'; // Core CSS
 import 'primeicons/primeicons.css'; // Icons

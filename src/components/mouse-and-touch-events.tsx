@@ -236,24 +236,17 @@ squareSelection: any) => {
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  window.addEventListener('load', (event) => {
+  const loadImages = (event: any) => {
     const mainElement = document.getElementById('main-element');
-    const windowWidth = window.innerWidth;
 
     if (mainElement) {
-      const rect = mainElement.getBoundingClientRect();
 
-      if (rect.width < windowWidth) {
-        const x = (windowWidth - rect.width) / 2;
-        view.move({ x, y: 0 });
-        view.applyTo(mainElement);
-      } else {
         view.move({ x: 0, y: 0 });
         view.applyTo(mainElement);
-      }
     }
-  });
+  }
 
+  window.addEventListener('load', loadImages);
   addTrackedEventListener(window, 'mousedown', handleMouseDown);
   addTrackedEventListener(window, 'mousemove', handleMouseMove);
   addTrackedEventListener(window, 'mouseup', handleMouseUp);

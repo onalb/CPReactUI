@@ -10,11 +10,12 @@ import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-
 import  { startTimer, stopTimer} from './timer-functions';
 import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
+import axios from 'axios';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
   //User Editable Paramters
-  const numberOfColumns = 10;
+  const numberOfColumns = 5;
 
   // Constants
   const padding = 10;
@@ -23,11 +24,11 @@ const ImageGrid: React.FC = () => {
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
-  const [images, setImages] = useState(() => {
-    return isOpenOnlyKept === 'true' ? pictures.filter(picture => picture.isKept) : pictures;
-  });
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
+  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
+  const [images, setImages] = useState([] as any[]);
   const [zoomScale, setZoomScale] = useState(1);
-  const [firstRowWidth, setFirstRowWidth] = useState(calculateFirstRowWidth()); // Initial transform-origin
+  const [firstRowWidth, setFirstRowWidth] = useState<number>(0); // Initial transform-origin
   const [isDragging, setIsDragging] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
@@ -40,6 +41,46 @@ const ImageGrid: React.FC = () => {
   let numberOfKeptImages = images.filter(image => image.isKept).length;
 
   // Side Effects
+  useEffect(() => {
+    async function fetchData() {
+        await axios.get(
+            "http://localhost:3080/api/photoList?folder=" + folder
+        ).then((res: any) => {
+          let images: any = [];
+          res.data.map((photo: any, i: any) => {
+            const image: any = {};
+            image['id'] = i;
+            image['path'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}`;
+            image['fileName'] = photo.name;
+            image['height'] = photo.dimensions.height;
+            image['width'] = photo.dimensions.width;
+            image['isKept'] = false;
+            image['deleteClickedOnce'] = false;
+
+              if (isOpenOnlyKept === 'true') {
+                if (image.isKept) images.push(image);
+              } else {
+                images.push(image);
+              }
+
+          });
+
+          setImages(images)
+        })
+        .catch((e: any)=>{
+            console.log(e)
+        });
+    }
+
+    if (folder) {
+        try {
+            fetchData()
+        } catch(e) {
+            console.log(e)
+        }
+    }
+  }, [folder])
+
   useEffect(() => {
     addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
     addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
@@ -60,8 +101,8 @@ const ImageGrid: React.FC = () => {
   }, [selectedImageIds]);
 
   useEffect(() => {
-    debugger;
     numberOfKeptImages = images.filter(image => image.isKept).length;
+    if (images.length > 0) setFirstRowWidth(calculateFirstRowWidth());
   }, [images]);
 
   useEffect(() => {
@@ -120,6 +161,11 @@ const ImageGrid: React.FC = () => {
     return result;
   }
 
+  const openGalleria = (event: any) => {
+    event.preventDefault();
+    setIsGalleriaClosed(false);
+  }
+
   const updateImages = (images: any[]) => {
     // Here we will make a call to DB. 
     // If the call is successful, we will keep the state as updated if wrong we will invalidate the query for images.
@@ -144,8 +190,7 @@ const ImageGrid: React.FC = () => {
     }
 
     if (event.ctrlKey && event.key === 'g') {
-      event.preventDefault();
-      setIsGalleriaClosed(false);
+      openGalleria(event);
     }
     
     if (event.key === 'Escape') {
@@ -323,9 +368,9 @@ const ImageGrid: React.FC = () => {
 
   const handleMouseEnterHeader = (e: any) => {
     e.currentTarget.style.transform = 'translateY(0%)';
-    e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .65)';
+    e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .8)';
     const headerHandle: HTMLElement = document.querySelector('.header-handle') as HTMLElement;
-    if (headerHandle) (headerHandle).style.backgroundColor = 'rgba(32, 32, 32, .65)';
+    if (headerHandle) (headerHandle).style.backgroundColor = 'rgba(32, 32, 32, .8)';
   };
 
   const handleMouseLeaveHeader = (e: any) => {
@@ -392,19 +437,42 @@ const ImageGrid: React.FC = () => {
         }}
       ></div>
       <div className='row align-self-center w-100'>
-      <div className='col-9 d-flex align-items-center' 
-        style={{ justifyContent: 'flex-start' }}>
-        <div
-          className='px-3'
-          style={{
-            display: 'flex', fontSize: '25px', color: 'white', 
+        <div className='col-8 d-flex align-items-center' 
+          style={{ justifyContent: 'flex-start' }}>
+          <div
+            className='px-3'
+            style={{
+              display: 'flex', fontSize: '25px', color: 'white', 
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center', // Center horizontally
+              height: '100%', // Make height as much as the parent
+              alignItems: 'center', // Center vertically
+              justifyContent: 'center' // Center horizontally
+            }}
+            data-bs-placement="top"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            >
+            SELECT FOLDER
+          </div>
+        </div>
+        <div className='col-1 d-flex justify-content-center align-items-center'
+          onClick={openGalleria}>
+          <i
+          className={`col bi bi-tv`}
+          style={{        
+            display: 'block', fontSize: '45px', color: 'white',
             transition: 'color 0.3s ease, background-color 0.3s ease',
-            textAlign: 'center', // Center horizontally
-            height: '100%', // Make height as much as the parent
-            alignItems: 'center', // Center vertically
-            justifyContent: 'center' // Center horizontally
+            textAlign: 'center',
           }}
+          data-bs-toggle="tooltip"
           data-bs-placement="top"
+          title='SELECT ALL'
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
           }}
@@ -412,78 +480,76 @@ const ImageGrid: React.FC = () => {
             e.currentTarget.style.color = 'white';
             e.currentTarget.style.backgroundColor = 'transparent';
           }}
-          >
-          SELECT FOLDER
+          ></i>
         </div>
-      </div>
-      <div className='col-1 d-flex justify-content-center align-items-center'
-        onClick={() => selectAllImages()}>
-        <i
-        className={`col bi bi-check2-all`}
-        style={{        
-          display: 'block', fontSize: '45px', color: 'white',
-          transition: 'color 0.3s ease, background-color 0.3s ease',
-          textAlign: 'center',
-        }}
-        data-bs-toggle="tooltip"
-        data-bs-placement="top"
-        title='SELECT ALL'
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = 'white';
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }}
-        ></i>
-      </div>
-      <div 
-        className='col-1 d-flex justify-content-center align-items-center'
-        style={{ pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
-        onClick={() => setIsDeletePopupVisible(true)}
-        data-toggle="modal" data-target="#exampleModalCenter">
-        <i
-        className={`col bi bi-trash3-fill`}
-        style={{        
-          display: 'block', fontSize: '45px', color: `${selectedImageIds.length > 0 ? 'white' : 'gray'}`,
-          transition: 'color 0.3s ease, background-color 0.3s ease',
-          textAlign: 'center',
-        }}
-        data-bs-toggle="tooltip"
-        data-bs-placement="top"
-        title='DELETE SELECTED'
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = 'white';
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }}
-        ></i>
-      </div>
-      <div className='col-1 d-flex justify-content-center align-items-center'
-        style={{ pointerEvents: `${numberOfKeptImages > 0 ? 'auto' : 'none'}` }}
-        onClick={() => openKeptOnNewTab()}>
-        <i
-        className={`col bi bi-bag-check`}
-        style={{        
-          fontSize: '45px', 
-          color: `${numberOfKeptImages > 0 ? 'white' : 'gray'}`,
-          transition: 'color 0.3s ease, background-color 0.3s ease',
-          textAlign: 'center',
-        }}
-        data-bs-toggle="tooltip"
-        data-bs-placement="top"
-        title='OPEN KEPT'
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = 'white';
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }}
-        ></i>
-      </div>
+        <div className='col-1 d-flex justify-content-center align-items-center'
+          onClick={() => selectAllImages()}>
+          <i
+          className={`col bi bi-check2-all`}
+          style={{        
+            display: 'block', fontSize: '45px', color: 'white',
+            transition: 'color 0.3s ease, background-color 0.3s ease',
+            textAlign: 'center',
+          }}
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title='SELECT ALL'
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'white';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+          ></i>
+        </div>
+        <div 
+          className='col-1 d-flex justify-content-center align-items-center'
+          style={{ pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
+          onClick={() => setIsDeletePopupVisible(true)}
+          data-toggle="modal" data-target="#exampleModalCenter">
+          <i
+          className={`col bi bi-trash3-fill`}
+          style={{        
+            display: 'block', fontSize: '45px', color: `${selectedImageIds.length > 0 ? 'white' : 'gray'}`,
+            transition: 'color 0.3s ease, background-color 0.3s ease',
+            textAlign: 'center',
+          }}
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title='DELETE SELECTED'
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'white';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+          ></i>
+        </div>
+        <div className='col-1 d-flex justify-content-center align-items-center'
+          style={{ pointerEvents: `${numberOfKeptImages > 0 ? 'auto' : 'none'}` }}
+          onClick={() => openKeptOnNewTab()}>
+          <i
+          className={`col bi bi-bag-check`}
+          style={{        
+            fontSize: '45px', 
+            color: `${numberOfKeptImages > 0 ? 'white' : 'gray'}`,
+            transition: 'color 0.3s ease, background-color 0.3s ease',
+            textAlign: 'center',
+          }}
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title='OPEN KEPT'
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'white';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+          ></i>
+        </div>
       </div>
     </div>
     <div
