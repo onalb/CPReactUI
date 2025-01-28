@@ -144,8 +144,9 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   const handleThumbnailMouseEnter = (e: any) => {
     const target = e.currentTarget as HTMLImageElement;
     target.style.transform = 'scale(1)';
-    // target.style.zIndex = '10';
-    if (target.src !== selectedImage) {
+
+    if (decodeURI(target.src) !== decodeURI(selectedImage)) {
+      debugger;
       target.style.border = '4px solid grey';
     }
   }
@@ -153,7 +154,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   const handleThumbnailMouseLeave = (e: any) => {
     const target = e.currentTarget as HTMLImageElement;
     target.style.transform = 'scale(1)';
-    // target.style.zIndex = '0';
     setTimeout(() => {
       if (Number(target.id) !== currentSelectedImageIndexOnGalleria) { //get image index from the target element and compare with currentSelectedImageIndexOnGalleria
         target.style.border = `4px solid ${images.find(img => img.id === Number(target.id))?.isKept ? 'orange' : 'rgba(0, 0, 0, 0.70)'}`;
@@ -224,7 +224,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   const handleDeleteOnClickOnGalleria = (e: any, image: any, index: number, deleteIcon: any) => {
 
     if (handleDeleteOnClick(e, image, index, deleteIcon)) {
-      // setIsGalleriaClosed(true);
       const nextImage = images.find((img, idx) => idx > index && img.id !== image.id);
       if (nextImage) {
         console.log('Next image:', nextImage);
@@ -314,11 +313,8 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
               style={{ height: '8vh', width: '8vh' }}>
               <input className="form-check-input m-0"
               style={{
-                // fontSize: '3vh',
                 width: '6vh',
                 height: '6vh',
-                // backgroundColor: 'white',
-                // borderColor: 'grey'
               }} 
               type="checkbox" 
               id="flexSwitchCheckDefault" 
