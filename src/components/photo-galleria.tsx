@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/photo-galleria.css'; // Import the CSS file
+import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 interface PhotoGalleriaProps {
   images: any[];
@@ -17,7 +18,9 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   const [isDraggingReel, setIsDraggingReel] = useState<boolean>(false);
   const [isAutoNextOn, setIsAutoNextOn] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(true); // State to track loading status
   const thumbnailReelRef = useRef<HTMLDivElement | null>(null);
+  let animationFrameId: number | null = null;
 
   useEffect(() => {
     const container = document.querySelector('.container-fluid') as HTMLDivElement;
@@ -85,7 +88,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
   }
 
   const handleReelOnMouseDown = (e: any) => {
-    e.preventDefault();
+    if (e.type !== 'touchstart') e.preventDefault();
     const reel = thumbnailReelRef.current;
     if (reel) {
       reel.style.cursor = 'grabbing';
@@ -94,6 +97,13 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
       const scrollLeft = reel.scrollLeft;
       let velocity = 0;
       let lastX = startX;
+
+      // Cancel any ongoing animation
+      if (animationFrameId) {
+        console.log('Canceling animation frame');
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
 
       const onMove = (moveEvent: MouseEvent | TouchEvent) => {
         setIsDraggingReel(true);
@@ -116,7 +126,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
           if (Math.abs(velocity) > 0.1) {
             reel.scrollLeft -= velocity;
             velocity *= 0.95; // Decrease velocity
-            requestAnimationFrame(continueDragging);
+            animationFrameId = requestAnimationFrame(continueDragging);
           }
         };
         continueDragging();
@@ -146,7 +156,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
     target.style.transform = 'scale(1)';
 
     if (decodeURI(target.src) !== decodeURI(selectedImage)) {
-      debugger;
       target.style.border = '4px solid grey';
     }
   }
@@ -238,6 +247,17 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
       handleThumbnailClick(image.path, index)
     }
   }
+
+    // Function to handle image load
+    const handleImageLoad = () => {
+      const allImagesLoaded = images.every((image, index) => {
+        const imgElement = document.getElementById(index.toString()) as HTMLImageElement;
+        return imgElement.complete;
+      });
+      if (allImagesLoaded) {
+        setLoading(false);
+      }
+    };
 
   return (
     <div className="photo-galleria container-fluid position-absolute vh-100 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 p-0" 
@@ -367,7 +387,25 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
               onTouchStart={handleReelOnMouseDown}
               onWheel={handleReelOnWheel}
             >
+              {loading && <div className="spinner">Loading...</div>}
               {images.map((image, index) => (
+                // <LazyLoadImage
+                //   id={index.toString()}
+                //   key={index}
+                //   src={image.path}
+                //   alt={`Thumbnail ${index}`}
+                //   className="thumbnail mx-1 cursor-pointer"
+                //   onClick={() => handleThumbnailImageClick(image, index)}
+                //   style={{ 
+                //     border: index === currentSelectedImageId ? '4px solid deeppink' : image.isKept ? '4px solid orange' : '4px solid rgba(0, 0, 0, 0.70)',
+                //     transform: 'scale(1)',
+                //     transition: 'transform 0.3s ease-in-out, border 0.3s ease-in-out',
+                //   }}
+                //   onMouseEnter={handleThumbnailMouseEnter}
+                //   onMouseLeave={handleThumbnailMouseLeave}
+                //   onLoad={handleImageLoad}
+                //   effect="blur" // Add this line for blur effect while loading
+                // />
                 <img
                   id={index.toString()}
                   key={index}
@@ -382,6 +420,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ images, setIsGalleriaClos
                   }}
                   onMouseEnter={handleThumbnailMouseEnter}
                   onMouseLeave={handleThumbnailMouseLeave}
+                  onLoad={handleImageLoad} // Add this line
                 />
               ))}
             </div>

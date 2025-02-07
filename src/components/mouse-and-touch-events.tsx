@@ -5,6 +5,7 @@ setZoomScale: any,
 setIsDragging: any, 
 setIsZooming: any, 
 setIsLongTouch: any, 
+setVisibleImages: any,
 squareRef: any, 
 handleClientMouseUp: any, 
 squareSelection: any) => {
@@ -18,6 +19,26 @@ squareSelection: any) => {
   let longTapTimeout: number | null = null;
   let isLongTouch = false;
   let startPoint: any = null;
+
+  const getVisibleImages = () => {
+    const mainElement = document.getElementById('main-element');
+    if (!mainElement) return [];
+
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const images = Array.from(mainElement.getElementsByTagName('img'));
+    const visibleImages = images.filter((img) => {
+      const imgRect = img.getBoundingClientRect();
+      return (
+        imgRect.top < viewportHeight &&
+        imgRect.left < viewportWidth &&
+        imgRect.bottom > 0 &&
+        imgRect.right > 0
+      );
+    });
+    // console.log(visibleImages);
+    setVisibleImages(visibleImages);
+  };
 
   const applyLongTouch = (event: any) => {
     // Long tap detection
@@ -97,6 +118,7 @@ squareSelection: any) => {
       view.applyTo(document.getElementById('main-element'));
       lastPosX = event.clientX;
       lastPosY = event.clientY;
+      getVisibleImages();
     }
   };
 
@@ -129,6 +151,7 @@ squareSelection: any) => {
     view.scaleAt(at, amount, setZoomScale);
     // Apply the transformation to the element you want to zoom
     view.applyTo(document.getElementById('main-element'));
+    getVisibleImages();
   };
 
   const handleTouchStart = (event: TouchEvent) => {

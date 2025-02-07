@@ -11,6 +11,8 @@ import  { startTimer, stopTimer} from './timer-functions';
 import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
 import axios from 'axios';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+import path from 'path';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
@@ -24,10 +26,13 @@ const ImageGrid: React.FC = () => {
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
-  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
-  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
+  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
   const [images, setImages] = useState([] as any[]);
   const [zoomScale, setZoomScale] = useState(1);
+  const [prevZoomScale, setPrevZoomScale] = useState(1);
+  const [zoomStop, setZoomStop] = useState(2);
   const [firstRowWidth, setFirstRowWidth] = useState<number>(0); // Initial transform-origin
   const [isDragging, setIsDragging] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
@@ -37,7 +42,9 @@ const ImageGrid: React.FC = () => {
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
   const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean | null>(null);
   const [isDeletePopupVisible, setIsDeletePopupVisible] = useState<boolean>(false);
+  const [visibleImages, setVisibleImages] = useState([] as any[]);
   const squareRef = useRef<HTMLDivElement | null>(null);
+  const imageHeight = Math.floor(zoomScale * 300);
   let numberOfKeptImages = images.filter(image => image.isKept).length;
 
   // Side Effects
@@ -50,7 +57,7 @@ const ImageGrid: React.FC = () => {
           res.data.map((photo: any, i: any) => {
             const image: any = {};
             image['id'] = i;
-            image['path'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}`;
+            image['path'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
             image['fileName'] = photo.name;
             image['height'] = photo.dimensions.height;
             image['width'] = photo.dimensions.width;
@@ -79,7 +86,51 @@ const ImageGrid: React.FC = () => {
             console.log(e)
         }
     }
-  }, [folder])
+  }, [folder]);
+
+  useEffect(() => {
+
+  }, [zoomScale])
+
+  useEffect(() => {
+    setImages((prevImages) => {
+      console.log('zoomScale', zoomScale);
+      console.log('prevZoomScale', prevZoomScale);
+      console.log('zoomStop', zoomStop);
+
+      // This means zooming out
+      if (zoomScale < prevZoomScale && Math.ceil(zoomScale) < zoomStop) {
+        setZoomStop(Math.ceil(zoomScale));
+        return prevImages.map((image) => {
+          if (visibleImages.some(visibleImage => visibleImage.id === 'image-' + image.id)) {
+            console.log('visibleImage:');
+            return {
+              ...image,
+              path: `http://localhost:3080/api/photos?folder=${folder}&image=${image.fileName}&height=${imageHeight}`
+            };
+          }
+          return image;
+        });
+      }
+
+      setPrevZoomScale(zoomScale);
+
+      if (Math.ceil(zoomScale) > zoomStop) {
+        setZoomStop(Math.ceil(zoomScale));
+        return prevImages.map((image) => {
+          if (visibleImages.some(visibleImage => visibleImage.id === 'image-' + image.id)) {
+            console.log('visibleImage:');
+            return {
+              ...image,
+              path: `http://localhost:3080/api/photos?folder=${folder}&image=${image.fileName}&height=${imageHeight}`
+            };
+          }
+          return image;
+        });
+      }
+      return [...prevImages];
+    });
+  }, [visibleImages]);
 
   useEffect(() => {
     addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
@@ -90,6 +141,7 @@ const ImageGrid: React.FC = () => {
       setIsDragging, 
       setIsZooming, 
       setIsLongTouch, 
+      setVisibleImages,
       squareRef, 
       handleMouseUp, 
       squareSelection);
@@ -113,7 +165,8 @@ const ImageGrid: React.FC = () => {
         setZoomScale, 
         setIsDragging, 
         setIsZooming, 
-        setIsLongTouch, 
+        setIsLongTouch,
+        setVisibleImages,
         squareRef, 
         handleMouseUp, 
         squareSelection);
@@ -389,7 +442,7 @@ const ImageGrid: React.FC = () => {
   })};
 
   const openKeptOnNewTab = () => {
-    window.open('http://localhost:3000/true', '_blank');
+    window.open('http://localhost:3000/true', '_blank'); // fix
   }
 
   const selectAllImages = () => {
@@ -566,17 +619,17 @@ const ImageGrid: React.FC = () => {
     >
       {images.map((image, index) => (
         <div key={index} className='image-card'>
-          <img
+          <LazyLoadImage
             id={`image-${image.id}`}
             src={image.path}
             alt={`Image ${index}`}
             className="img no-drag"
-            onTouchEnd={(event) => {
-              return !isDragging ? handleImageClick(image.id, index, event) : null;
-            } }
-            onMouseUp={(event) => {
-              return !isDragging ? handleImageClick(image.id, index, event) : null;
-            } }
+            onTouchEnd={(e: any) => {
+              return !isDragging ? handleImageClick(image.id, index, e) : null;
+            }}
+            onMouseUp={(e: any) => {
+              return !isDragging ? handleImageClick(image.id, index, e) : null;
+            }}
             style={{
               borderColor: currentSelectedImageId === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
               opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
@@ -589,19 +642,19 @@ const ImageGrid: React.FC = () => {
               className={`btn btn-dark py-1.5 my-1 ${image.isKept ? ' disabled' : ''}`}
               onMouseUp={(e) => {
                 handleDeleteOnClick(e, image, index, e.currentTarget.querySelector(`i#delete-icon-${image.id}`));
-              } }
+              }}
               onTouchEnd={(e) => {
                 handleDeleteOnClick(e, image, index, e.currentTarget.querySelector(`i#delete-icon-${image.id}`));
-              } }>
+              }}>
               <i
-                id={`delete-icon-${image.id}`}
-                style={{
-                  transform: image.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
-                }}
-                className={`bi bi-trash3-fill pointer${image.deleteClickedOnce ? ' clicked' : ''}`}
-                data-bs-toggle="tooltip"
-                data-bs-placement="top"
-                title='DELETE'
+          id={`delete-icon-${image.id}`}
+          style={{
+            transform: image.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
+          }}
+          className={`bi bi-trash3-fill pointer${image.deleteClickedOnce ? ' clicked' : ''}`}
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title='DELETE'
               ></i>
             </button>
             <button
@@ -610,16 +663,16 @@ const ImageGrid: React.FC = () => {
               className="btn btn-dark py-1.5 m-2 my-1"
               onMouseUp={(e) => {
                 handleKeepOnClick(e, image);
-              } }
+              }}
               onTouchEnd={(e) => {
                 handleKeepOnClick(e, image);
-              } }>
+              }}>
               <i
-                id={`keep-icon-${image.id}`}
-                className={`bi ${image.isKept ? 'bi-bag-dash-fill' : 'bi-bag-plus-fill'} pointer${image.isKept ? ' clicked' : ''}`}
-                data-bs-toggle="tooltip"
-                data-bs-placement="top"
-                title={`${image.isKept ? 'UNKEEP' : 'KEEP'}`}
+          id={`keep-icon-${image.id}`}
+          className={`bi ${image.isKept ? 'bi-bag-dash-fill' : 'bi-bag-plus-fill'} pointer${image.isKept ? ' clicked' : ''}`}
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title={`${image.isKept ? 'UNKEEP' : 'KEEP'}`}
               ></i>
             </button>
             <span
@@ -629,8 +682,8 @@ const ImageGrid: React.FC = () => {
               title={image.fileName}
             >
               <span className='no-selection-removal-on-click'>{image.fileName.length > 10
-                ? `${image.fileName.slice(0, 5)}...${image.fileName.slice(-5)}`
-                : image.fileName}</span>
+          ? `${image.fileName.slice(0, 5)}...${image.fileName.slice(-5)}`
+          : image.fileName}</span>
             </span>
           </div>
         </div>
