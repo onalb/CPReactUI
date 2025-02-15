@@ -13,16 +13,12 @@ import ModalPopup from './model-popup';
 import axios from 'axios';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import path from 'path';
+import { set } from 'react-hook-form';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
   //User Editable Paramters
   const numberOfColumns = 5;
-
-  // Constants
-  const padding = 10;
-  const columnGap = 2;
-  const defaultRowHeight = 300;
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
@@ -30,6 +26,8 @@ const ImageGrid: React.FC = () => {
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
   const [images, setImages] = useState([] as any[]);
+  const [loadedImageCount, setLoadedImageCount] = useState<number>(1);
+  const [isLoadingCompleted, setIsLoadingCompleted] = useState<boolean>(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [prevZoomScale, setPrevZoomScale] = useState(1);
   const [zoomStop, setZoomStop] = useState(2);
@@ -43,13 +41,49 @@ const ImageGrid: React.FC = () => {
   const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean | null>(null);
   const [isDeletePopupVisible, setIsDeletePopupVisible] = useState<boolean>(false);
   const [visibleImages, setVisibleImages] = useState([] as any[]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [imagesElements, setImagesElements] = useState([] as any[]);
   const squareRef = useRef<HTMLDivElement | null>(null);
-  const imageHeight = Math.floor(zoomScale * 300);
+
+  // Variables
+  const padding = 10;
+  const columnGap = 2;
+  const defaultRowHeight = 300;
+  const imageHeight = 300;
   let numberOfKeptImages = images.filter(image => image.isKept).length;
+
+
+  const getVisibleImages = () => {
+    const mainElement = document.getElementById('main-element');
+    if (!mainElement) return [];
+
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    let images = [];
+
+    if (imagesElements.length === 0) {
+      images.push(...Array.from(mainElement.getElementsByTagName('img')));
+      // images = imagesElements;
+    } else {
+      images = imagesElements;
+    }
+    if (images.length === 0) return;
+    const visibleImages = images.filter((img: any) => {
+      const imgRect = img.getBoundingClientRect();
+      return (
+        imgRect.top < viewportHeight &&
+        imgRect.left < viewportWidth &&
+        imgRect.bottom > 0 &&
+        imgRect.right > 0
+      );
+    });
+    setVisibleImages(visibleImages);
+  };
 
   // Side Effects
   useEffect(() => {
     async function fetchData() {
+      setIsLoading(true);
         await axios.get(
             "http://localhost:3080/api/photoList?folder=" + folder
         ).then((res: any) => {
@@ -73,6 +107,7 @@ const ImageGrid: React.FC = () => {
           });
 
           setImages(images)
+          setIsLoading(false);
         })
         .catch((e: any)=>{
             console.log(e)
@@ -89,47 +124,10 @@ const ImageGrid: React.FC = () => {
   }, [folder]);
 
   useEffect(() => {
-
-  }, [zoomScale])
+  }, [isLoading])
 
   useEffect(() => {
-    setImages((prevImages) => {
-      console.log('zoomScale', zoomScale);
-      console.log('prevZoomScale', prevZoomScale);
-      console.log('zoomStop', zoomStop);
-
-      // This means zooming out
-      if (zoomScale < prevZoomScale && Math.ceil(zoomScale) < zoomStop) {
-        setZoomStop(Math.ceil(zoomScale));
-        return prevImages.map((image) => {
-          if (visibleImages.some(visibleImage => visibleImage.id === 'image-' + image.id)) {
-            console.log('visibleImage:');
-            return {
-              ...image,
-              path: `http://localhost:3080/api/photos?folder=${folder}&image=${image.fileName}&height=${imageHeight}`
-            };
-          }
-          return image;
-        });
-      }
-
-      setPrevZoomScale(zoomScale);
-
-      if (Math.ceil(zoomScale) > zoomStop) {
-        setZoomStop(Math.ceil(zoomScale));
-        return prevImages.map((image) => {
-          if (visibleImages.some(visibleImage => visibleImage.id === 'image-' + image.id)) {
-            console.log('visibleImage:');
-            return {
-              ...image,
-              path: `http://localhost:3080/api/photos?folder=${folder}&image=${image.fileName}&height=${imageHeight}`
-            };
-          }
-          return image;
-        });
-      }
-      return [...prevImages];
-    });
+    varyImageQuality();
   }, [visibleImages]);
 
   useEffect(() => {
@@ -144,17 +142,23 @@ const ImageGrid: React.FC = () => {
       setVisibleImages,
       squareRef, 
       handleMouseUp, 
-      squareSelection);
-    return cleanup;
-  }, []);
+      squareSelection,
+      () => imagesElements, // Pass a function to get the latest imagesElements
+      getVisibleImages
+    );
 
-  useEffect(() => {
-    console.log('selectedImageIds:', selectedImageIds);
-  }, [selectedImageIds]);
+    return () => {
+      cleanup();
+      removeTrackedEventListeners(window, 'keyup');
+      removeTrackedEventListeners(window, 'keydown');
+    };
+  }, [imagesElements]);
 
   useEffect(() => {
     numberOfKeptImages = images.filter(image => image.isKept).length;
     if (images.length > 0) setFirstRowWidth(calculateFirstRowWidth());
+    const mainElement = document.getElementById('main-element');
+
   }, [images]);
 
   useEffect(() => {
@@ -169,7 +173,9 @@ const ImageGrid: React.FC = () => {
         setVisibleImages,
         squareRef, 
         handleMouseUp, 
-        squareSelection);
+        squareSelection,
+        images,
+        getVisibleImages);
         addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
         addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
       return cleanup;
@@ -198,8 +204,7 @@ const ImageGrid: React.FC = () => {
       // removeTrackedEventListeners(window,'touchend');
     };
   }, [isDragging, isLongTouch]);
-
-  // Functions
+  
   function calculateFirstRowWidth () {
     let result = padding; 
     const ratio = defaultRowHeight / images[0]!.height;
@@ -212,6 +217,41 @@ const ImageGrid: React.FC = () => {
 
     result -= columnGap;
     return result;
+  }
+
+  function varyImageQuality () {
+    setImages((prevImages) => {
+      // This means zooming out
+      if (zoomScale < prevZoomScale && Math.ceil(zoomScale) < zoomStop) {
+        setZoomStop(Math.ceil(zoomScale));
+        return updateImagesWithNewHeight(prevImages);
+      };
+
+      setPrevZoomScale(zoomScale);
+
+      if (Math.ceil(zoomScale) > zoomStop) {
+        setZoomStop(Math.ceil(zoomScale));
+        return updateImagesWithNewHeight(prevImages);
+      }
+
+      if (isDragging) {
+        return updateImagesWithNewHeight(prevImages);
+      }
+
+      return [...prevImages];
+    });
+  }
+
+  const updateImagesWithNewHeight = (prevImages: any) => {
+    return prevImages.map((image: any) => {
+      if (visibleImages.some(visibleImage => visibleImage.id === 'image-' + image.id)) {
+      return {
+          ...image,
+          path: `http://localhost:3080/api/photos?folder=${folder}&image=${image.fileName}&height=${Math.floor(zoomScale < 2 ? 300 : zoomScale < 3 ? 600 : zoomScale < 4 ? 900 : image.height)}`
+        };
+      }
+      return image;
+    });
   }
 
   const openGalleria = (event: any) => {
@@ -236,7 +276,6 @@ const ImageGrid: React.FC = () => {
 
   // User-Event handlers
   const handleKeyDown = (event: any) => {
-    console.log('Key pressed:', event.key);
     if (event.ctrlKey && event.key === 'a') {
       event.preventDefault();
       selectAllImages();
@@ -247,16 +286,14 @@ const ImageGrid: React.FC = () => {
     }
     
     if (event.key === 'Escape') {
-      console.log(isGalleriaClosed);
       if(!isGalleriaClosed) {
         const container = document.querySelector('.photo-galleria') as HTMLDivElement;
         if (container) {
-            container.style.transition = 'opacity 0.2s ease-out';
-            container.style.opacity = '0';
-            setTimeout(() => {
+          container.style.transition = 'opacity 0.2s ease-out';
+          container.style.opacity = '0';
+          setTimeout(() => {
             setIsGalleriaClosed(true);
-            console.log('Close button clicked');
-            }, 200);
+          }, 200);
         }
       } else {
         setSelectedImageIds([]);
@@ -412,7 +449,6 @@ const ImageGrid: React.FC = () => {
         }
         return false;
       }).map(image => image.id);
-      
       setSelectedImageIds(prevIds => Array.from(new Set([...prevIds, ...newSelectedImageIds])).filter(id => !deselectedImages.includes(id)));
       document.body.removeChild(squareRef.current);
       squareRef.current = null;
@@ -440,6 +476,21 @@ const ImageGrid: React.FC = () => {
     setCurrentSelectedImageId((prevIndex: number | null) => {
       return null;
   })};
+
+  const handleOnloadCaptureImg = (e: any) => {
+
+  }
+
+  const handleOnloadImg = () => {
+    setLoadedImageCount(loadedImageCount + 1);
+    setIsLoading(false);
+
+    if(loadedImageCount === images.length) {
+      setIsLoadingCompleted(true);
+      const mainElement = document.getElementById('main-element');
+      setImagesElements(Array.from(mainElement!.getElementsByTagName('img')));
+    }
+  }
 
   const openKeptOnNewTab = () => {
     window.open('http://localhost:3000/true', '_blank'); // fix
@@ -619,22 +670,57 @@ const ImageGrid: React.FC = () => {
     >
       {images.map((image, index) => (
         <div key={index} className='image-card'>
-          <LazyLoadImage
-            id={`image-${image.id}`}
-            src={image.path}
-            alt={`Image ${index}`}
-            className="img no-drag"
-            onTouchEnd={(e: any) => {
-              return !isDragging ? handleImageClick(image.id, index, e) : null;
-            }}
-            onMouseUp={(e: any) => {
-              return !isDragging ? handleImageClick(image.id, index, e) : null;
-            }}
-            style={{
-              borderColor: currentSelectedImageId === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
-              opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
-              height: defaultRowHeight + 'px'
-            }} />
+          <div style={{ height: defaultRowHeight + 'px' }}>
+            <img
+              id={`image-${image.id}`}
+              src={image.path}
+              alt={`Image ${index}`}
+              className="img no-drag"
+              onLoadCapture={() => setIsLoading(true)}
+              onLoad={handleOnloadImg}
+              onError={() => console.log(`Image ${index} failed to load`)}
+              onTouchEnd={(e: any) => {
+                return !isDragging ? handleImageClick(image.id, index, e) : null;
+              }}
+              onMouseUp={(e: any) => {
+                return !isDragging ? handleImageClick(image.id, index, e) : null;
+              }}
+              style={{
+                borderColor: currentSelectedImageId === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'orange' : 'rgba(255, 255, 255, 0.5)',
+                opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
+                height: defaultRowHeight + 'px'
+              }} 
+            />
+            <span
+              className='image-tool-area-gap mr-2'
+              data-bs-toggle="tooltip"
+              data-bs-placement="top"
+              title={image.fileName}
+              style={{
+                position: 'relative',
+                bottom: '25px',
+                left: '5px',
+                color: 'white',
+                padding: '2px 5px',
+                borderRadius: '3px',
+                fontSize: '12px',
+                zIndex: 1, // Ensure it appears above other elements
+                transition: 'background-color 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <span className='no-selection-removal-on-click text-light' style={{ opacity: '75%' }}>
+                {image.fileName.length > 10
+                  ? `${image.fileName.slice(0, 3)}...${image.fileName.replace(/\.(jpg|jpeg)$/i, '').slice(-4)}`
+                  : image.fileName.replace(/\.(jpg|jpeg)$/i, '')}
+              </span>
+            </span>
+          </div>
           <div className='image-tool-area-container no-selection-removal-on-click' style={{ display: 'flex', flexWrap: 'wrap' }}>
             <button
               id={`delete-button-${image.id}`}
@@ -647,14 +733,14 @@ const ImageGrid: React.FC = () => {
                 handleDeleteOnClick(e, image, index, e.currentTarget.querySelector(`i#delete-icon-${image.id}`));
               }}>
               <i
-          id={`delete-icon-${image.id}`}
-          style={{
-            transform: image.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
-          }}
-          className={`bi bi-trash3-fill pointer${image.deleteClickedOnce ? ' clicked' : ''}`}
-          data-bs-toggle="tooltip"
-          data-bs-placement="top"
-          title='DELETE'
+                id={`delete-icon-${image.id}`}
+                style={{
+                  transform: image.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
+                }}
+                className={`bi bi-trash3-fill pointer${image.deleteClickedOnce ? ' clicked' : ''}`}
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title='DELETE'
               ></i>
             </button>
             <button
@@ -668,27 +754,46 @@ const ImageGrid: React.FC = () => {
                 handleKeepOnClick(e, image);
               }}>
               <i
-          id={`keep-icon-${image.id}`}
-          className={`bi ${image.isKept ? 'bi-bag-dash-fill' : 'bi-bag-plus-fill'} pointer${image.isKept ? ' clicked' : ''}`}
-          data-bs-toggle="tooltip"
-          data-bs-placement="top"
-          title={`${image.isKept ? 'UNKEEP' : 'KEEP'}`}
+                id={`keep-icon-${image.id}`}
+                className={`bi ${image.isKept ? 'bi-bag-dash-fill' : 'bi-bag-plus-fill'} pointer${image.isKept ? ' clicked' : ''}`}
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title={`${image.isKept ? 'UNKEEP' : 'KEEP'}`}
               ></i>
             </button>
-            <span
-              className='image-tool-area-gap'
-              data-bs-toggle="tooltip"
-              data-bs-placement="top"
-              title={image.fileName}
-            >
-              <span className='no-selection-removal-on-click'>{image.fileName.length > 10
-          ? `${image.fileName.slice(0, 5)}...${image.fileName.slice(-5)}`
-          : image.fileName}</span>
-            </span>
           </div>
         </div>
       ))}
     </div>
+    {!isLoadingCompleted &&
+      <div className='loading-spinner' style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 9999,
+        backdropFilter: 'blur(5px)'
+      }}>
+        <div style={{ textAlign: 'center', color: 'white' }}>
+          <div className="progress" style={{ width: '80%', margin: '0 auto' }}>
+            <div
+              className="progress-bar progress-bar-striped progress-bar-animated"
+              role="progressbar"
+              style={{ width: `${(loadedImageCount / images.length) * 100}%` }}
+              aria-valuenow={loadedImageCount}
+              aria-valuemin={0}
+              aria-valuemax={images.length}
+            ></div>
+          </div>
+          <p>{`Loaded ${loadedImageCount} of ${images.length} images`}</p>
+        </div>
+      </div>
+    }
     {isGalleriaClosed === false && 
     <PhotoGalleria 
       images={images} 

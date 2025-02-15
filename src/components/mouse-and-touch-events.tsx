@@ -8,7 +8,9 @@ setIsLongTouch: any,
 setVisibleImages: any,
 squareRef: any, 
 handleClientMouseUp: any, 
-squareSelection: any) => {
+squareSelection: any,
+imagesElements: any,
+getVisibleImages: any) => {
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
@@ -20,25 +22,7 @@ squareSelection: any) => {
   let isLongTouch = false;
   let startPoint: any = null;
 
-  const getVisibleImages = () => {
-    const mainElement = document.getElementById('main-element');
-    if (!mainElement) return [];
 
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    const images = Array.from(mainElement.getElementsByTagName('img'));
-    const visibleImages = images.filter((img) => {
-      const imgRect = img.getBoundingClientRect();
-      return (
-        imgRect.top < viewportHeight &&
-        imgRect.left < viewportWidth &&
-        imgRect.bottom > 0 &&
-        imgRect.right > 0
-      );
-    });
-    // console.log(visibleImages);
-    setVisibleImages(visibleImages);
-  };
 
   const applyLongTouch = (event: any) => {
     // Long tap detection
@@ -49,8 +33,9 @@ squareSelection: any) => {
       isLongTouch = true;
       setIsLongTouch(true);
       isDragging = false;
+      
       if (isLongTouch) { 
-        squareSelection(touches)
+        squareSelection(touches);
         startPoint = { x: touches.clientX, y: touches.clientY };
       }
 
@@ -251,6 +236,7 @@ squareSelection: any) => {
       event.preventDefault(); // Prevent click event if touch did not move
     }
     clickDispatched = false; // Reset clickDispatched flag
+    getVisibleImages();
   };
 
   const getDistance = (touch1: Touch, touch2: Touch) => {
