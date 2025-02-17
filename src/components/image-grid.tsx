@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { pictures } from './pictures';
 import '../styles/ImageZoom.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -12,8 +11,6 @@ import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
 import axios from 'axios';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
-import path from 'path';
-import { set } from 'react-hook-form';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
@@ -90,6 +87,37 @@ const ImageGrid: React.FC = () => {
     }));
   };
 
+  useEffect(() => {
+    debugger;
+    if (!isGalleriaClosed) 
+      if (images.some((image) => image.id === currentSelectedImageId)) {{
+        setImages((prevImages: any[]) => {
+          // const index = prevImages.findIndex((image: any) => image.id === currentSelectedImageId);
+          const index = currentSelectedImageId;
+          if(index === null) return prevImages;
+
+          const previousElement = index > 0 ? prevImages[index - 1] : null;
+          const currentElement = prevImages[index];
+          const nextElement = index < prevImages.length - 1 ? prevImages[index + 1] : null;
+
+          if (previousElement) previousElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${previousElement.fileName}&height=${previousElement.height}`;
+          if (currentElement) currentElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${currentElement.fileName}&height=${currentElement.height}`;
+          if (nextElement) nextElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${nextElement.fileName}&height=${nextElement.height}`;
+
+          prevImages = prevImages.map((prevImage, i) => (
+            i === index - 1 ? 
+            previousElement : i === index ? 
+            currentElement : i === index + 1 ? 
+            nextElement : {
+              ...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=300`
+          }));
+          debugger;
+          return prevImages
+        });
+      }
+    }
+  }, [currentSelectedImageId]);
+
   // Side Effects
   useEffect(() => {
     async function fetchData() {
@@ -165,12 +193,12 @@ const ImageGrid: React.FC = () => {
   useEffect(() => {
     numberOfKeptImages = images.filter(image => image.isKept).length;
     if (images.length > 0) setFirstRowWidth(calculateFirstRowWidth());
-    const mainElement = document.getElementById('main-element');
 
   }, [images]);
 
   useEffect(() => {
     if (isGalleriaClosed) {
+      setImages(prevImages => prevImages.map((prevImage) => ({...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=300` })));
       addTrackedEventListener(window, 'click', handleClickOutside);
       addTrackedEventListener(window, 'touchend', handleClickOutside);
       const cleanup = applyMouseAndTouchEvents(
@@ -194,6 +222,7 @@ const ImageGrid: React.FC = () => {
       removeTrackedEventListeners(window, 'touchmove');
       removeTrackedEventListeners(window, 'touchend');
       removeTrackedEventListeners(window, 'click');
+      setImages(prevImages => prevImages.map((prevImage) => ({...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=600` })));
     }
 
     return () => {
@@ -210,13 +239,6 @@ const ImageGrid: React.FC = () => {
       // removeTrackedEventListeners(window,'touchend');
     };
   }, [isDragging, isLongTouch]);
-
-  // useEffect(() => {
-  //   const currentSelectedImage = images.filter(image => image.id === currentSelectedImageId);
-  //   if (currentSelectedImage) {
-  //     setImages(updateImagesWithNewHeight(images, 999, currentSelectedImage));      
-  //   }
-  // }, [currentSelectedImageId]);
   
   function calculateFirstRowWidth () {
     let result = padding; 

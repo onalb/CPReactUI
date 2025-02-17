@@ -21,9 +21,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
 }) => {
   const currentSelectedImageIndexOnGalleria = currentSelectedImageId || 0;
   const currentSelectedImageOnGalleria = images[currentSelectedImageIndexOnGalleria];
-  const [selectedImage, setSelectedImage] = useState<any>(images[currentSelectedImageIndexOnGalleria]);
-  // console.log('currentSelectedImageOnGalleria: ', currentSelectedImageOnGalleria);
-  // console.log('selectedNextImage: ', selectedNextImage);
+  const [selectedImage, setSelectedImage] = useState<any>(currentSelectedImageOnGalleria);
   const [isDraggingReel, setIsDraggingReel] = useState<boolean>(false);
   const [isAutoNextOn, setIsAutoNextOn] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(1);
@@ -45,19 +43,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
 
     centerThumbnail(currentSelectedImageIndexOnGalleria);
   }, []);
-
-  useEffect(() => {
-    if (selectedImage) {
-      setSelectedImage({
-        ...selectedImage,
-        path: selectedImage.path.replace(/height=\d+/, `height=600`)
-      });
-      setSelectedImage({
-        ...selectedImage,
-        path: selectedImage.path.replace(/height=\d+/, `height=${selectedImage.height}`)
-      });
-    }
-  }, [currentSelectedImageId]);
 
   const scrollThumbnails = (direction: 'left' | 'right', increment: number) => {
     if ( direction === 'left' ) {
@@ -90,14 +75,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
       thumbnailReelRef.current.scrollTo({ left: scrollPosition, behavior: 'smooth' });
     }
   };
-
-  // function findNextElement (array: any[], predicate: any) {
-  //   const index = array.findIndex(predicate);
-  //   if (index !== -1 && index < array.length - 1) {
-  //     return array[index + 1];
-  //   }
-  //   return null; // or handle the case where the next element doesn't exist
-  // };
 
   const handleThumbnailClick = (image: string, index: number) => {
     setSelectedImage(image);
@@ -186,7 +163,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
     const target = e.currentTarget as HTMLImageElement;
     target.style.transform = 'scale(1)';
 
-    if (decodeURI(target.src) !== decodeURI(selectedImage)) {
+    if (Number(target.id) !== selectedImage.id) {
       target.style.border = '4px solid grey';
     }
   }
@@ -273,7 +250,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   }
   
   const handleThumbnailImageClick = (image: any, index: any) => {
-    debugger;
     if (!isDraggingReel) {
       handleThumbnailClick(image, index)
     }
@@ -305,14 +281,11 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
         <div className='col'>
           <img 
             id={`image-${currentSelectedImageId}`}
-            // src={selectedImage.path.replace(/height=\d+/, `height=${selectedImage.height}`)} // Replace height parameter
-            src={selectedImage.path} 
+            src={images[currentSelectedImageIndexOnGalleria].path} 
             alt="Selected" 
             className="col p-0 position-absolute" 
             style={{
               height: '600px',
-              // maxWidth: '70vw', 
-              // maxHeight: '70vh', 
               border: '15px solid rgba(0, 0, 0, 0.70)',
               transition: 'transform 0.3s ease-in-out',
               cursor: 'grab',
