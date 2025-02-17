@@ -5,11 +5,9 @@ setZoomScale: any,
 setIsDragging: any, 
 setIsZooming: any, 
 setIsLongTouch: any, 
-setVisibleImages: any,
 squareRef: any, 
 handleClientMouseUp: any, 
 squareSelection: any,
-imagesElements: any,
 getVisibleImages: any) => {
   let isDragging = false;
   let lastPosX = 0;

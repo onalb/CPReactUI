@@ -3,8 +3,16 @@
   user-select: none;
 }
 
-.clicked {
-  color: orange;
+.clicked-red {
+  color: rgb(255, 100, 100);
+}
+
+.clicked-green {
+  color: rgb(150, 255, 175);
+}
+
+.clicked-orange {
+  color: rgb(255, 193, 100);
 }
 
 .img {

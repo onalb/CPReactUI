@@ -4,12 +4,13 @@ import { Dialog } from 'primereact/dialog';
 import '../styles/ImageZoom.css';
 
 interface ModelPopupProps {
+  message: string;
   setIsDeletePopupVisible: React.Dispatch<React.SetStateAction<boolean>>;
   isDeletePopupVisible: boolean;
   handleDeleteImages: () => void;
 }
 
-const ModalPopup: React.FC<ModelPopupProps> = ({ setIsDeletePopupVisible, isDeletePopupVisible, handleDeleteImages }) => {
+const ModalPopup: React.FC<ModelPopupProps> = ({ message, setIsDeletePopupVisible, isDeletePopupVisible, handleDeleteImages }) => {
     const footerContent = (
         <div className="rounded-0">
             <Button 
@@ -31,12 +32,11 @@ const ModalPopup: React.FC<ModelPopupProps> = ({ setIsDeletePopupVisible, isDele
     );
     return (
         <div className="container-fluid position-absolute top-0 start-0 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 p-0">
-            {/* <Button label="Show" icon="pi pi-external-link" onClick={() => setIsDeletePopupVisible(true)} /> */}
             <Dialog 
                 headerClassName="rounded-0"
                 header="Delete" 
                 visible={isDeletePopupVisible} 
-                style={{ width: '50vw', backgroundColor: 'rgba(20, 20, 20, 0.75)', color: 'white' }} 
+                style={{ width: '50vw', backgroundColor: 'rgba(20, 20, 20, 0.85)', color: 'white', border: '1px solid rgba(50, 50, 50, 0.85)'}} 
                 onHide={() => {if (!isDeletePopupVisible) return; setIsDeletePopupVisible(false); }} 
                 footer={footerContent}
                 pt={{ 
@@ -47,7 +47,7 @@ const ModalPopup: React.FC<ModelPopupProps> = ({ setIsDeletePopupVisible, isDele
                 }}
             >
                 <p className="m-0">
-                    You are about to delete the selected images. KEPT images will retain. Are you sure you want to proceed?
+                    {message}
                 </p>
             </Dialog>
         </div>
