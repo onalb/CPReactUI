@@ -220,7 +220,8 @@ getVisibleImages: any) => {
   };
 
   const handleTouchEnd = (event: TouchEvent) => {
-    setIsDragging(false);
+    // setIsDragging(false);
+    isDragging = false;
     if (isLongTouch) {
       handleClientMouseUp();
     }

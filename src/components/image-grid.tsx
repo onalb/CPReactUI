@@ -33,7 +33,7 @@ const ImageGrid: React.FC = () => {
   const [isZooming, setIsZooming] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
-  const [currentSelectedImageId, setCurrentSelectedImageId] = useState<number | null>(null);
+  const [currentSelectedImageIndex, setCurrentSelectedImageIndex] = useState<number | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
   const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean | null>(null);
   const [isPopupVisible, setIsPopupVisible] = useState<boolean>(false);
@@ -87,36 +87,36 @@ const ImageGrid: React.FC = () => {
     }));
   };
 
-  useEffect(() => {
-    debugger;
-    if (!isGalleriaClosed) 
-      if (images.some((image) => image.id === currentSelectedImageId)) {{
-        setImages((prevImages: any[]) => {
-          // const index = prevImages.findIndex((image: any) => image.id === currentSelectedImageId);
-          const index = currentSelectedImageId;
-          if(index === null) return prevImages;
+  // useEffect(() => {
+  //   if (!isGalleriaClosed) 
+  //     if (images.some((image) => image.id === currentSelectedImageIndex)) {{
+  //       setImages((prevImages: any[]) => {
+  //         // const index = prevImages.findIndex((image: any) => image.id === currentSelectedImageIndex);
+  //         const index = currentSelectedImageIndex;
+  //         if(index === null) return prevImages;
 
-          const previousElement = index > 0 ? prevImages[index - 1] : null;
-          const currentElement = prevImages[index];
-          const nextElement = index < prevImages.length - 1 ? prevImages[index + 1] : null;
+  //         const previousElement = index > 0 ? prevImages[index - 1] : null;
+  //         const currentElement = prevImages[index];
+  //         const nextElement = index < prevImages.length - 1 ? prevImages[index + 1] : null;
 
-          if (previousElement) previousElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${previousElement.fileName}&height=${previousElement.height}`;
-          if (currentElement) currentElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${currentElement.fileName}&height=${currentElement.height}`;
-          if (nextElement) nextElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${nextElement.fileName}&height=${nextElement.height}`;
+  //         if (previousElement) previousElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${previousElement.fileName}&height=${previousElement.height}`;
+  //         if (currentElement) currentElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${currentElement.fileName}&height=${currentElement.height}`;
+  //         if (nextElement) nextElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${nextElement.fileName}&height=${nextElement.height}`;
 
-          prevImages = prevImages.map((prevImage, i) => (
-            i === index - 1 ? 
-            previousElement : i === index ? 
-            currentElement : i === index + 1 ? 
-            nextElement : {
-              ...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=300`
-          }));
-          debugger;
-          return prevImages
-        });
-      }
-    }
-  }, [currentSelectedImageId]);
+  //         prevImages = prevImages.map((prevImage, i) => (
+  //           i === index - 1 ? 
+  //           previousElement : i === index ? 
+  //           currentElement : i === index + 1 ? 
+  //           nextElement : {
+  //             ...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=${imageHeight * 2}`
+  //           }
+  //         ));
+
+  //         return prevImages
+  //       });
+  //     }
+  //   }
+  // }, [currentSelectedImageIndex]);
 
   // Side Effects
   useEffect(() => {
@@ -130,6 +130,10 @@ const ImageGrid: React.FC = () => {
             const image: any = {};
             image['id'] = i;
             image['path'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
+            image['pathXS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
+            image['pathS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
+            image['pathL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
+            image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${photo.dimensions.height}`;
             image['fileName'] = photo.name;
             image['height'] = photo.dimensions.height;
             image['width'] = photo.dimensions.width;
@@ -165,6 +169,7 @@ const ImageGrid: React.FC = () => {
   }, [isLoading])
 
   useEffect(() => {
+    console.log('visibleImages', visibleImages.length);
     varyImageQualityWithZoom();
   }, [visibleImages]);
 
@@ -193,12 +198,11 @@ const ImageGrid: React.FC = () => {
   useEffect(() => {
     numberOfKeptImages = images.filter(image => image.isKept).length;
     if (images.length > 0) setFirstRowWidth(calculateFirstRowWidth());
-
   }, [images]);
 
   useEffect(() => {
     if (isGalleriaClosed) {
-      setImages(prevImages => prevImages.map((prevImage) => ({...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=300` })));
+      // setImages(prevImages => prevImages.map((prevImage) => ({...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=${imageHeight}` })));
       addTrackedEventListener(window, 'click', handleClickOutside);
       addTrackedEventListener(window, 'touchend', handleClickOutside);
       const cleanup = applyMouseAndTouchEvents(
@@ -222,7 +226,7 @@ const ImageGrid: React.FC = () => {
       removeTrackedEventListeners(window, 'touchmove');
       removeTrackedEventListeners(window, 'touchend');
       removeTrackedEventListeners(window, 'click');
-      setImages(prevImages => prevImages.map((prevImage) => ({...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=600` })));
+      setImages(prevImages => prevImages.map((prevImage) => ({...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=${imageHeight * 2}` })));
     }
 
     return () => {
@@ -255,6 +259,7 @@ const ImageGrid: React.FC = () => {
   }
 
   function varyImageQualityWithZoom () {
+    // console.log(visibleImages)
     setImages((prevImages) => {
       // This means zooming out
       if (zoomScale < prevZoomScale && Math.ceil(zoomScale) < zoomStop) {
@@ -268,7 +273,7 @@ const ImageGrid: React.FC = () => {
         setZoomStop(Math.ceil(zoomScale));
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
       }
-
+      console.log(isDragging, ' isDragging')
       if (isDragging) {
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
       }
@@ -282,10 +287,14 @@ const ImageGrid: React.FC = () => {
       if (imagesToUpdate.some(imageToUpdate => imageToUpdate.id === image.id)) {
         return {
             ...image,
-            path: `http://localhost:3080/api/photos?folder=${folder}&image=${image.fileName}&height=${Math.floor(zoomScale < 2 ? 300 : zoomScale < 3 ? 600 : zoomScale < 4 ? 900 : image.height)}`
+            path: `http://localhost:3080/api/photos?folder=${folder}&image=${image.fileName}&height=${Math.floor(zoomScale < 2 ? imageHeight : zoomScale < 3 ? imageHeight * 2 : zoomScale < 4 ? imageHeight * 3 : image.height)}`
         };
+      } else {
+        return {
+          ...image,
+          path: `http://localhost:3080/api/photos?folder=${folder}&image=${image.fileName}&height=${imageHeight}`
+      };
       }
-      return image;
     });
 
     return result;
@@ -334,7 +343,7 @@ const ImageGrid: React.FC = () => {
         }
       } else {
         setSelectedImageIds([]);
-        setCurrentSelectedImageId(null);
+        setCurrentSelectedImageIndex(null);
       }
     }
   };
@@ -353,27 +362,27 @@ const ImageGrid: React.FC = () => {
       const target = event.target as HTMLElement;
       if (target.tagName !== 'IMG' && target.tagName !== 'BUTTON' && target.tagName !== 'I' && !target.classList.contains('no-selection-removal-on-click')) {
         setSelectedImageIds([]);
-        setCurrentSelectedImageId(null);
+        setCurrentSelectedImageIndex(null);
       }
     };
   };
 
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging && !isZooming) {
-      if (event.shiftKey && currentSelectedImageId !== null) {
-        const start = Math.min(currentSelectedImageId, index);
-        const end = Math.max(currentSelectedImageId, index);
+      if (event.shiftKey && currentSelectedImageIndex !== null) {
+        const start = Math.min(currentSelectedImageIndex, index);
+        const end = Math.max(currentSelectedImageIndex, index);
         const newSelectedImageIds = images.slice(start, end + 1).map(img => img.id);
         setSelectedImageIds(prevIds => Array.from(new Set([...prevIds, ...newSelectedImageIds])));
-        setCurrentSelectedImageId(index);
-      } else if (event.shiftKey && currentSelectedImageId === null) {
-        setCurrentSelectedImageId(index);
+        setCurrentSelectedImageIndex(index);
+      } else if (event.shiftKey && currentSelectedImageIndex === null) {
+        setCurrentSelectedImageIndex(index);
         setSelectedImageIds(prevIds =>  [...prevIds, imageId]);
       } else {
-        if (currentSelectedImageId === index || selectedImageIds.includes(imageId)) {
-          setCurrentSelectedImageId(null);
+        if (currentSelectedImageIndex === index || selectedImageIds.includes(imageId)) {
+          setCurrentSelectedImageIndex(null);
         } else {
-          setCurrentSelectedImageId(index);
+          setCurrentSelectedImageIndex(index);
         }
 
         setSelectedImageIds(prevIds =>
@@ -414,8 +423,9 @@ const ImageGrid: React.FC = () => {
         setImages(images.filter(img => img.id !== image.id)); // removes the deleted image from the array
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
         setSelectedImageIds(prevIds => prevIds.filter(id => id !== image.id));
-        setCurrentSelectedImageId((prevIndex: number | null) => { 
-           if (prevIndex === index || prevIndex === null) {
+        setCurrentSelectedImageIndex((prevIndex: number | null) => { 
+          debugger;
+           if (prevIndex === null) {
              return null;
            } else if (prevIndex! > index) {
              return prevIndex - 1;
@@ -424,8 +434,8 @@ const ImageGrid: React.FC = () => {
            }
         });
 
-        if (currentSelectedImageId === images.findIndex(img => img.id === image.id)) {
-          setCurrentSelectedImageId(null);
+        if (currentSelectedImageIndex === images.findIndex(img => img.id === image.id)) {
+          setCurrentSelectedImageIndex(null);
         }
         return true;
       }
@@ -483,15 +493,15 @@ const ImageGrid: React.FC = () => {
           );
 
           if (isIntersecting) {
-            if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImageId === index) {
-              setCurrentSelectedImageId(null);
+            if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImageIndex === index) {
+              setCurrentSelectedImageIndex(null);
               deselectedImages.push(image.id);
               return false;
-            } else if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImageId !== index) {
+            } else if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImageIndex !== index) {
               deselectedImages.push(image.id);
               return false;
             } else {
-              setCurrentSelectedImageId(index);
+              setCurrentSelectedImageIndex(index);
             }
 
             return true;
@@ -523,7 +533,7 @@ const ImageGrid: React.FC = () => {
     const updatedImages = images.filter(image => !selectedImageIds.includes(image.id) || image.isKept);
     setImages(updatedImages);
     setSelectedImageIds([]);
-    setCurrentSelectedImageId(() => {
+    setCurrentSelectedImageIndex(() => {
       return null;
   })};
 
@@ -542,9 +552,14 @@ const ImageGrid: React.FC = () => {
     setIsLoading(false);
 
     if(loadedImageCount === images.length) {
-      setIsLoadingCompleted(true);
-      const mainElement = document.getElementById('main-element');
-      setImagesElements(Array.from(mainElement!.getElementsByTagName('img')));
+      setTimeout(() => {
+        setIsLoadingCompleted(true);
+        const mainElement = document.getElementById('main-element');
+        setImagesElements(Array.from(mainElement!.getElementsByTagName('img')));
+        debugger;
+        console.log('images loaded')
+      }, 1000);
+
     }
   }
 
@@ -751,6 +766,7 @@ const ImageGrid: React.FC = () => {
         padding: padding + 'px',
         width: firstRowWidth + 'px',
         transformOrigin: origin, // Dynamic transform-origin based on mouse position
+        transform: 'matrix(1, 0, 0, 1, 0, 0)'
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
@@ -774,7 +790,7 @@ const ImageGrid: React.FC = () => {
                 return !isDragging ? handleImageClick(image.id, index, e) : null;
               }}
               style={{
-                borderColor: currentSelectedImageId === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'rgb(150, 255, 175)' : 'rgba(255, 255, 255, 0.5)',
+                borderColor: currentSelectedImageIndex === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'rgb(150, 255, 175)' : 'rgba(255, 255, 255, 0.5)',
                 opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
                 height: defaultRowHeight + 'px'
               }} 
@@ -893,7 +909,7 @@ const ImageGrid: React.FC = () => {
             <div
               className="progress-bar progress-bar-striped progress-bar-animated"
               role="progressbar"
-              style={{ width: `${(loadedImageCount / images.length) * 100}%` }}
+              style={{ width: `${(loadedImageCount / images.length) * 100}%`, transition: 'width .5s ease-in-out' }}
               aria-valuenow={loadedImageCount}
               aria-valuemin={0}
               aria-valuemax={images.length}
@@ -907,8 +923,8 @@ const ImageGrid: React.FC = () => {
       <PhotoGalleria 
         images={images} 
         setIsGalleriaClosed={setIsGalleriaClosed} 
-        setCurrentSelectedImageId={setCurrentSelectedImageId} 
-        currentSelectedImageId={currentSelectedImageId}
+        setCurrentSelectedImageIndex={setCurrentSelectedImageIndex} 
+        currentSelectedImageIndex={currentSelectedImageIndex}
         handleDeleteOnClick={handleDeleteOnClick}
         handleKeepOnClick={handleKeepOnClick}/>
     }
