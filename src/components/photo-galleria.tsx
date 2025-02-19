@@ -19,9 +19,8 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   handleDeleteOnClick, 
   handleKeepOnClick
 }) => {
-  let currentSelectedImageIndexOnGalleria = currentSelectedImageIndex || 0;
-  const currentSelectedImageOnGalleria = images[currentSelectedImageIndexOnGalleria];
-  const [selectedImage, setSelectedImage] = useState<any>(currentSelectedImageOnGalleria);
+  const [imagesOnGalleria, setImagesOnGalleria] = useState<any[]>(images);
+  const [selectedImage, setSelectedImage] = useState<any>(imagesOnGalleria[currentSelectedImageIndex || 0]);
   const [isDraggingReel, setIsDraggingReel] = useState<boolean>(false);
   const [isAutoNextOn, setIsAutoNextOn] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(1);
@@ -29,7 +28,8 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
 
   const thumbnailReelRef = useRef<HTMLDivElement | null>(null);
   let animationFrameId: number | null = null;
-  let selectedImageInitialRender = true;
+  let currentSelectedImageIndexOnGalleria = currentSelectedImageIndex || 0;
+  const currentSelectedImageOnGalleria = imagesOnGalleria[currentSelectedImageIndexOnGalleria];
 
   useEffect(() => {
     const container = document.querySelector('.container-fluid') as HTMLDivElement;
@@ -47,9 +47,18 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   }, []);
 
   useEffect(() => {
-    debugger;
+    setImagesOnGalleria((prevImagesOnGalleria: any[]) => {
+      const updatedImages = prevImagesOnGalleria.map((image: any, index: number) => {
+        if (Math.abs(index - currentSelectedImageIndexOnGalleria) < 11) {
+          return {...image, path: image.pathXL};
+        } else {
+          return {...image, path: image.pathL};
+        }
+      });
+      return updatedImages;
+    });
+
     setSelectedImage((prevSelectedImage: any) => {
-      selectedImageInitialRender = true
       if (scale > 1) {
         return {...prevSelectedImage, path: prevSelectedImage.pathXL};
       } else {
@@ -60,7 +69,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
 
   useEffect(() => {
     setSelectedImage((prevSelectedImage: any) => {
-      selectedImageInitialRender = true
       if (scale > 1) {
         return {...prevSelectedImage, path: prevSelectedImage.pathXL};
       } else {
@@ -73,16 +81,16 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
     if (direction === 'left') {
       if (currentSelectedImageIndexOnGalleria > 0) {
         if (currentSelectedImageIndexOnGalleria - increment < 0) {
-          handleThumbnailClick(images[0], 0);
+          handleThumbnailClick(imagesOnGalleria[0], 0);
         } else {
-          handleThumbnailClick(images[currentSelectedImageIndexOnGalleria - increment], currentSelectedImageIndexOnGalleria - increment);
+          handleThumbnailClick(imagesOnGalleria[currentSelectedImageIndexOnGalleria - increment], currentSelectedImageIndexOnGalleria - increment);
         }
       }
     } else { 
-      if (currentSelectedImageIndexOnGalleria + increment >= images.length) {
-        handleThumbnailClick(images[images.length - 1], images.length - 1);
-      } else if (currentSelectedImageIndexOnGalleria < images.length - increment && currentSelectedImageIndexOnGalleria + increment < images.length) {
-        handleThumbnailClick(images[currentSelectedImageIndexOnGalleria + increment], currentSelectedImageIndexOnGalleria + increment);
+      if (currentSelectedImageIndexOnGalleria + increment >= imagesOnGalleria.length) {
+        handleThumbnailClick(imagesOnGalleria[imagesOnGalleria.length - 1], imagesOnGalleria.length - 1);
+      } else if (currentSelectedImageIndexOnGalleria < imagesOnGalleria.length - increment && currentSelectedImageIndexOnGalleria + increment < imagesOnGalleria.length) {
+        handleThumbnailClick(imagesOnGalleria[currentSelectedImageIndexOnGalleria + increment], currentSelectedImageIndexOnGalleria + increment);
       }
     }
   };
@@ -199,7 +207,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
     target.style.transform = 'scale(1)';
     setTimeout(() => {
       if (Number(target.id) !== selectedImage.id) { //get image index from the target element and compare with currentSelectedImageIndexOnGalleria
-        target.style.border = `4px solid ${images.find(img => img.id === Number(target.id))?.isKept ? 'rgb(150, 255, 175)' : 'rgba(0, 0, 0, 0.70)'}`;
+        target.style.border = `4px solid ${imagesOnGalleria.find(img => img.id === Number(target.id))?.isKept ? 'rgb(150, 255, 175)' : 'rgba(0, 0, 0, 0.70)'}`;
       }
     }, 300); // Delay border change to match the transition duration
   }
@@ -266,18 +274,16 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
 
   const handleDeleteOnClickOnGalleria = (e: any, image: any, index: number, deleteIcon: any) => {
     if (handleDeleteOnClick(e, image, index, deleteIcon)) {
-      // const nextImage = images.find((img, idx) => idx > index && img.id !== image.id);
-      debugger;
       let nextImage;
-      if (index + 1 === images.length) {
-        nextImage = images.find((img, idx) => idx === index - 1)
+      if (index + 1 === imagesOnGalleria.length) {
+        nextImage = imagesOnGalleria.find((img, idx) => idx === index - 1)
         if (nextImage) {
           currentSelectedImageIndexOnGalleria = index - 1;
           setCurrentSelectedImageIndex(index - 1);
           setSelectedImage(nextImage);
         }
       } else {
-        nextImage = images.find((img, idx) => idx === index + 1)
+        nextImage = imagesOnGalleria.find((img, idx) => idx === index + 1)
         if (nextImage) {
           currentSelectedImageIndexOnGalleria = index;
           setCurrentSelectedImageIndex(index);
@@ -287,7 +293,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
 
       console.log('index: ', index);
       console.log('nextImage: ', nextImage);
-      debugger;
     }
   }
   
@@ -299,7 +304,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   }
 
   const handleImageLoad = () => {
-    const allImagesLoaded = images.every((image, index) => {
+    const allImagesLoaded = imagesOnGalleria.every((image, index) => {
       const imgElement = document.getElementById(index.toString()) as HTMLImageElement;
       return imgElement.complete;
     });
@@ -438,7 +443,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
               onWheel={handleReelOnWheel}
             >
               {/* {loading && <div className="spinner">Loading...</div>} */}
-              {images.map((image, index) => (
+              {imagesOnGalleria.map((image, index) => (
                 // <LazyLoadImage
                 //   id={index.toString()}
                 //   key={index}
@@ -464,7 +469,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
                   className="thumbnail mx-1 cursor-pointer"
                   onClick={() => handleThumbnailImageClick(image, index)}
                   style={{ 
-                    border: image.id === images[currentSelectedImageIndex || 0].id ? '4px solid deeppink' : image.isKept ? '4px solid rgb(150, 255, 175)' : '4px solid rgba(0, 0, 0, 0.70)',
+                    border: image.id === imagesOnGalleria[currentSelectedImageIndex || 0].id ? '4px solid deeppink' : image.isKept ? '4px solid rgb(150, 255, 175)' : '4px solid rgba(0, 0, 0, 0.70)',
                     transform: 'scale(1)',
                     transition: 'transform 0.3s ease-in-out, border 0.3s ease-in-out'
                   }}

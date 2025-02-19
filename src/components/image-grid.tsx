@@ -19,11 +19,11 @@ const ImageGrid: React.FC = () => {
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
-  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
-  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
+  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
   const [images, setImages] = useState([] as any[]);
-  const [loadedImageCount, setLoadedImageCount] = useState<number>(1);
+  const [loadedImageCount, setLoadedImageCount] = useState<number>(0);
   const [isLoadingCompleted, setIsLoadingCompleted] = useState<boolean>(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [prevZoomScale, setPrevZoomScale] = useState(1);
@@ -129,11 +129,12 @@ const ImageGrid: React.FC = () => {
           res.data.map((photo: any, i: any) => {
             const image: any = {};
             image['id'] = i;
-            image['path'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
             image['pathXS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
             image['pathS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
+            image['pathM'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
             image['pathL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
-            image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${photo.dimensions.height}`;
+            image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 10}`;
+            image['path'] = image['pathM'];
             image['fileName'] = photo.name;
             image['height'] = photo.dimensions.height;
             image['width'] = photo.dimensions.width;
@@ -244,6 +245,7 @@ const ImageGrid: React.FC = () => {
     };
   }, [isDragging, isLongTouch]);
   
+  // Functions
   function calculateFirstRowWidth () {
     let result = padding; 
     const ratio = defaultRowHeight / images[0]!.height;
@@ -424,7 +426,6 @@ const ImageGrid: React.FC = () => {
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
         setSelectedImageIds(prevIds => prevIds.filter(id => id !== image.id));
         setCurrentSelectedImageIndex((prevIndex: number | null) => { 
-          debugger;
            if (prevIndex === null) {
              return null;
            } else if (prevIndex! > index) {
@@ -551,12 +552,11 @@ const ImageGrid: React.FC = () => {
     setLoadedImageCount(loadedImageCount + 1);
     setIsLoading(false);
 
-    if(loadedImageCount === images.length) {
+    if(loadedImageCount === images.length - 1) {
       setTimeout(() => {
         setIsLoadingCompleted(true);
         const mainElement = document.getElementById('main-element');
         setImagesElements(Array.from(mainElement!.getElementsByTagName('img')));
-        debugger;
         console.log('images loaded')
       }, 1000);
 
