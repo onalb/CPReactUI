@@ -20,8 +20,8 @@ const ImageGrid: React.FC = () => {
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
-  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
-  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
+  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
   const [images, setImages] = useState([] as any[]);
   const [loadedImageCount, setLoadedImageCount] = useState<number>(0);
   const [isLoadingCompleted, setIsLoadingCompleted] = useState<boolean>(false);
@@ -42,6 +42,7 @@ const ImageGrid: React.FC = () => {
   const [visibleImages, setVisibleImages] = useState([] as any[]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [imagesElements, setImagesElements] = useState([] as any[]);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const squareRef = useRef<HTMLDivElement | null>(null);
 
   // Variables
@@ -133,7 +134,8 @@ const ImageGrid: React.FC = () => {
             image['pathS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
             image['pathM'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
             image['pathL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
-            image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 10}`;
+            image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 3}`;
+            image['pathXXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 10}`;
             image['path'] = image['pathM'];
             image['fileName'] = photo.name;
             image['height'] = photo.dimensions.height;
@@ -167,10 +169,15 @@ const ImageGrid: React.FC = () => {
   }, [folder]);
 
   useEffect(() => {
+    if (isDeleting) {
+      getVisibleImages();
+    }
+  }, [isDeleting]);
+
+  useEffect(() => {
   }, [isLoading])
 
   useEffect(() => {
-    console.log('visibleImages', visibleImages.length);
     varyImageQualityWithZoom();
   }, [visibleImages]);
 
@@ -261,7 +268,6 @@ const ImageGrid: React.FC = () => {
   }
 
   function varyImageQualityWithZoom () {
-    // console.log(visibleImages)
     setImages((prevImages) => {
       // This means zooming out
       if (zoomScale < prevZoomScale && Math.ceil(zoomScale) < zoomStop) {
@@ -275,8 +281,13 @@ const ImageGrid: React.FC = () => {
         setZoomStop(Math.ceil(zoomScale));
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
       }
-      console.log(isDragging, ' isDragging')
+
       if (isDragging) {
+        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
+      }
+
+      if (isDeleting) {
+        setIsDeleting(false);
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
       }
 
@@ -289,12 +300,12 @@ const ImageGrid: React.FC = () => {
       if (imagesToUpdate.some(imageToUpdate => imageToUpdate.id === image.id)) {
         return {
             ...image,
-            path: `http://localhost:3080/api/photos?folder=${folder}&image=${image.fileName}&height=${Math.floor(zoomScale < 2 ? imageHeight : zoomScale < 3 ? imageHeight * 2 : zoomScale < 4 ? imageHeight * 3 : image.height)}`
+            path: `${zoomScale < 2 ? image.pathM : zoomScale < 3 ? image.pathL : zoomScale < 4 ? image.pathXL : image.pathXXL}`
         };
       } else {
         return {
           ...image,
-          path: `http://localhost:3080/api/photos?folder=${folder}&image=${image.fileName}&height=${imageHeight}`
+          path: image.pathM
       };
       }
     });
@@ -557,7 +568,6 @@ const ImageGrid: React.FC = () => {
         setIsLoadingCompleted(true);
         const mainElement = document.getElementById('main-element');
         setImagesElements(Array.from(mainElement!.getElementsByTagName('img')));
-        console.log('images loaded')
       }, 1000);
 
     }
@@ -870,7 +880,9 @@ const ImageGrid: React.FC = () => {
               type="button"
               className={`btn btn-dark py-1.5 my-1 ${image.isKept ? ' disabled' : ''}`}
               onMouseUp={(e) => {
-                handleDeleteOnClick(e, image, index, e.currentTarget.querySelector(`i#delete-icon-${image.id}`));
+                if (handleDeleteOnClick(e, image, index, e.currentTarget.querySelector(`i#delete-icon-${image.id}`))) {
+                  setIsDeleting(true);
+                }
               }}
               onTouchEnd={(e) => {
                 handleDeleteOnClick(e, image, index, e.currentTarget.querySelector(`i#delete-icon-${image.id}`));

@@ -50,7 +50,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
     setImagesOnGalleria((prevImagesOnGalleria: any[]) => {
       const updatedImages = prevImagesOnGalleria.map((image: any, index: number) => {
         if (Math.abs(index - currentSelectedImageIndexOnGalleria) < 11) {
-          return {...image, path: image.pathXL};
+          return {...image, path: image.pathXXL};
         } else {
           return {...image, path: image.pathL};
         }
@@ -60,7 +60,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
 
     setSelectedImage((prevSelectedImage: any) => {
       if (scale > 1) {
-        return {...prevSelectedImage, path: prevSelectedImage.pathXL};
+        return {...prevSelectedImage, path: prevSelectedImage.pathXXL};
       } else {
         return {...prevSelectedImage, path: prevSelectedImage.pathL};
       }
@@ -70,7 +70,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   useEffect(() => {
     setSelectedImage((prevSelectedImage: any) => {
       if (scale > 1) {
-        return {...prevSelectedImage, path: prevSelectedImage.pathXL};
+        return {...prevSelectedImage, path: prevSelectedImage.pathXXL};
       } else {
         return {...prevSelectedImage, path: prevSelectedImage.pathL};
       }
