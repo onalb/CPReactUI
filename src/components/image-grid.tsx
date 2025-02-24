@@ -10,21 +10,24 @@ import  { startTimer, stopTimer} from './timer-functions';
 import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
 import axios from 'axios';
+import { openDB } from 'idb';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
   //User Editable Paramters
-  const numberOfColumns = 5;
+  const numberOfColumns = 10;
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
-  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
-  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
+  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
   const [images, setImages] = useState([] as any[]);
+  const [totalNumberOfImages, setTotalNumberOfImages] = useState<number>(0);
   const [loadedImageCount, setLoadedImageCount] = useState<number>(0);
-  const [isLoadingCompleted, setIsLoadingCompleted] = useState<boolean>(false);
+  const [cachedImageCount, setCachedImageCount] = useState<number>(1);
+  const [isCachingCompleted, setIsCachingCompleted] = useState<boolean>(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [prevZoomScale, setPrevZoomScale] = useState(1);
   const [zoomStop, setZoomStop] = useState(2);
@@ -52,6 +55,11 @@ const ImageGrid: React.FC = () => {
   const imageHeight = 300;
   let numberOfKeptImages = images.filter(image => image.isKept).length;
 
+  const dbPromise = openDB('image-store', 1, {
+    upgrade(db) {
+      db.createObjectStore('images');
+    },
+  });
 
   const getVisibleImages = () => {
     const mainElement = document.getElementById('main-element');
@@ -88,83 +96,87 @@ const ImageGrid: React.FC = () => {
     }));
   };
 
-  // useEffect(() => {
-  //   if (!isGalleriaClosed) 
-  //     if (images.some((image) => image.id === currentSelectedImageIndex)) {{
-  //       setImages((prevImages: any[]) => {
-  //         // const index = prevImages.findIndex((image: any) => image.id === currentSelectedImageIndex);
-  //         const index = currentSelectedImageIndex;
-  //         if(index === null) return prevImages;
+  const saveImageToIndexedDB = async (url: any, key: any) => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const db = await dbPromise;
+    await db.put('images', blob, key);
+  };
 
-  //         const previousElement = index > 0 ? prevImages[index - 1] : null;
-  //         const currentElement = prevImages[index];
-  //         const nextElement = index < prevImages.length - 1 ? prevImages[index + 1] : null;
-
-  //         if (previousElement) previousElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${previousElement.fileName}&height=${previousElement.height}`;
-  //         if (currentElement) currentElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${currentElement.fileName}&height=${currentElement.height}`;
-  //         if (nextElement) nextElement.path = `http://localhost:3080/api/photos?folder=${folder}&image=${nextElement.fileName}&height=${nextElement.height}`;
-
-  //         prevImages = prevImages.map((prevImage, i) => (
-  //           i === index - 1 ? 
-  //           previousElement : i === index ? 
-  //           currentElement : i === index + 1 ? 
-  //           nextElement : {
-  //             ...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=${imageHeight * 2}`
-  //           }
-  //         ));
-
-  //         return prevImages
-  //       });
-  //     }
-  //   }
-  // }, [currentSelectedImageIndex]);
+  const loadImageFromIndexedDB = async (key: any) => {
+    try {
+      const db = await dbPromise;
+      const blob = await db.get('images', key);
+      if (blob) {
+      return URL.createObjectURL(blob);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error loading image from IndexedDB:', error);
+      return null;
+    }
+  };
 
   // Side Effects
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
       setIsLoading(true);
-        await axios.get(
-          "http://localhost:3080/api/photoList?folder=" + folder
-        ).then((res: any) => {
-          let images: any = [];
-          res.data.map((photo: any, i: any) => {
-            const image: any = {};
-            image['id'] = i;
-            image['pathXS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
-            image['pathS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
-            image['pathM'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
-            image['pathL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
-            image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 3}`;
-            image['pathXXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 10}`;
-            image['path'] = image['pathM'];
-            image['fileName'] = photo.name;
-            image['height'] = photo.dimensions.height;
-            image['width'] = photo.dimensions.width;
-            image['isKept'] = false;
-            image['deleteClickedOnce'] = false;
-            image['markedForDeletion'] = false;
 
-              if (isOpenOnlyKept === 'true') {
-                if (image.isKept) images.push(image);
-              } else {
-                images.push(image);
-              }
-          });
+      try {
+        setIsCachingCompleted(false);
+        const res = await axios.get(`http://localhost:3080/api/photoList?folder=${folder}`);
+        setTotalNumberOfImages(res.data.length);
+        let images = [];
 
-          setImages(images)
-          setIsLoading(false);
-        })
-        .catch((e: any)=>{
-            console.log(e)
-        });
-    }
+        for (let i = 0; i < res.data.length; i++) {
+          const photo = res.data[i];
+          setCachedImageCount(prevCount => prevCount + 1);
+
+          const image: any = {};
+          image['id'] = i;
+          image['fileName'] = photo.name;
+          image['height'] = photo.dimensions.height;
+          image['width'] = photo.dimensions.width;
+          image['isKept'] = false;
+          image['deleteClickedOnce'] = false;
+          image['markedForDeletion'] = false;
+
+          image['pathXS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
+          image['pathS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
+          image['pathM'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
+          image['pathL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
+          image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 3}`;
+          image['pathXXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 10}`;
+
+          const MCached = await loadImageFromIndexedDB(image['pathM']) || image['pathM'];
+          if (MCached === image['pathM']) {
+            await saveImageToIndexedDB(image['pathM'], image['pathM']);
+            image['pathM'] = await loadImageFromIndexedDB(image['pathM'])
+          } else {
+            image['pathM'] = MCached;
+          }
+          
+          image['path'] = image['pathM'];
+          images.push(image);
+        }
+
+        setIsCachingCompleted(true);
+
+        if (isOpenOnlyKept === 'true') {
+          setImages(images.filter(image => image.isKept));
+        } else {
+          setImages(images);
+        }
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setIsLoading(false);
+      }
+    };
 
     if (folder) {
-        try {
-            fetchData()
-        } catch(e) {
-            console.log(e)
-        }
+      fetchData();
     }
   }, [folder]);
 
@@ -193,7 +205,8 @@ const ImageGrid: React.FC = () => {
       squareRef, 
       handleMouseUp, 
       squareSelection,
-      getVisibleImages
+      getVisibleImages,
+      images.length
     );
 
     return () => {
@@ -221,7 +234,9 @@ const ImageGrid: React.FC = () => {
         squareRef, 
         handleMouseUp, 
         squareSelection,
-        getVisibleImages);
+        getVisibleImages,
+        images.length
+      );
         addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
         addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
       return cleanup;
@@ -234,7 +249,7 @@ const ImageGrid: React.FC = () => {
       removeTrackedEventListeners(window, 'touchmove');
       removeTrackedEventListeners(window, 'touchend');
       removeTrackedEventListeners(window, 'click');
-      setImages(prevImages => prevImages.map((prevImage) => ({...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=${imageHeight * 2}` })));
+      // setImages(prevImages => prevImages.map((prevImage) => ({...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=${imageHeight * 2}` })));
     }
 
     return () => {
@@ -251,6 +266,72 @@ const ImageGrid: React.FC = () => {
       // removeTrackedEventListeners(window,'touchend');
     };
   }, [isDragging, isLongTouch]);
+
+  // useEffect(() => {
+  //   const updateImagePaths = async () => {
+  //     if (!isGalleriaClosed && images.some((image) => image.id === currentSelectedImageIndex)) {
+  //       const updatePaths = async (prevImages: any[]) => {
+  //         const index = currentSelectedImageIndex;
+  //         if (index === null) return prevImages;
+
+  //         const previousElement = index > 0 ? prevImages[index - 1] : null;
+  //         const currentElement = prevImages[index];
+  //         const nextElement = index < prevImages.length - 1 ? prevImages[index + 1] : null;
+
+  //         if (previousElement) previousElement.path = await loadImageFromIndexedDB(`http://localhost:3080/api/photos?folder=${folder}&image=${previousElement.fileName}&height=${previousElement.height}`) || `http://localhost:3080/api/photos?folder=${folder}&image=${previousElement.fileName}&height=${previousElement.height}`;
+  //         if (currentElement) currentElement.path = await loadImageFromIndexedDB(`http://localhost:3080/api/photos?folder=${folder}&image=${currentElement.fileName}&height=${currentElement.height}`) || `http://localhost:3080/api/photos?folder=${folder}&image=${currentElement.fileName}&height=${currentElement.height}`;
+  //         if (nextElement) nextElement.path = await loadImageFromIndexedDB(`http://localhost:3080/api/photos?folder=${folder}&image=${nextElement.fileName}&height=${nextElement.height}`) || `http://localhost:3080/api/photos?folder=${folder}&image=${nextElement.fileName}&height=${nextElement.height}`;
+
+  //         return prevImages.map((prevImage, i) => (
+  //           i === index - 1 ? 
+  //           previousElement : i === index ? 
+  //           currentElement : i === index + 1 ? 
+  //           nextElement : {
+  //             ...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=${imageHeight * 2}`
+  //           }
+  //         ));
+  //       };
+
+  //       setImages(prevImages => {
+  //         updatePaths(prevImages).then(updatedImages => setImages(updatedImages));
+  //         return prevImages;
+  //       });
+  //     }
+  //   };
+
+  //   updateImagePaths();
+  // }, [currentSelectedImageIndex]);
+
+  useEffect(() => {
+    const fetchXXLImage = async () => {
+      if (images.length > 0) {
+        for (let i = currentSelectedImageIndex || 0; i < (currentSelectedImageIndex || 0) + 5; i++) {
+          const image = images[i || 0];
+
+          if (i >= images.length) return;
+          if (image['pathXXL'].includes('blob')) return;
+
+          let XXLCached = null;
+          while (XXLCached === null) {
+            if (image['pathXXL']) {
+              XXLCached = await loadImageFromIndexedDB(image['pathXXL']) || image['pathXXL'];
+            }
+            
+            if (XXLCached === image['pathXXL']) {
+              await saveImageToIndexedDB(image['pathXXL'], image['pathXXL']);
+              XXLCached = await loadImageFromIndexedDB(image['pathXXL']);
+            } else {
+              image['pathXXL'] = XXLCached;
+            }
+          }
+
+          image['pathXXL'] = XXLCached;
+          setImages(images.map((img, index) => index === i ? image : img));
+        }
+      };
+    }
+    fetchXXLImage();
+  }, [currentSelectedImageIndex]);
   
   // Functions
   function calculateFirstRowWidth () {
@@ -563,13 +644,12 @@ const ImageGrid: React.FC = () => {
     setLoadedImageCount(loadedImageCount + 1);
     setIsLoading(false);
 
-    if(loadedImageCount === images.length - 1) {
+    if (loadedImageCount === images.length - 1) {
       setTimeout(() => {
-        setIsLoadingCompleted(true);
+        setIsCachingCompleted(true);
         const mainElement = document.getElementById('main-element');
         setImagesElements(Array.from(mainElement!.getElementsByTagName('img')));
       }, 1000);
-
     }
   }
 
@@ -589,6 +669,7 @@ const ImageGrid: React.FC = () => {
   }, [handleMouseUp]);
 
   return (
+    images && images.length > 0 ? (
     <>
     <div
       className='header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0'
@@ -835,7 +916,7 @@ const ImageGrid: React.FC = () => {
               </span>
             </span>
           </div>
-            <div className='image-tool-area-container no-selection-removal-on-click' style={{ flexWrap: 'wrap' }}>
+            <div className='image-tool-area-container' style={{ flexWrap: 'wrap' }}>
             <button
               id={`keep-button-${image.id}`}
               type="button"
@@ -902,7 +983,24 @@ const ImageGrid: React.FC = () => {
         </div>
       ))}
     </div>
-    {!isLoadingCompleted &&
+
+    {isGalleriaClosed === false && 
+      <PhotoGalleria 
+        images={images} 
+        setIsGalleriaClosed={setIsGalleriaClosed} 
+        setCurrentSelectedImageIndex={setCurrentSelectedImageIndex} 
+        currentSelectedImageIndex={currentSelectedImageIndex}
+        handleDeleteOnClick={handleDeleteOnClick}
+        handleKeepOnClick={handleKeepOnClick}/>
+    }
+    <ModalPopup 
+      message ={popupMessage}
+      setIsDeletePopupVisible={setIsPopupVisible}
+      isDeletePopupVisible={isPopupVisible}
+      handleDeleteImages={handleDeleteImages}
+    ></ModalPopup>
+    </>
+    ) : (<>{!isCachingCompleted &&
       <div className='loading-spinner' style={{
         position: 'fixed',
         top: 0,
@@ -921,32 +1019,16 @@ const ImageGrid: React.FC = () => {
             <div
               className="progress-bar progress-bar-striped progress-bar-animated"
               role="progressbar"
-              style={{ width: `${(loadedImageCount / images.length) * 100}%`, transition: 'width .5s ease-in-out' }}
-              aria-valuenow={loadedImageCount}
+              style={{ width: `${(cachedImageCount / totalNumberOfImages) * 100}%`, transition: 'width .001s ease-in-out' }}
+              aria-valuenow={cachedImageCount}
               aria-valuemin={0}
-              aria-valuemax={images.length}
+              aria-valuemax={totalNumberOfImages}
             ></div>
           </div>
-          <p>{`Loaded ${loadedImageCount} of ${images.length} images`}</p>
+          <p>{`Loaded ${cachedImageCount} of ${totalNumberOfImages} images`}</p>
         </div>
       </div>
-    }
-    {isGalleriaClosed === false && 
-      <PhotoGalleria 
-        images={images} 
-        setIsGalleriaClosed={setIsGalleriaClosed} 
-        setCurrentSelectedImageIndex={setCurrentSelectedImageIndex} 
-        currentSelectedImageIndex={currentSelectedImageIndex}
-        handleDeleteOnClick={handleDeleteOnClick}
-        handleKeepOnClick={handleKeepOnClick}/>
-    }
-    <ModalPopup 
-      message ={popupMessage}
-      setIsDeletePopupVisible={setIsPopupVisible}
-      isDeletePopupVisible={isPopupVisible}
-      handleDeleteImages={handleDeleteImages}
-    ></ModalPopup>
-    </>
+    }</>)
   );
 };
 

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/photo-galleria.css'; // Import the CSS file
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import { removeTrackedEventListeners } from './tracked-event-handler';
 
 interface PhotoGalleriaProps {
   images: any[];
@@ -30,7 +31,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   let animationFrameId: number | null = null;
   let currentSelectedImageIndexOnGalleria = currentSelectedImageIndex || 0;
   const currentSelectedImageOnGalleria = imagesOnGalleria[currentSelectedImageIndexOnGalleria];
-
   useEffect(() => {
     const container = document.querySelector('.container-fluid') as HTMLDivElement;
     if (container) {
@@ -44,19 +44,21 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
     }
 
     centerThumbnail(currentSelectedImageIndexOnGalleria);
+
+    // return () => {
+    //   removeTrackedEventListeners(window, 'mousedown');
+    //   removeTrackedEventListeners(window, 'mousemove');
+    //   removeTrackedEventListeners(window, 'mouseup');
+    //   removeTrackedEventListeners(window, 'wheel');
+    //   removeTrackedEventListeners(window, 'touchstart');
+    //   removeTrackedEventListeners(window, 'touchmove');
+    //   removeTrackedEventListeners(window, 'touchend');
+    //   removeTrackedEventListeners(window, 'click');
+    // }
   }, []);
 
   useEffect(() => {
-    setImagesOnGalleria((prevImagesOnGalleria: any[]) => {
-      const updatedImages = prevImagesOnGalleria.map((image: any, index: number) => {
-        if (Math.abs(index - currentSelectedImageIndexOnGalleria) < 11) {
-          return {...image, path: image.pathXXL};
-        } else {
-          return {...image, path: image.pathL};
-        }
-      });
-      return updatedImages;
-    });
+    setImagesOnGalleria(images);
 
     setSelectedImage((prevSelectedImage: any) => {
       if (scale > 1) {
@@ -65,17 +67,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
         return {...prevSelectedImage, path: prevSelectedImage.pathL};
       }
     });
-  }, [scale, currentSelectedImageIndex]);
-
-  useEffect(() => {
-    setSelectedImage((prevSelectedImage: any) => {
-      if (scale > 1) {
-        return {...prevSelectedImage, path: prevSelectedImage.pathXXL};
-      } else {
-        return {...prevSelectedImage, path: prevSelectedImage.pathL};
-      }
-    });
-  }, [scale, currentSelectedImageIndex]);
+  }, [images, scale, currentSelectedImageIndex]);
 
   const scrollThumbnails = (direction: 'left' | 'right', increment: number) => {
     if (direction === 'left') {
@@ -348,13 +340,13 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
       <div id="reel" className="row position-absolute bottom-0 start-50 translate-middle-x m-0 my-4" style={{ width: '100%' }}>
         <div className="container">
           <div className="row justify-content-center">
-            <button className="col-1 btn py-1.5 my-2 fs-3 me-auto no-focus-border"              
+            <button className={`col-1 btn py-1.5 my-2 fs-3 me-auto no-focus-border ${currentSelectedImageIndex === 0 ? 'disabled' : ''}`}              
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
               onClick={() => scrollThumbnails('left', 10)}>
               <i className="pi bi-arrow-left-circle-fill text-secondary"></i>
             </button>
-            <button className="nav-button col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center"                
+            <button className={`nav-button col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center ${currentSelectedImageIndex === 0 ? 'disabled' : ''}`}            
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
               onClick={() => scrollThumbnails('left', 1)}
@@ -421,13 +413,13 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
                 title={`${currentSelectedImageOnGalleria.isKept ? 'UNKEEP' : 'KEEP'}`}
               ></i>
             </button>
-            <button className="nav-button col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center"           
+            <button className={`nav-button col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center ${currentSelectedImageIndex === images.length - 1 ? 'disabled' : ''}`}       
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
               onClick={() => scrollThumbnails('right', 1)}>
                 <i className="bi bi-chevron-compact-right text-secondary" style={{ fontSize: '3em' }}></i>
             </button>
-            <button className="col-1 btn py-1.5 my-2 fs-3 ms-auto"            
+            <button className={`col-1 btn py-1.5 my-2 fs-3 ms-auto ${currentSelectedImageIndex === images.length - 1 ? 'disabled' : ''}`}           
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
               onClick={() => scrollThumbnails('right', 10)}>

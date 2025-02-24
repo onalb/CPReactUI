@@ -1,14 +1,16 @@
 import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-event-handler';
 
 const applyMouseAndTouchEvents = (
-setZoomScale: any, 
-setIsDragging: any, 
-setIsZooming: any, 
-setIsLongTouch: any, 
-squareRef: any, 
-handleClientMouseUp: any, 
-squareSelection: any,
-getVisibleImages: any) => {
+  setZoomScale: any, 
+  setIsDragging: any, 
+  setIsZooming: any, 
+  setIsLongTouch: any, 
+  squareRef: any, 
+  handleClientMouseUp: any, 
+  squareSelection: any,
+  getVisibleImages: any,
+  numberOfImages: number
+) => {
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
@@ -118,16 +120,39 @@ getVisibleImages: any) => {
     }
   };
 
-  const handleWheel = (event: any) => {
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  };
+
+  // Recalculate these values later to optimize -- Tech debt
+  const calculateZoomSpeed = (numberOfImages: number) => {
+    if (numberOfImages > 600) {
+      return { speed: 0.35, debounceDuration: 15 };
+    } else if (numberOfImages > 400) {
+      return { speed: 0.25, debounceDuration: 10 };
+    } else if (numberOfImages > 200) {
+      return { speed: 0.15, debounceDuration: 5 };
+    } else {
+      return { speed: 0.1, debounceDuration: 1 };
+    }
+  }
+
+  const zoomSettings = calculateZoomSpeed(numberOfImages);
+
+  const handleWheel = debounce((event: any) => {
     // Prevent the default zoom
     event.preventDefault();
     // Determine the zoom point (e.g., the current mouse position)
     const at = { x: event.clientX, y: event.clientY };
     // Determine the zoom amount based on the wheel delta
-    const amount = event.deltaY < 0 ? 1.1 : 0.9;
+    const amount = event.deltaY < 0 ? 1 + zoomSettings.speed : 1 - zoomSettings.speed;
     // Check if the new scale is within the limits
-    const newScale = view.getScale() * amount;
-    if (newScale < 0.2 || newScale > 5) {
+    const newScale = view.getScale() * amount * 2;
+    if (newScale < 0.2 || newScale > 10) {
       return; // Do not apply the zoom if it exceeds the limits
     }
     // Call the scaleAt function
@@ -135,7 +160,7 @@ getVisibleImages: any) => {
     // Apply the transformation to the element you want to zoom
     view.applyTo(document.getElementById('main-element'));
     getVisibleImages();
-  };
+  }, zoomSettings.debounceDuration);
 
   const handleTouchStart = (event: TouchEvent) => {
     isLongTouch = false;
