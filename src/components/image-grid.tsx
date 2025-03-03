@@ -20,8 +20,8 @@ const ImageGrid: React.FC = () => {
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
-  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
-  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
+  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
   const [images, setImages] = useState([] as any[]);
   const [totalNumberOfImages, setTotalNumberOfImages] = useState<number>(0);
@@ -223,7 +223,6 @@ const ImageGrid: React.FC = () => {
 
   useEffect(() => {
     if (isGalleriaClosed) {
-      // setImages(prevImages => prevImages.map((prevImage) => ({...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=${imageHeight}` })));
       addTrackedEventListener(window, 'click', handleClickOutside);
       addTrackedEventListener(window, 'touchend', handleClickOutside);
       const cleanup = applyMouseAndTouchEvents(
@@ -240,16 +239,6 @@ const ImageGrid: React.FC = () => {
         addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
         addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
       return cleanup;
-    } else if (isGalleriaClosed === false) {
-      removeTrackedEventListeners(window, 'mousedown');
-      removeTrackedEventListeners(window, 'mousemove');
-      removeTrackedEventListeners(window, 'mouseup');
-      removeTrackedEventListeners(window, 'wheel');
-      removeTrackedEventListeners(window, 'touchstart');
-      removeTrackedEventListeners(window, 'touchmove');
-      removeTrackedEventListeners(window, 'touchend');
-      removeTrackedEventListeners(window, 'click');
-      // setImages(prevImages => prevImages.map((prevImage) => ({...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=${imageHeight * 2}` })));
     }
 
     return () => {

@@ -31,30 +31,27 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   let animationFrameId: number | null = null;
   let currentSelectedImageIndexOnGalleria = currentSelectedImageIndex || 0;
   const currentSelectedImageOnGalleria = imagesOnGalleria[currentSelectedImageIndexOnGalleria];
+  removeTrackedEventListeners(window, 'mousedown');
+  removeTrackedEventListeners(window, 'mousemove');
+  removeTrackedEventListeners(window, 'mouseup');
+  removeTrackedEventListeners(window, 'wheel');
+  removeTrackedEventListeners(window, 'touchstart');
+  removeTrackedEventListeners(window, 'touchmove');
+  removeTrackedEventListeners(window, 'touchend');
+  removeTrackedEventListeners(window, 'click');
+
   useEffect(() => {
     const container = document.querySelector('.container-fluid') as HTMLDivElement;
+
     if (container) {
       container.style.transition = 'opacity 0.15s ease-in-out';
       setTimeout(() => {
         container.style.opacity = '1';
       }, 150);
     }
-    if (currentSelectedImageIndex === null) {
-      setCurrentSelectedImageIndex(0);
-    }
+
 
     centerThumbnail(currentSelectedImageIndexOnGalleria);
-
-    // return () => {
-    //   removeTrackedEventListeners(window, 'mousedown');
-    //   removeTrackedEventListeners(window, 'mousemove');
-    //   removeTrackedEventListeners(window, 'mouseup');
-    //   removeTrackedEventListeners(window, 'wheel');
-    //   removeTrackedEventListeners(window, 'touchstart');
-    //   removeTrackedEventListeners(window, 'touchmove');
-    //   removeTrackedEventListeners(window, 'touchend');
-    //   removeTrackedEventListeners(window, 'click');
-    // }
   }, []);
 
   useEffect(() => {
@@ -188,7 +185,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   const handleThumbnailMouseEnter = (e: any) => {
     const target = e.currentTarget as HTMLImageElement;
     target.style.transform = 'scale(1)';
-    // console.log(selectedImage);
+
     if (Number(target.id) !== selectedImage.id) {
       target.style.border = '4px solid grey';
     }
@@ -282,34 +279,56 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
           setSelectedImage(nextImage);
         }
       }
-
-      console.log('index: ', index);
-      console.log('nextImage: ', nextImage);
     }
   }
   
   const handleThumbnailImageClick = (image: any, index: any) => {
-    // console.log('image: ', image, 'index: ', index);
     if (!isDraggingReel) {
       handleThumbnailClick(image, index)
     }
   }
 
   const handleImageLoad = () => {
+    console.log('Image load start');
     const allImagesLoaded = imagesOnGalleria.every((image, index) => {
       const imgElement = document.getElementById(index.toString()) as HTMLImageElement;
       return imgElement.complete;
     });
+    
     if (allImagesLoaded) {
       setLoading(false);
     }
+    console.log('Image load end', allImagesLoaded);
   };
 
   return (
-    <div className="photo-galleria container-fluid position-absolute vh-100 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 p-0" 
+    <>
+    {loading && (<div className='loading-spinner' style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 9999,
+        backdropFilter: 'blur(5px)'
+      }}>
+        <div style={{ textAlign: 'center', color: 'white' }}>
+          <div className="spinner-border" role="status" style={{ width: '3rem', height: '3rem' }}>
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p>Loading images...</p>
+        </div>
+      </div>
+    )}
+    (<div className="photo-galleria container-fluid position-absolute vh-100 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 p-0" 
       style={{ zIndex: 2, backdropFilter: 'blur(10px)', opacity: 0 }}>
       <button
         className="position-absolute top-0 end-0 m-4 btn"
+        style={{ zIndex: '2' }}
         aria-label="Close" 
         onMouseEnter={handleOnMouseEnter}
         onMouseLeave={handleOnMouseLeave}
@@ -434,7 +453,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
               onTouchStart={handleReelOnMouseDown}
               onWheel={handleReelOnWheel}
             >
-              {/* {loading && <div className="spinner">Loading...</div>} */}
               {imagesOnGalleria.map((image, index) => (
                 // <LazyLoadImage
                 //   id={index.toString()}
@@ -474,7 +492,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>)</>
   );
 };
 
