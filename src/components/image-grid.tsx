@@ -20,8 +20,8 @@ const ImageGrid: React.FC = () => {
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
-  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
-  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
+  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
   const [images, setImages] = useState([] as any[]);
   const [totalNumberOfImages, setTotalNumberOfImages] = useState<number>(0);
@@ -33,6 +33,7 @@ const ImageGrid: React.FC = () => {
   const [zoomStop, setZoomStop] = useState(2);
   const [firstRowWidth, setFirstRowWidth] = useState<number>(0); // Initial transform-origin
   const [isDragging, setIsDragging] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
@@ -88,7 +89,6 @@ const ImageGrid: React.FC = () => {
     });
 
     const visibleImageIds = visibleImagesElements.map((visibleImage: any) => visibleImage.id.replace('image-', ''));
-
     setVisibleImages(images.filter((image) => {
       if (visibleImageIds.includes(image.id.toString())) {
         return image;
@@ -190,6 +190,7 @@ const ImageGrid: React.FC = () => {
   }, [isLoading])
 
   useEffect(() => {
+    console.log('visibleImages:', ...visibleImages);
     varyImageQualityWithZoom();
   }, [visibleImages]);
 
@@ -199,7 +200,8 @@ const ImageGrid: React.FC = () => {
 
     const cleanup = applyMouseAndTouchEvents(
       setZoomScale, 
-      setIsDragging, 
+      setIsDragging,
+      setIsScrolling, 
       setIsZooming, 
       setIsLongTouch, 
       squareRef, 
@@ -227,7 +229,8 @@ const ImageGrid: React.FC = () => {
       addTrackedEventListener(window, 'touchend', handleClickOutside);
       const cleanup = applyMouseAndTouchEvents(
         setZoomScale, 
-        setIsDragging, 
+        setIsDragging,
+        setIsScrolling, 
         setIsZooming, 
         setIsLongTouch,
         squareRef, 
@@ -255,6 +258,14 @@ const ImageGrid: React.FC = () => {
       // removeTrackedEventListeners(window,'touchend');
     };
   }, [isDragging, isLongTouch]);
+
+  useEffect(() => {
+    window.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
 
   // useEffect(() => {
   //   const updateImagePaths = async () => {
@@ -355,7 +366,10 @@ const ImageGrid: React.FC = () => {
       if (isDragging) {
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
       }
-
+      if (isScrolling) {
+        setIsScrolling(false);
+        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
+      }
       if (isDeleting) {
         setIsDeleting(false);
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
@@ -430,6 +444,12 @@ const ImageGrid: React.FC = () => {
       }
     }
   };
+
+  const handleWheel = (event: WheelEvent) => {
+    if (event.ctrlKey) {
+      event.preventDefault();
+    }
+  }
 
   const handleKeyUp = (event: KeyboardEvent) => {
     if (event.key === 'Control') {

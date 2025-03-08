@@ -3,6 +3,7 @@ import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-
 const applyMouseAndTouchEvents = (
   setZoomScale: any, 
   setIsDragging: any, 
+  setIsScrolling: any,
   setIsZooming: any, 
   setIsLongTouch: any, 
   squareRef: any, 
@@ -22,10 +23,7 @@ const applyMouseAndTouchEvents = (
   let isLongTouch = false;
   let startPoint: any = null;
 
-
-
   const applyLongTouch = (event: any) => {
-    // Long tap detection
     if (event.touches && event.touches.length > 1) { return }
     const touches = event.touches && event.touches[0] || event;
 
@@ -128,7 +126,6 @@ const applyMouseAndTouchEvents = (
     };
   };
 
-  // Recalculate these values later to optimize -- Tech debt
   const calculateZoomSpeed = (numberOfImages: number) => {
     if (numberOfImages > 600) {
       return { speed: 0.35, debounceDuration: 15 };
@@ -144,21 +141,64 @@ const applyMouseAndTouchEvents = (
   const zoomSettings = calculateZoomSpeed(numberOfImages);
 
   const handleWheel = debounce((event: any) => {
-    // Prevent the default zoom
     event.preventDefault();
-    // Determine the zoom point (e.g., the current mouse position)
-    const at = { x: event.clientX, y: event.clientY };
-    // Determine the zoom amount based on the wheel delta
-    const amount = event.deltaY < 0 ? 1 + zoomSettings.speed : 1 - zoomSettings.speed;
-    // Check if the new scale is within the limits
-    const newScale = view.getScale() * amount * 2;
-    if (newScale < 0.2 || newScale > 10) {
-      return; // Do not apply the zoom if it exceeds the limits
+    if (event.ctrlKey) {
+      setIsScrolling(true);
+      const dy = event.deltaY;
+      const mainElement = document.getElementById('main-element');
+
+      if (mainElement) {
+        const rect = mainElement.getBoundingClientRect();
+        const isBottomInView = rect.bottom - dy <= window.innerHeight;
+        const isTopInView = rect.top + dy >= 0;
+
+        if (!(dy > 0 && isBottomInView) && !(dy < 0 && isTopInView)) {
+          const rect = mainElement.getBoundingClientRect();
+          const distanceToTop = rect.top;
+          const distanceToBottom = window.innerHeight - rect.bottom;
+          const minDistance = Math.min(distanceToTop, distanceToBottom);
+          const multiplier = Math.min(Math.max(.2, Math.abs(minDistance) / window.innerHeight), 2.5);
+          const x = Math.abs(minDistance) / window.innerHeight;
+          // console.log({ multiplier, distanceToTop, distanceToBottom, minDistance, x });
+          view.pan({ x: 0, y: -dy * multiplier });
+          view.applyTo(mainElement);
+        }
+      }
+    } else if (event.shiftKey) {
+      setIsScrolling(true);
+      const dx = event.deltaY;
+      const mainElement = document.getElementById('main-element');
+
+      if (mainElement) {
+        const rect = mainElement.getBoundingClientRect();
+        const isRightInView = rect.right - dx <= window.innerWidth;
+        const isLeftInView = rect.left + dx >= 0;
+
+        if (!(dx > 0 && isRightInView) && !(dx < 0 && isLeftInView)) {
+          const rect = mainElement.getBoundingClientRect();
+          const distanceToLeft = rect.left;
+          const distanceToRight = window.innerWidth - rect.right;
+          const minDistance = Math.min(distanceToLeft, distanceToRight);
+          const multiplier = Math.min(Math.max(.2, Math.abs(minDistance) / window.innerWidth), 2.5);
+          const x = Math.abs(minDistance) / window.innerWidth;
+          // console.log({ multiplier, distanceToLeft, distanceToRight, minDistance, x });
+          view.pan({ x: -dx * multiplier, y: 0 });
+          view.applyTo(mainElement);
+        }
+      }
     }
-    // Call the scaleAt function
-    view.scaleAt(at, amount, setZoomScale);
-    // Apply the transformation to the element you want to zoom
-    view.applyTo(document.getElementById('main-element'));
+    
+    else {
+      const at = { x: event.clientX, y: event.clientY };
+      const amount = event.deltaY < 0 ? 1 + zoomSettings.speed : 1 - zoomSettings.speed;
+      const newScale = view.getScale() * amount * 2;
+      if (newScale < 0.2 || newScale > 10) {
+        return;
+      }
+      view.scaleAt(at, amount, setZoomScale);
+      view.applyTo(document.getElementById('main-element'));
+    }
+
     getVisibleImages();
   }, zoomSettings.debounceDuration);
 
@@ -167,10 +207,9 @@ const applyMouseAndTouchEvents = (
     setIsLongTouch(false);
     setIsZooming(false);
     event.preventDefault();
-    touchMoved = false; // Reset touchMoved flag
+    touchMoved = false;
 
     if (!clickDispatched) {
-      // Dispatch click event at touch start
       const clickEvent = new MouseEvent('click', {
         bubbles: true,
         cancelable: true,
@@ -180,7 +219,7 @@ const applyMouseAndTouchEvents = (
       });
 
       event.target && event.target.dispatchEvent(clickEvent);
-      clickDispatched = true; // Set clickDispatched flag
+      clickDispatched = true;
     }
 
     applyLongTouch(event);
@@ -204,7 +243,8 @@ const applyMouseAndTouchEvents = (
       clearTimeout(longTapTimeout);
       longTapTimeout = null;
     }
-    touchMoved = true; // Set touchMoved flag
+
+    touchMoved = true;
     if (isLongTouch) {
       if (startPoint && squareRef.current) {
         const width = event.touches[0].clientX - startPoint.x;
@@ -226,7 +266,6 @@ const applyMouseAndTouchEvents = (
         view.applyTo(document.getElementById('main-element'));
         initialDistance = currentDistance;
 
-        // Handle dragging with double touches
         const dx = at.x - lastPosX;
         const dy = at.y - lastPosY;
         view.pan({ x: dx, y: dy });
@@ -245,21 +284,23 @@ const applyMouseAndTouchEvents = (
   };
 
   const handleTouchEnd = (event: TouchEvent) => {
-    // setIsDragging(false);
     isDragging = false;
+
     if (isLongTouch) {
       handleClientMouseUp();
     }
+
     if (longTapTimeout) {
       clearTimeout(longTapTimeout);
       longTapTimeout = null;
     }
     initialDistance = 0;
     isTouchDragging = false;
+
     if (!touchMoved) {
-      event.preventDefault(); // Prevent click event if touch did not move
+      event.preventDefault();
     }
-    clickDispatched = false; // Reset clickDispatched flag
+    clickDispatched = false;
     getVisibleImages();
   };
 
@@ -273,7 +314,6 @@ const applyMouseAndTouchEvents = (
     const mainElement = document.getElementById('main-element');
 
     if (mainElement) {
-
         view.move({ x: 0, y: 0 });
         view.applyTo(mainElement);
     }
@@ -283,7 +323,7 @@ const applyMouseAndTouchEvents = (
   addTrackedEventListener(window, 'mousedown', handleMouseDown);
   addTrackedEventListener(window, 'mousemove', handleMouseMove);
   addTrackedEventListener(window, 'mouseup', handleMouseUp);
-  addTrackedEventListener(window, 'wheel', handleWheel);
+  addTrackedEventListener(window, 'wheel', handleWheel, { passive: false });
   addTrackedEventListener(window, 'touchstart', handleTouchStart as EventListener, { passive: false });
   addTrackedEventListener(window, 'touchmove', handleTouchMove as EventListener, { passive: false });
   addTrackedEventListener(window, 'touchend', handleTouchEnd as EventListener, { passive: false });
@@ -300,10 +340,10 @@ const applyMouseAndTouchEvents = (
 };
 
 const view = (() => {
-  const matrix = [1, 0, 0, 1, 0, 0]; // current view transform
-  var m = matrix; // alias
-  var scale = 1; // current scale
-  const pos = { x: 0, y: 0 }; // current position of origin
+  const matrix = [1, 0, 0, 1, 0, 0];
+  var m = matrix;
+  var scale = 1;
+  const pos = { x: 0, y: 0 };
   var dirty = true;
   const API = {
     applyTo(el: any) {
@@ -314,10 +354,10 @@ const view = (() => {
     },
     update() {
       dirty = false;
-      m[3] = m[0] = scale; // Scale X and Y equally
-      m[2] = m[1] = 0; // No skew
-      m[4] = pos.x; // Translate X
-      m[5] = pos.y; // Translate Y
+      m[3] = m[0] = scale;
+      m[2] = m[1] = 0;
+      m[4] = pos.x;
+      m[5] = pos.y;
     },
     move(amount: any) {
       if (dirty) {
@@ -341,7 +381,7 @@ const view = (() => {
       }
       const newScale = scale * amount;
       if (newScale < 0.2 || newScale > 5) {
-        return; // Do not apply the zoom if it exceeds the limits
+        return;
       }
       scale = newScale;
       setZoomScale(scale);
@@ -353,6 +393,7 @@ const view = (() => {
       return scale;
     },
   };
+  
   return API;
 })();
 
