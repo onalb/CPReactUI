@@ -12,6 +12,7 @@ import ModalPopup from './model-popup';
 import axios from 'axios';
 import { openDB } from 'idb';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+// import findPortByServiceName from '../utils';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
@@ -47,6 +48,7 @@ const ImageGrid: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [imagesElements, setImagesElements] = useState([] as any[]);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isKeepButtonDisabled, setIsKeepButtonDisabled] = useState<boolean>(false);
   const squareRef = useRef<HTMLDivElement | null>(null);
 
   // Variables
@@ -123,6 +125,7 @@ const ImageGrid: React.FC = () => {
       setIsLoading(true);
 
       try {
+        // const port = findPortByServiceName();
         setIsCachingCompleted(false);
         const res = await axios.get(`http://localhost:3080/api/photoList?folder=${folder}`);
         setTotalNumberOfImages(res.data.length);
@@ -220,6 +223,7 @@ const ImageGrid: React.FC = () => {
 
   useEffect(() => {
     numberOfKeptImages = images.filter(image => image.isKept).length;
+    // console.log('numberOfKeptImages:', numberOfKeptImages);
     if (images.length > 0) setFirstRowWidth(calculateFirstRowWidth());
   }, [images]);
 
@@ -497,21 +501,27 @@ const ImageGrid: React.FC = () => {
     }
   };
 
-  const handleKeepOnClick = (e: any, image: any) => {
-    if (isZooming) return false;
-    const isKept: boolean = image.isKept ? false : true;
-    const updatedImage = { ...image, isKept };
-    const updatedImages: any[] = images.map(img => img.id === updatedImage.id ? updatedImage : img);
+  const handleKeepOnClick = (e: any, image: any): boolean => {
+    if (isKeepButtonDisabled) return false;
 
-    setImages(updatedImages);
-    updateImages(updatedImages);
-
-    if (!image.isKept) {
-      createParticles(e.clientX, e.clientY, zoomScale, 'keep');
-    }
-
+    setIsKeepButtonDisabled(true);
+    setTimeout(() => {
+      setIsKeepButtonDisabled(false);
+    }, 400);
+  
+    setImages((prevImages) => {
+      const updatedImage = { ...image, isKept: !image.isKept };
+      const updatedImages = prevImages.map(img => img.id === updatedImage.id ? updatedImage : img);
+  
+      if (!image.isKept) {
+        createParticles(e.clientX, e.clientY, zoomScale, 'keep');
+      }
+  
+      return updatedImages;
+    });
+  
     return true;
-  }
+  };
 
   const handleDeleteOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
     if (isZooming) return false;
@@ -1000,7 +1010,9 @@ const ImageGrid: React.FC = () => {
         setCurrentSelectedImageIndex={setCurrentSelectedImageIndex} 
         currentSelectedImageIndex={currentSelectedImageIndex}
         handleDeleteOnClick={handleDeleteOnClick}
-        handleKeepOnClick={handleKeepOnClick}/>
+        handleKeepOnClick={handleKeepOnClick}
+        isKeepButtonDisabled={isKeepButtonDisabled}
+      />
     }
     <ModalPopup 
       message ={popupMessage}

@@ -10,6 +10,7 @@ interface PhotoGalleriaProps {
   currentSelectedImageIndex: number | null;
   handleDeleteOnClick: (e: any, image: any, index: number, deleteIcon: any) => boolean;
   handleKeepOnClick: (e: any, image: any ) => boolean;
+  isKeepButtonDisabled?: boolean;
 }
 
 const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ 
@@ -18,7 +19,8 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   setCurrentSelectedImageIndex, 
   currentSelectedImageIndex, 
   handleDeleteOnClick, 
-  handleKeepOnClick
+  handleKeepOnClick,
+  isKeepButtonDisabled
 }) => {
   const [imagesOnGalleria, setImagesOnGalleria] = useState<any[]>(images);
   const [selectedImage, setSelectedImage] = useState<any>(imagesOnGalleria[currentSelectedImageIndex || 0]);
@@ -412,8 +414,12 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
               type="button"
               style={{ height: '8vh', width: '8vh'}}
               className="keep-btn col-1 btn btn-dark align-self-center ml-2"
-              onMouseDown={(e) => handleKeepOnClick(e, currentSelectedImageOnGalleria) }
+              disabled={isKeepButtonDisabled}
+              // onMouseDown={(e) => {
+
+              // } }
               onMouseUp={(e) => {
+                handleKeepOnClick(e, currentSelectedImageOnGalleria) &&
                 isAutoNextOn && scrollThumbnails('right', 1);
               }}
               onTouchStart={(e) => handleKeepOnClick(e, currentSelectedImageOnGalleria) }
