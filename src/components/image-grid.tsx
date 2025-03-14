@@ -168,7 +168,7 @@ const ImageGrid: React.FC = () => {
         }
 
         setIsCachingCompleted(true);
-        console.log('Images.length:', images.length);
+
         if (isOpenOnlyKept === 'true') {
           setImages(images.filter(image => image.isKept));
         } else {
@@ -225,12 +225,8 @@ const ImageGrid: React.FC = () => {
   }, [imagesElements]);
 
   useEffect(() => {
-    const currentTime1 = new Date().toLocaleTimeString();
-    console.log('currentTime1', currentTime1)
     numberOfKeptImages = images.filter(image => image.isKept).length;
     if (images.length > 0) setFirstRowWidth(calculateFirstRowWidth());
-    const currentTime2 = new Date().toLocaleTimeString();
-    console.log('currentTime2', currentTime2)
   }, [images]);
 
   useEffect(() => {
@@ -670,10 +666,8 @@ const ImageGrid: React.FC = () => {
   }
 
   const handleOnloadImg = () => {
-    console.log(isGalleriaClosed)
     if (isGalleriaClosed === false) {
       const currentTime = new Date().toLocaleTimeString();
-      console.log('handleOnloadImg1', currentTime)
 
       setLoadedImageCount(loadedImageCount + 1);
       setIsLoading(false);
@@ -686,8 +680,6 @@ const ImageGrid: React.FC = () => {
           setImagesElements(Array.from(mainElement!.getElementsByTagName('img')));
         }, 1000);
       }
-
-      console.log('handleOnloadImg2', currentTime)
     }
   }
 

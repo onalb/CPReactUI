@@ -291,7 +291,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   }
 
   const handleImageLoad = () => {
-    console.log('Image load start');
     const allImagesLoaded = imagesOnGalleria.every((image, index) => {
       const imgElement = document.getElementById(index.toString()) as HTMLImageElement;
       return imgElement.complete;
@@ -300,7 +299,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
     if (allImagesLoaded) {
       setLoading(false);
     }
-    console.log('Image load end', allImagesLoaded);
   };
 
   return (
