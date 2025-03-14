@@ -3,7 +3,7 @@ import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-
 const applyMouseAndTouchEvents = (
   setZoomScale: any, 
   setIsDragging: any, 
-  setIsScrolling: any,
+  // setIsScrolling: any,
   setIsZooming: any, 
   setIsLongTouch: any, 
   squareRef: any, 
@@ -112,6 +112,7 @@ const applyMouseAndTouchEvents = (
     if (isLongTouch) {
       handleClientMouseUp();
     }
+
     if (longTapTimeout) {
       clearTimeout(longTapTimeout);
       longTapTimeout = null;
@@ -144,7 +145,7 @@ const applyMouseAndTouchEvents = (
   const handleWheel = debounce((event: any) => {
     event.preventDefault();
     if (event.ctrlKey) {
-      setIsScrolling(true);
+      // setIsScrolling(true);
       const dy = event.deltaY;
       const mainElement = document.getElementById('main-element');
 
@@ -166,7 +167,7 @@ const applyMouseAndTouchEvents = (
         }
       }
     } else if (event.shiftKey) {
-      setIsScrolling(true);
+      // setIsScrolling(true);
       const dx = event.deltaY;
       const mainElement = document.getElementById('main-element');
 
@@ -324,7 +325,7 @@ const applyMouseAndTouchEvents = (
   addTrackedEventListener(window, 'mousedown', handleMouseDown);
   addTrackedEventListener(window, 'mousemove', handleMouseMove);
   addTrackedEventListener(window, 'mouseup', handleMouseUp);
-  addTrackedEventListener(window, 'wheel', handleWheel, { passive: false });
+  addTrackedEventListener(window, 'wheel', handleWheel);
   addTrackedEventListener(window, 'touchstart', handleTouchStart as EventListener, { passive: false });
   addTrackedEventListener(window, 'touchmove', handleTouchMove as EventListener, { passive: false });
   addTrackedEventListener(window, 'touchend', handleTouchEnd as EventListener, { passive: false });

@@ -38,7 +38,7 @@ const ImageGrid: React.FC = () => {
   const [zoomStop, setZoomStop] = useState(2);
   const [firstRowWidth, setFirstRowWidth] = useState<number>(0); // Initial transform-origin
   const [isDragging, setIsDragging] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
+  // const [isScrolling, setIsScrolling] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
@@ -207,7 +207,7 @@ const ImageGrid: React.FC = () => {
     const cleanup = applyMouseAndTouchEvents(
       setZoomScale, 
       setIsDragging,
-      setIsScrolling, 
+      // setIsScrolling, 
       setIsZooming, 
       setIsLongTouch, 
       squareRef, 
@@ -225,6 +225,7 @@ const ImageGrid: React.FC = () => {
   }, [imagesElements]);
 
   useEffect(() => {
+    console.log('images:', images);
     numberOfKeptImages = images.filter(image => image.isKept).length;
     if (images.length > 0) setFirstRowWidth(calculateFirstRowWidth());
   }, [images]);
@@ -236,7 +237,7 @@ const ImageGrid: React.FC = () => {
       const cleanup = applyMouseAndTouchEvents(
         setZoomScale, 
         setIsDragging,
-        setIsScrolling, 
+        // setIsScrolling, 
         setIsZooming, 
         setIsLongTouch,
         squareRef, 
@@ -333,7 +334,7 @@ const ImageGrid: React.FC = () => {
           }
 
           image['pathXXL'] = XXLCached;
-          setImages(images.map((img, index) => index === i ? image : img));
+          // setImages(images.map((img, index) => index === i ? image : img));  
         }
       };
     }
@@ -373,10 +374,10 @@ const ImageGrid: React.FC = () => {
       if (isDragging) {
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
       }
-      if (isScrolling) {
-        setIsScrolling(false);
-        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
-      }
+      // if (isScrolling) {
+      //   setIsScrolling(false);
+      //   return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
+      // }
       if (isDeleting) {
         setIsDeleting(false);
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
@@ -529,7 +530,7 @@ const ImageGrid: React.FC = () => {
   const handleDeleteOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
     if (isZooming) return false;
     if (deleteIcon) {
-      if(!image.deleteClickedOnce) {
+      if (!image.deleteClickedOnce) {
         image.deleteClickedOnce = true;
         setImages(images.map(img => img.id === image.id ? image : img)); // updates the deleteClickedOnce property of the current image
         startTimer(image, setImages);
@@ -595,7 +596,7 @@ const ImageGrid: React.FC = () => {
       const isAClick = squareRect.right - squareRect.left === 4 && squareRect.bottom - squareRect.top === 4;
       const deselectedImages: number[] = [];
       const newSelectedImageIds = images.filter(image => {
-        const index = images.findIndex(img => img.id === image.id);
+        const index = images.findIndex(img => img.id === image.id); // fix it
         const imageElement = document.getElementById(`image-${image.id}`);
 
         if (imageElement) {
@@ -666,7 +667,7 @@ const ImageGrid: React.FC = () => {
   }
 
   const handleOnloadImg = () => {
-    if (isGalleriaClosed === false) {
+    if (isGalleriaClosed !== true) {
       const currentTime = new Date().toLocaleTimeString();
 
       setLoadedImageCount(loadedImageCount + 1);
