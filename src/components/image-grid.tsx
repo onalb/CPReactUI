@@ -12,6 +12,7 @@ import ModalPopup from './model-popup';
 import axios from 'axios';
 import { openDB } from 'idb';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import ImageCard from './image-card';
 // import findPortByServiceName from '../utils';
 
 const ImageGrid: React.FC = () => {
@@ -22,7 +23,10 @@ const ImageGrid: React.FC = () => {
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
-  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 Prague');
+  // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\24\\don's olds mobile");
+  const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\23");
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
   const [images, setImages] = useState([] as any[]);
   const [totalNumberOfImages, setTotalNumberOfImages] = useState<number>(0);
@@ -126,7 +130,7 @@ const ImageGrid: React.FC = () => {
 
       try {
         // const port = findPortByServiceName();
-        setIsCachingCompleted(false);
+        // setIsCachingCompleted(false);
         const res = await axios.get(`http://localhost:3080/api/photoList?folder=${folder}`);
         setTotalNumberOfImages(res.data.length);
         let images = [];
@@ -164,7 +168,7 @@ const ImageGrid: React.FC = () => {
         }
 
         setIsCachingCompleted(true);
-
+        console.log('Images.length:', images.length);
         if (isOpenOnlyKept === 'true') {
           setImages(images.filter(image => image.isKept));
         } else {
@@ -193,7 +197,6 @@ const ImageGrid: React.FC = () => {
   }, [isLoading])
 
   useEffect(() => {
-    console.log('visibleImages:', ...visibleImages);
     varyImageQualityWithZoom();
   }, [visibleImages]);
 
@@ -222,9 +225,12 @@ const ImageGrid: React.FC = () => {
   }, [imagesElements]);
 
   useEffect(() => {
+    const currentTime1 = new Date().toLocaleTimeString();
+    console.log('currentTime1', currentTime1)
     numberOfKeptImages = images.filter(image => image.isKept).length;
-    // console.log('numberOfKeptImages:', numberOfKeptImages);
     if (images.length > 0) setFirstRowWidth(calculateFirstRowWidth());
+    const currentTime2 = new Date().toLocaleTimeString();
+    console.log('currentTime2', currentTime2)
   }, [images]);
 
   useEffect(() => {
@@ -257,6 +263,7 @@ const ImageGrid: React.FC = () => {
   useEffect(() => {
     addTrackedEventListener(window, 'click', handleClickOutside);
     addTrackedEventListener(window, 'touchend', handleClickOutside);
+    
     return () => {
       removeTrackedEventListeners(window, 'click');
       // removeTrackedEventListeners(window,'touchend');
@@ -650,8 +657,11 @@ const ImageGrid: React.FC = () => {
   })};
 
   const handleDeleteMarkedImages = () => {
-    const updatedImages = images.filter(image => !image.markedForDeletion || image.isKept);
-    setImages(updatedImages);
+    // const updatedImages = images.filter(image => !image.markedForDeletion || image.isKept);
+    setImages((previousImages: any[]) => {
+      return previousImages.filter(image => !image.markedForDeletion || image.isKept);
+    });
+
     setSelectedImageIds([]);
   };
 
@@ -660,15 +670,24 @@ const ImageGrid: React.FC = () => {
   }
 
   const handleOnloadImg = () => {
-    setLoadedImageCount(loadedImageCount + 1);
-    setIsLoading(false);
+    console.log(isGalleriaClosed)
+    if (isGalleriaClosed === false) {
+      const currentTime = new Date().toLocaleTimeString();
+      console.log('handleOnloadImg1', currentTime)
 
-    if (loadedImageCount === images.length - 1) {
-      setTimeout(() => {
-        setIsCachingCompleted(true);
-        const mainElement = document.getElementById('main-element');
-        setImagesElements(Array.from(mainElement!.getElementsByTagName('img')));
-      }, 1000);
+      setLoadedImageCount(loadedImageCount + 1);
+      setIsLoading(false);
+      setIsCachingCompleted(false);
+
+      if (loadedImageCount === images.length - 1) {
+        setTimeout(() => {
+          setIsCachingCompleted(true);
+          const mainElement = document.getElementById('main-element');
+          setImagesElements(Array.from(mainElement!.getElementsByTagName('img')));
+        }, 1000);
+      }
+
+      console.log('handleOnloadImg2', currentTime)
     }
   }
 
@@ -722,7 +741,9 @@ const ImageGrid: React.FC = () => {
         }}
       ></div>
       <div className='row align-self-center w-100'>
-        <div className='col-7 d-flex align-items-center' 
+        <div 
+          key='select-folder'
+          className='col-7 d-flex align-items-center' 
           style={{ justifyContent: 'flex-start' }}>
           <div
             className='px-3'
@@ -746,7 +767,9 @@ const ImageGrid: React.FC = () => {
             SELECT FOLDER
           </div>
         </div>
-        <div className='col-1 d-flex justify-content-center align-items-center'
+        <div
+          key='select-all'
+          className='col-1 d-flex justify-content-center align-items-center'
           onClick={() => selectAllImages()}>
           <i
           className={`col bi bi-check2-all`}
@@ -757,7 +780,7 @@ const ImageGrid: React.FC = () => {
           }}
           data-bs-toggle="tooltip"
           data-bs-placement="top"
-          title='OPEN GALLERIA'
+          title='SELECT ALL'
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
           }}
@@ -767,7 +790,8 @@ const ImageGrid: React.FC = () => {
           }}
           ></i>
         </div>
-        <div 
+        <div
+          key='delete-marked'
           className='col-1 d-flex justify-content-center align-items-center'
           style={{ pointerEvents: `${images.some((i: any) => i.markedForDeletion === true) ? 'auto' : 'none'}` }}
           onClick={() => {
@@ -795,7 +819,8 @@ const ImageGrid: React.FC = () => {
             }}
           ></i>
         </div>
-        <div 
+        <div
+          key='delete-selected'
           className='col-1 d-flex justify-content-center align-items-center'
           style={{ pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
           onClick={() => {
@@ -823,7 +848,9 @@ const ImageGrid: React.FC = () => {
             }}
           ></i>
         </div>
-        <div className='col-1 d-flex justify-content-center align-items-center'
+        <div
+          key='open-galleria'
+          className='col-1 d-flex justify-content-center align-items-center'
           onClick={openGalleria}>
           <i
           className={`col bi bi-tv`}
@@ -844,7 +871,9 @@ const ImageGrid: React.FC = () => {
           }}
           ></i>
         </div>
-        <div className='col-1 d-flex justify-content-center align-items-center'
+        <div 
+          key='open-kept'
+          className='col-1 d-flex justify-content-center align-items-center'
           style={{ pointerEvents: `${numberOfKeptImages > 0 ? 'auto' : 'none'}` }}
           onClick={() => openKeptOnNewTab()}>
           <i
@@ -883,123 +912,20 @@ const ImageGrid: React.FC = () => {
       onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
     >
       {images.map((image, index) => (
-        <div key={index} className='image-card'>
-          <div style={{ height: defaultRowHeight + 'px', minWidth: '200px' }}>
-            <img
-              id={`image-${image.id}`}
-              src={image.path}
-              alt={`Image ${index}`}
-              className="img no-drag"
-              onLoadCapture={() => setIsLoading(true)}
-              onLoad={handleOnloadImg}
-              onError={() => console.log(`Image ${index} failed to load`)}
-              onTouchEnd={(e: any) => {
-                return !isDragging ? handleImageClick(image.id, index, e) : null;
-              }}
-              onMouseUp={(e: any) => {
-                return !isDragging ? handleImageClick(image.id, index, e) : null;
-              }}
-              style={{
-                borderColor: currentSelectedImageIndex === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'rgb(150, 255, 175)' : 'rgba(255, 255, 255, 0.5)',
-                opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
-                height: defaultRowHeight + 'px'
-              }} 
-            />
-            <span
-              className='image-tool-area-gap mr-2'
-              data-bs-toggle="tooltip"
-              data-bs-placement="top"
-              title={image.fileName}
-              style={{
-                position: 'relative',
-                bottom: '25px',
-                left: '5px',
-                color: 'white',
-                padding: '2px 5px',
-                borderRadius: '3px',
-                fontSize: '12px',
-                zIndex: 1, // Ensure it appears above other elements
-                transition: 'background-color 0.3s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              <span className='no-selection-removal-on-click text-light' style={{ opacity: '75%' }}>
-                {image.fileName.length > 10
-                  ? `${image.fileName.slice(0, 3)}...${image.fileName.replace(/\.(jpg|jpeg)$/i, '').slice(-4)}`
-                  : image.fileName.replace(/\.(jpg|jpeg)$/i, '')}
-              </span>
-            </span>
-          </div>
-            <div className='image-tool-area-container' style={{ flexWrap: 'wrap' }}>
-            <button
-              id={`keep-button-${image.id}`}
-              type="button"
-              className="btn btn-dark py-1.5 my-1"
-              onMouseUp={(e) => {
-                handleKeepOnClick(e, image);
-              }}
-              onTouchEnd={(e) => {
-                handleKeepOnClick(e, image);
-              }}>
-              <i
-                id={`keep-icon-${image.id}`}
-                className={`bi ${image.isKept ? 'bi-bag-dash-fill' : 'bi-bag-plus-fill'} pointer${image.isKept ? ' clicked-green' : ''}`}
-                data-bs-toggle="tooltip"
-                data-bs-placement="top"
-                title={`${image.isKept ? 'UNKEEP' : 'KEEP'}`}
-              ></i>
-            </button>
-            <button
-              id={`mark-for-deletion-button-${image.id}`}
-              type="button"
-              className={`btn btn-dark py-1.5 m-2 my-1 ${image.isKept ? ' disabled' : ''}`}
-              onMouseUp={(e) => {
-                handleMarkForDeletionOnClick(e, image, index, e.currentTarget.querySelector(`i#mark-for-deletion-icon-${image.id}`));
-              }}
-              onTouchEnd={(e) => {
-                handleMarkForDeletionOnClick(e, image, index, e.currentTarget.querySelector(`i#mark-for-deletion-icon-${image.id}`));
-              }}>
-              <i
-                id={`mark-for-deletion-icon-${image.id}`}
-                style={{
-                  transform: image.markedForDeletion ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
-                }}
-                className={`bi bi-cart-x pointer${image.markedForDeletion ? ' clicked-orange' : ''}`}
-                data-bs-toggle="tooltip"
-                data-bs-placement="top"
-                title='Mark for Deletion'
-              ></i>
-            </button>
-            <button
-              id={`delete-button-${image.id}`}
-              type="button"
-              className={`btn btn-dark py-1.5 my-1 ${image.isKept ? ' disabled' : ''}`}
-              onMouseUp={(e) => {
-                if (handleDeleteOnClick(e, image, index, e.currentTarget.querySelector(`i#delete-icon-${image.id}`))) {
-                  setIsDeleting(true);
-                }
-              }}
-              onTouchEnd={(e) => {
-                handleDeleteOnClick(e, image, index, e.currentTarget.querySelector(`i#delete-icon-${image.id}`));
-              }}>
-              <i
-                id={`delete-icon-${image.id}`}
-                style={{
-                  transform: image.deleteClickedOnce ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
-                }}
-                className={`bi bi-trash3-fill pointer${image.deleteClickedOnce ? ' clicked-red' : ''}`}
-                data-bs-toggle="tooltip"
-                data-bs-placement="top"
-                title='DELETE'
-              ></i>
-            </button>
-          </div>
-        </div>
+        <ImageCard 
+          image={image}
+          index={index}
+          handleImageClick={handleImageClick}
+          handleKeepOnClick={handleKeepOnClick}
+          handleMarkForDeletionOnClick={handleMarkForDeletionOnClick}
+          handleDeleteOnClick={handleDeleteOnClick}
+          currentSelectedImageIndex={currentSelectedImageIndex}
+          isDragging={isDragging}
+          selectedImageIds={selectedImageIds}
+          setIsLoading={setIsLoading}
+          handleOnloadImg={handleOnloadImg}
+          setIsDeleting={setIsDeleting}
+        />
       ))}
     </div>
 

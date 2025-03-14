@@ -49,6 +49,7 @@ const applyMouseAndTouchEvents = (
           cursorSquare.style.transform = 'scale(25)';
           cursorSquare.style.opacity = '0.5'
         }
+
         setTimeout(() => {
           if (cursorSquare) {
             cursorSquare.style.transform = 'scale(50)';
@@ -159,7 +160,7 @@ const applyMouseAndTouchEvents = (
           const minDistance = Math.min(distanceToTop, distanceToBottom);
           const multiplier = Math.min(Math.max(.2, Math.abs(minDistance) / window.innerHeight), 2.5);
           const x = Math.abs(minDistance) / window.innerHeight;
-          // console.log({ multiplier, distanceToTop, distanceToBottom, minDistance, x });
+
           view.pan({ x: 0, y: -dy * multiplier });
           view.applyTo(mainElement);
         }
@@ -181,7 +182,7 @@ const applyMouseAndTouchEvents = (
           const minDistance = Math.min(distanceToLeft, distanceToRight);
           const multiplier = Math.min(Math.max(.2, Math.abs(minDistance) / window.innerWidth), 2.5);
           const x = Math.abs(minDistance) / window.innerWidth;
-          // console.log({ multiplier, distanceToLeft, distanceToRight, minDistance, x });
+
           view.pan({ x: -dx * multiplier, y: 0 });
           view.applyTo(mainElement);
         }

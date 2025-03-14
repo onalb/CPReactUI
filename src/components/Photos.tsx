@@ -23,14 +23,13 @@ export const Photos = ({ folder }: IPhotos) => {
             ).then((res)=>{
                 let photoGrid = ''
                 res.data.map((photo: { name: any; }, i: any) => {
-                    console.log("Entered"); 
                     photoGrid += `<img src="http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}" height="300" alt="" loading="eager" />`
                  })
     
                 setPhotos(photoGrid);
             })
             .catch((e)=>{
-                console.log(e)
+                console.error(e)
             });
         }
 
@@ -38,7 +37,7 @@ export const Photos = ({ folder }: IPhotos) => {
             try {
                 fetchData()
             } catch(e) {
-                console.log(e)
+                console.error(e)
             }
         }
     }, [folder])
