@@ -31,7 +31,7 @@ const applyMouseAndTouchEvents = (
       isLongTouch = true;
       setIsLongTouch(true);
       isDragging = false;
-      
+
       if (isLongTouch) { 
         squareSelection(touches);
         startPoint = { x: touches.clientX, y: touches.clientY };

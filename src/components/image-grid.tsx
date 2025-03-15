@@ -50,6 +50,8 @@ const ImageGrid: React.FC = () => {
   const [popupMessage, setPopupMessage] = useState<string>('');
   const [visibleImages, setVisibleImages] = useState([] as any[]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoadingCompleted, setIsLoadingCompleted] = useState<boolean>(false);
+  const [isLoadingCompletedAtStart, setIsLoadingCompletedAtStart] = useState<boolean>(false);
   const [imagesElements, setImagesElements] = useState([] as any[]);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isKeepButtonDisabled, setIsKeepButtonDisabled] = useState<boolean>(false);
@@ -126,7 +128,7 @@ const ImageGrid: React.FC = () => {
   // Side Effects
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
+      // setIsLoading(true);
 
       try {
         // const port = findPortByServiceName();
@@ -175,7 +177,7 @@ const ImageGrid: React.FC = () => {
           setImages(images);
         }
 
-        setIsLoading(false);
+        // setIsLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
         setIsLoading(false);
@@ -194,6 +196,18 @@ const ImageGrid: React.FC = () => {
   }, [isDeleting]);
 
   useEffect(() => {
+    // To get the number of images that are loaded make the calculation here -- tech debt
+    setIsLoadingCompleted(() => {
+      console.log('isLoadingCompletedAtStart:', isLoadingCompletedAtStart);
+      console.log('loadedImageCount:', loadedImageCount);
+      console.log('images.length:', images.length);
+      
+      if (images.length > 0 && loadedImageCount === images.length && !isLoadingCompletedAtStart) {
+        setIsLoadingCompletedAtStart(true);
+        return true;
+      } 
+      return false
+    });
   }, [isLoading])
 
   useEffect(() => {
@@ -201,31 +215,32 @@ const ImageGrid: React.FC = () => {
   }, [visibleImages]);
 
   useEffect(() => {
-    addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
-    addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
+    if (isLoadingCompletedAtStart) {
+      addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
+      addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
 
-    const cleanup = applyMouseAndTouchEvents(
-      setZoomScale, 
-      setIsDragging,
-      // setIsScrolling, 
-      setIsZooming, 
-      setIsLongTouch, 
-      squareRef, 
-      handleMouseUp, 
-      squareSelection,
-      getVisibleImages,
-      images.length
-    );
+      const cleanup = applyMouseAndTouchEvents(
+        setZoomScale, 
+        setIsDragging,
+        // setIsScrolling, 
+        setIsZooming, 
+        setIsLongTouch, 
+        squareRef, 
+        handleMouseUp, 
+        squareSelection,
+        getVisibleImages,
+        images.length
+      );
 
-    return () => {
-      cleanup();
-      removeTrackedEventListeners(window, 'keyup');
-      removeTrackedEventListeners(window, 'keydown');
-    };
-  }, [imagesElements]);
+      return () => {
+        cleanup();
+        removeTrackedEventListeners(window, 'keyup');
+        removeTrackedEventListeners(window, 'keydown');
+      };
+    }
+  }, [isLoadingCompletedAtStart]);
 
   useEffect(() => {
-    console.log('images:', images);
     numberOfKeptImages = images.filter(image => image.isKept).length;
     if (images.length > 0) setFirstRowWidth(calculateFirstRowWidth());
   }, [images]);
@@ -668,8 +683,6 @@ const ImageGrid: React.FC = () => {
 
   const handleOnloadImg = () => {
     if (isGalleriaClosed !== true) {
-      const currentTime = new Date().toLocaleTimeString();
-
       setLoadedImageCount(loadedImageCount + 1);
       setIsLoading(false);
       setIsCachingCompleted(false);
@@ -898,7 +911,7 @@ const ImageGrid: React.FC = () => {
         padding: padding + 'px',
         width: firstRowWidth + 'px',
         transformOrigin: origin, // Dynamic transform-origin based on mouse position
-        transform: 'matrix(1, 0, 0, 1, 0, 0)'
+        transform: 'matrix(1, 0, 0, 1, 0, 0)',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
@@ -939,8 +952,8 @@ const ImageGrid: React.FC = () => {
       isDeletePopupVisible={isPopupVisible}
       handleDeleteImages={handleDeleteImages}
     ></ModalPopup>
-    </>
-    ) : (<>{!isCachingCompleted &&
+
+    {!isLoadingCompleted && !isLoadingCompletedAtStart && (
       <div className='loading-spinner' style={{
         position: 'fixed',
         top: 0,
@@ -953,6 +966,30 @@ const ImageGrid: React.FC = () => {
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 9999,
         backdropFilter: 'blur(5px)'
+      }}>
+        <div style={{ textAlign: 'center', color: 'white' }}>
+          <div className="spinner-border" role="status" style={{ width: '3rem', height: '3rem' }}>
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p>Loading images...</p>
+        </div>
+      </div>
+    )}
+    </>
+    ) : (<>{!isCachingCompleted &&
+      <div className='loading-spinner' 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 9999,
+          backdropFilter: 'blur(5px)'
       }}>
         <div style={{ textAlign: 'center', color: 'white' }}>
           <div className="progress" style={{ width: '80%', margin: '0 auto' }}>
