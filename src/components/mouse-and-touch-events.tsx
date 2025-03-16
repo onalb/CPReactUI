@@ -22,6 +22,8 @@ const applyMouseAndTouchEvents = (
   let longTapTimeout: number | null = null;
   let isLongTouch = false;
   let startPoint: any = null;
+  let touchDeltaX = 0;
+  let touchDeltaY = 0;
 
   const applyLongTouch = (event: any) => {
     if (event.touches && event.touches.length > 1) { return }
@@ -205,6 +207,7 @@ const applyMouseAndTouchEvents = (
   }, zoomSettings.debounceDuration);
 
   const handleTouchStart = (event: TouchEvent) => {
+    setIsDragging(false);
     isLongTouch = false;
     setIsLongTouch(false);
     setIsZooming(false);
@@ -241,12 +244,14 @@ const applyMouseAndTouchEvents = (
 
   const handleTouchMove = (event: TouchEvent) => {
     setIsDragging(true);
+
     if (longTapTimeout) {
       clearTimeout(longTapTimeout);
       longTapTimeout = null;
     }
 
     touchMoved = true;
+
     if (isLongTouch) {
       if (startPoint && squareRef.current) {
         const width = event.touches[0].clientX - startPoint.x;
@@ -264,6 +269,7 @@ const applyMouseAndTouchEvents = (
           x: (event.touches[0].clientX + event.touches[1].clientX) / 2,
           y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
         };
+        
         view.scaleAt(at, amount, setZoomScale);
         view.applyTo(document.getElementById('main-element'));
         initialDistance = currentDistance;
@@ -277,16 +283,26 @@ const applyMouseAndTouchEvents = (
       } else if (event.touches.length === 1 && isTouchDragging) {
         const dx = event.touches[0].clientX - lastPosX;
         const dy = event.touches[0].clientY - lastPosY;
-        view.pan({ x: dx, y: dy });
-        view.applyTo(document.getElementById('main-element'));
-        lastPosX = event.touches[0].clientX;
-        lastPosY = event.touches[0].clientY;
+        touchDeltaX += dx;
+        touchDeltaY += dy;
+        
+        if (Math.abs(touchDeltaX) > 50 || Math.abs(touchDeltaY) > 50) {
+          view.pan({ x: dx, y: dy });
+          view.applyTo(document.getElementById('main-element'));
+          lastPosX = event.touches[0].clientX;
+          lastPosY = event.touches[0].clientY;
+        } else {
+          setIsDragging(false);
+          touchMoved = false;
+        }
       }
     }
   };
 
   const handleTouchEnd = (event: TouchEvent) => {
     isDragging = false;
+    touchDeltaX = 0;
+    touchDeltaY = 0;
 
     if (isLongTouch) {
       handleClientMouseUp();

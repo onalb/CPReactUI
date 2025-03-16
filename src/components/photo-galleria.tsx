@@ -32,6 +32,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   const thumbnailReelRef = useRef<HTMLDivElement | null>(null);
   let animationFrameId: number | null = null;
   let currentSelectedImageIndexOnGalleria = currentSelectedImageIndex || 0;
+  let loadedImageCount = 0;
   const currentSelectedImageOnGalleria = imagesOnGalleria[currentSelectedImageIndexOnGalleria];
   removeTrackedEventListeners(window, 'mousedown');
   removeTrackedEventListeners(window, 'mousemove');
@@ -290,13 +291,9 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
     }
   }
 
-  const handleImageLoad = () => {
-    const allImagesLoaded = imagesOnGalleria.every((image, index) => {
-      const imgElement = document.getElementById(index.toString()) as HTMLImageElement;
-      return imgElement.complete;
-    });
-    
-    if (allImagesLoaded) {
+  const handleImageLoad = (index: number) => {
+    loadedImageCount++;
+    if (loadedImageCount === imagesOnGalleria.length) {
       setLoading(false);
     }
   };
@@ -489,7 +486,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
                   }}
                   onMouseEnter={handleThumbnailMouseEnter}
                   onMouseLeave={handleThumbnailMouseLeave}
-                  onLoad={handleImageLoad} // Add this line
+                  onLoad={() => handleImageLoad(index)} // Add this line
                 />
               ))}
             </div>
