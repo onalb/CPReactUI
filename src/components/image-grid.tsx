@@ -177,10 +177,8 @@ const ImageGrid: React.FC = () => {
           setImages(images);
         }
 
-        // setIsLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
-        setIsLoading(false);
       }
     };
 
@@ -194,21 +192,6 @@ const ImageGrid: React.FC = () => {
       getVisibleImages();
     }
   }, [isDeleting]);
-
-  useEffect(() => {
-    // To get the number of images that are loaded make the calculation here -- tech debt
-    setIsLoadingCompleted(() => {
-      console.log('isLoadingCompletedAtStart:', isLoadingCompletedAtStart);
-      console.log('loadedImageCount:', loadedImageCount);
-      console.log('images.length:', images.length);
-      
-      if (images.length > 0 && loadedImageCount === images.length && !isLoadingCompletedAtStart) {
-        setIsLoadingCompletedAtStart(true);
-        return true;
-      } 
-      return false
-    });
-  }, [isLoading])
 
   useEffect(() => {
     varyImageQualityWithZoom();
@@ -682,18 +665,28 @@ const ImageGrid: React.FC = () => {
   }
 
   const handleOnloadImg = () => {
-    if (isGalleriaClosed !== true) {
-      setLoadedImageCount(loadedImageCount + 1);
-      setIsLoading(false);
-      setIsCachingCompleted(false);
+    // This if statement is put here so taht if an image is deleted after the initial load the following updates will not happen
+    // If following updates happen upon image deletion, clicks freeze until all the images are parsed again and all thse updates complete.
+    if(!isLoadingCompletedAtStart) {
+      if (isGalleriaClosed !== true) {
+        setLoadedImageCount(loadedImageCount + 1);
+        setIsCachingCompleted(false);
 
-      if (loadedImageCount === images.length - 1) {
-        setTimeout(() => {
+        if (loadedImageCount === images.length - 1) {
           setIsCachingCompleted(true);
-          const mainElement = document.getElementById('main-element');
-          setImagesElements(Array.from(mainElement!.getElementsByTagName('img')));
-        }, 1000);
+          setImagesElements(Array.from(document.getElementById('main-element')!.getElementsByTagName('img')));
+        }
       }
+
+      // To get the number of images that are loaded make the calculation here -- tech debt
+      setIsLoadingCompleted(() => { 
+        if (images.length > 0 && loadedImageCount === images.length - 1 && !isLoadingCompletedAtStart) {
+          setIsLoadingCompletedAtStart(true);
+          return true;
+        } 
+
+        return false
+      });
     }
   }
 
@@ -953,7 +946,7 @@ const ImageGrid: React.FC = () => {
       handleDeleteImages={handleDeleteImages}
     ></ModalPopup>
 
-    {!isLoadingCompleted && !isLoadingCompletedAtStart && (
+    {!isLoadingCompletedAtStart && (
       <div className='loading-spinner' style={{
         position: 'fixed',
         top: 0,

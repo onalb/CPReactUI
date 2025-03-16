@@ -44,7 +44,6 @@ const ImageCard = memo(({
           src={image.path}
           alt={`Image ${index}`}
           className="img no-drag"
-          onLoadCapture={() => setIsLoading(true)}
           onLoad={handleOnloadImg}
           onError={() => console.error(`Image ${index} failed to load`)}
           onTouchEnd={(e: any) => {
