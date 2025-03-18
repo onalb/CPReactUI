@@ -205,7 +205,6 @@ const ImageGrid: React.FC = () => {
       const cleanup = applyMouseAndTouchEvents(
         setZoomScale, 
         setIsDragging,
-        // setIsScrolling, 
         setIsZooming, 
         setIsLongTouch, 
         squareRef, 

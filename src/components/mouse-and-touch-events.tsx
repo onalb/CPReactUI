@@ -3,7 +3,6 @@ import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-
 const applyMouseAndTouchEvents = (
   setZoomScale: any, 
   setIsDragging: any, 
-  // setIsScrolling: any,
   setIsZooming: any, 
   setIsLongTouch: any, 
   squareRef: any, 
