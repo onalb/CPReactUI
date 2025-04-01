@@ -402,6 +402,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
                 id="flexSwitchCheckDefault" 
                 checked={isAutoNextOn} 
                 onChange={() => setIsAutoNextOn(!isAutoNextOn)} 
+                title='AUTO NEXT'
               />
             </div>
             <button
