@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/ImageZoom.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -17,6 +17,7 @@ import ImageCard from './image-card';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
+  const navigate = useNavigate();
   //User Editable Paramters
   const numberOfColumns = 10;
 
@@ -475,29 +476,73 @@ const ImageGrid: React.FC = () => {
     };
   };
 
+  let clickTimeout: NodeJS.Timeout | null = null;
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging && !isZooming) {
-      if (event.shiftKey && currentSelectedImageIndex !== null) {
-        const start = Math.min(currentSelectedImageIndex, index);
-        const end = Math.max(currentSelectedImageIndex, index);
-        const newSelectedImageIds = images.slice(start, end + 1).map(img => img.id);
-        setSelectedImageIds(prevIds => Array.from(new Set([...prevIds, ...newSelectedImageIds])));
-        setCurrentSelectedImageIndex(index);
-      } else if (event.shiftKey && currentSelectedImageIndex === null) {
-        setCurrentSelectedImageIndex(index);
-        setSelectedImageIds(prevIds =>  [...prevIds, imageId]);
-      } else {
-        if (currentSelectedImageIndex === index || selectedImageIds.includes(imageId)) {
-          setCurrentSelectedImageIndex(null);
-        } else {
-          setCurrentSelectedImageIndex(index);
-        }
+      if (clickTimeout) {
+        // Double-click detected
+        clearTimeout(clickTimeout);
 
-        setSelectedImageIds(prevIds =>
-          prevIds.includes(imageId)
-            ? prevIds.filter(id => id !== imageId) // Deselect if already selected
-            : [...prevIds, imageId] // Select if not already selected
-        );
+        // Set the clicked image as the current selected image
+        setCurrentSelectedImageIndex(index);
+
+        // Add the image to the selectedImageIds
+        setSelectedImageIds((prevIds) => Array.from(new Set([...prevIds, imageId])));
+
+        // Open the image in a new tab
+        const clickedImage = images.find((img) => img.id === imageId);
+        const isOpenedOnBrowser = typeof navigator !== 'undefined' && navigator.userAgent !== undefined && !navigator.userAgent.includes('Electron');
+
+        if (isOpenedOnBrowser) {
+          if (clickedImage) {
+            // window.open(clickedImage.path, '_blank');
+            if (clickedImage) {
+              // const fullSizeImageUrl = `http://localhost:3000/full-size-image/`;
+              // window.open(fullSizeImageUrl, '_blank');
+              navigate(`/full-size-image/asd`);
+            }
+          }
+        } else {
+          // Make an Axios POST request
+          axios.post('http://localhost:3080/api/openNewTab', {
+            url: 'http://localhost:3000/full-size-image/asd',
+            title: 'My Title2',
+          })
+          .then((response) => {
+            console.log('Response from server:', response.data);
+          })
+          .catch((error) => {
+            console.error('Error making POST request:', error);
+          });
+        }
+      } else {
+        // Single click detected, start a timeout to wait for a potential double-click
+        clickTimeout = setTimeout(() => {
+          clickTimeout = null;
+
+          if (event.shiftKey && currentSelectedImageIndex !== null) {
+            const start = Math.min(currentSelectedImageIndex, index);
+            const end = Math.max(currentSelectedImageIndex, index);
+            const newSelectedImageIds = images.slice(start, end + 1).map((img) => img.id);
+            setSelectedImageIds((prevIds) => Array.from(new Set([...prevIds, ...newSelectedImageIds])));
+            setCurrentSelectedImageIndex(index);
+          } else if (event.shiftKey && currentSelectedImageIndex === null) {
+            setCurrentSelectedImageIndex(index);
+            setSelectedImageIds((prevIds) => [...prevIds, imageId]);
+          } else {
+            if (currentSelectedImageIndex === index || selectedImageIds.includes(imageId)) {
+              setCurrentSelectedImageIndex(null);
+            } else {
+              setCurrentSelectedImageIndex(index);
+            }
+
+            setSelectedImageIds((prevIds) =>
+              prevIds.includes(imageId)
+                ? prevIds.filter((id) => id !== imageId) // Deselect if already selected
+                : [...prevIds, imageId] // Select if not already selected
+            );
+          }
+        }, 300); // Timeout for detecting double-click (300ms is a common threshold)
       }
     }
   };
