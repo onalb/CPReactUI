@@ -8,9 +8,9 @@ const App: React.FC = () => {
     <Router>
       <div style={styles.container}>
         <Routes>
-        <Route path="/" element={<ImageGrid />} />
+          <Route path="/" element={<ImageGrid />} />
           <Route path="/:isOpenOnlyKept" element={<ImageGrid />} />
-          <Route path="/full-size-image/:imagePath" element={<FullSizeImage />} />
+          <Route path="/full-size-image/:imagePath/:imageName" element={<FullSizeImage />} />
         </Routes>
       </div>
     </Router>

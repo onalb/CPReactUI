@@ -64,6 +64,7 @@ const ImageGrid: React.FC = () => {
   const defaultRowHeight = 300;
   const imageHeight = 300;
   let numberOfKeptImages = images.filter(image => image.isKept).length;
+  let clickTimeout: NodeJS.Timeout | null = null;
 
   const dbPromise = openDB('image-store', 1, {
     upgrade(db) {
@@ -126,6 +127,19 @@ const ImageGrid: React.FC = () => {
     }
   };
 
+  const getImage = async (url: string, title: string) => {
+    axios.post('http://localhost:3080/api/openNewTab', {
+      url: `http://localhost:3000/full-size-image/${url}/${title}`,
+      title: title,
+    })
+    .then((response) => {
+      console.log('Response from server:', response.data);
+    })
+    .catch((error) => {
+      console.error('Error making POST request:', error);
+    });
+  }
+
   // Side Effects
   useEffect(() => {
     const fetchData = async () => {
@@ -156,7 +170,7 @@ const ImageGrid: React.FC = () => {
           image['pathM'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
           image['pathL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
           image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 3}`;
-          image['pathXXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 10}`;
+          image['pathXXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${photo.dimensions.height}`;
 
           const MCached = await loadImageFromIndexedDB(image['pathM']) || image['pathM'];
           if (MCached === image['pathM']) {
@@ -476,7 +490,6 @@ const ImageGrid: React.FC = () => {
     };
   };
 
-  let clickTimeout: NodeJS.Timeout | null = null;
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging && !isZooming) {
       if (clickTimeout) {
@@ -492,28 +505,15 @@ const ImageGrid: React.FC = () => {
         // Open the image in a new tab
         const clickedImage = images.find((img) => img.id === imageId);
         const isOpenedOnBrowser = typeof navigator !== 'undefined' && navigator.userAgent !== undefined && !navigator.userAgent.includes('Electron');
+        const imagePath = encodeURIComponent(clickedImage.pathXXL);
+        const imageName = encodeURIComponent(clickedImage.fileName);
 
         if (isOpenedOnBrowser) {
           if (clickedImage) {
-            // window.open(clickedImage.path, '_blank');
-            if (clickedImage) {
-              // const fullSizeImageUrl = `http://localhost:3000/full-size-image/`;
-              // window.open(fullSizeImageUrl, '_blank');
-              navigate(`/full-size-image/asd`);
-            }
+            window.open(`/full-size-image/${imagePath}/${imageName}`, '_blank');
           }
         } else {
-          // Make an Axios POST request
-          axios.post('http://localhost:3080/api/openNewTab', {
-            url: 'http://localhost:3000/full-size-image/asd',
-            title: 'My Title2',
-          })
-          .then((response) => {
-            console.log('Response from server:', response.data);
-          })
-          .catch((error) => {
-            console.error('Error making POST request:', error);
-          });
+          getImage(imagePath, imageName);
         }
       } else {
         // Single click detected, start a timeout to wait for a potential double-click

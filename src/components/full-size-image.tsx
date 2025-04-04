@@ -1,17 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/photo-galleria.css'; // Import the CSS file
-import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { removeTrackedEventListeners } from './tracked-event-handler';
+import { useParams } from 'react-router-dom';
 
 const FullSizeImage: React.FC<any> = () => {
-  debugger;
-  const folder='C:\\Users\\burak\\Pictures\\Lansdale\\23'
-  const name = '0H7A6252.JPG';
-  const imageHeight = 364.8;
-  const image = `http://localhost:3080/api/photos?folder=${folder}&image=${name}&height=${imageHeight * 10}`
-  const [selectedImage, setSelectedImage] = useState<any>(image);
-  const [scale, setScale] = useState<number>(1);
-  const [loading, setLoading] = useState<boolean>(false);
+  // const folder='C:\\Users\\burak\\Pictures\\Lansdale\\23'
+  const { imagePath } = useParams<{ imagePath: string }>();
+  const { imageName } = useParams<{ imageName: string }>();
+   const [scale, setScale] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const thumbnailReelRef = useRef<HTMLDivElement | null>(null);
 
@@ -53,7 +50,7 @@ const FullSizeImage: React.FC<any> = () => {
     const img = e.currentTarget as HTMLImageElement;
     const scaleRatio = 0.003;
     let newScale = scale;
-    if (!(scale + e.deltaY * -scaleRatio < 1 || scale + e.deltaY * -scaleRatio > 6)) {
+    if (!(scale + e.deltaY * -scaleRatio < 1 || scale + e.deltaY * -scaleRatio > 10)) {
       newScale = scale + e.deltaY * -scaleRatio;
       setScale(newScale);
     }
@@ -85,6 +82,11 @@ const FullSizeImage: React.FC<any> = () => {
     window.addEventListener('mouseup', onMouseUp);
   }
 
+  const handleOnLoadImage = (e: any) => {
+    console.log('Image loaded:');
+    setLoading(false);
+  }
+
   return (
     <>
     {loading && (<div className='loading-spinner' style={{
@@ -113,8 +115,8 @@ const FullSizeImage: React.FC<any> = () => {
       <div className='row h-25 mt-8'>
         <div className='col'>
           <img 
-            id={selectedImage}
-            src={selectedImage} 
+            id={imageName}
+            src={imagePath} 
             alt="Selected" 
             className="col p-0 position-absolute" 
             style={{
@@ -127,6 +129,7 @@ const FullSizeImage: React.FC<any> = () => {
             }}
             onWheel={handleSelectedImageOnWheel}
             onMouseDown={handleSelectedImageOnMouseDown}
+            onLoad={handleOnLoadImage}
           />
         </div>
       </div>
