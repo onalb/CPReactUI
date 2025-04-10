@@ -4,40 +4,47 @@ import { Dialog } from 'primereact/dialog';
 import '../styles/ImageZoom.css';
 
 interface ModelPopupProps {
-  message: string;
-  setIsDeletePopupVisible: React.Dispatch<React.SetStateAction<boolean>>;
-  isDeletePopupVisible: boolean;
-  handleDeleteImages: () => void;
+    popupOptions: { isVisible: boolean; isYesNo: boolean; title: string, message: string };
+    setPopupOptions: React.Dispatch<React.SetStateAction<any>>;
+    handleDeleteImages: () => void;
 }
 
-const ModalPopup: React.FC<ModelPopupProps> = ({ message, setIsDeletePopupVisible, isDeletePopupVisible, handleDeleteImages }) => {
+const ModalPopup: React.FC<ModelPopupProps> = ({ popupOptions, setPopupOptions, handleDeleteImages }) => {
     const footerContent = (
         <div className="rounded-0">
-            <Button 
+            { popupOptions.isYesNo ? 
+            (<><Button 
                 label="No" 
                 icon="pi pi-times" 
-                onClick={() => setIsDeletePopupVisible(false)} 
+                onClick={() => setPopupOptions(prev => ({ ...prev, isVisible: false }))} 
                 className="p-button-text no-button" />
             <Button 
                 label="Yes" 
                 icon="pi pi-check" 
                 onClick={() => {
-                    setIsDeletePopupVisible(false);
+                    setPopupOptions(prev => ({ ...prev, isVisible: false }));
                     handleDeleteImages();
                 }} 
                 autoFocus
                 className="yes-button"
-            />
+            /></>)
+            : 
+            (<><Button 
+                label="OK" 
+                icon="pi pi-times" 
+                onClick={() => setPopupOptions(prev => ({ ...prev, isVisible: false }))} 
+                className="p-button-text no-button" /></>)
+        }
         </div>
     );
     return (
         <div className="container-fluid position-absolute top-0 start-0 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 p-0">
             <Dialog 
                 headerClassName="rounded-0"
-                header="Delete" 
-                visible={isDeletePopupVisible} 
+                header={popupOptions.title} 
+                visible={popupOptions.isVisible} 
                 style={{ width: '50vw', backgroundColor: 'rgba(20, 20, 20, 0.85)', color: 'white', border: '1px solid rgba(50, 50, 50, 0.85)'}} 
-                onHide={() => {if (!isDeletePopupVisible) return; setIsDeletePopupVisible(false); }} 
+                onHide={() => { if (!popupOptions.isVisible) return; setPopupOptions(prev => ({ ...prev, isVisible: false })); }} 
                 footer={footerContent}
                 pt={{ 
                     root: { className: 'delete-popup-background' },
@@ -47,7 +54,7 @@ const ModalPopup: React.FC<ModelPopupProps> = ({ message, setIsDeletePopupVisibl
                 }}
             >
                 <p className="m-0">
-                    {message}
+                    {popupOptions.message}
                 </p>
             </Dialog>
         </div>

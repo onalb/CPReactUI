@@ -11,22 +11,24 @@ import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
 import axios from 'axios';
 import { openDB } from 'idb';
-import { LazyLoadImage } from 'react-lazy-load-image-component';
 import ImageCard from './image-card';
-// import findPortByServiceName from '../utils';
+import { useMutation, useQueryClient } from 'react-query';
+import { useQuery } from 'react-query';
+import { getPhotoListFromFolder, getPhotoFromFolder } from '../services/PhotoService';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   //User Editable Paramters
   const numberOfColumns = 10;
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
-  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
-  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 Prague');
+  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
+   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 Prague');
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\24\\don's olds mobile");
-  const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\23");
+  // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\23");
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
   const [images, setImages] = useState([] as any[]);
@@ -39,16 +41,14 @@ const ImageGrid: React.FC = () => {
   const [zoomStop, setZoomStop] = useState(2);
   const [firstRowWidth, setFirstRowWidth] = useState<number>(0); // Initial transform-origin
   const [isDragging, setIsDragging] = useState(false);
-  // const [isScrolling, setIsScrolling] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
   const [currentSelectedImageIndex, setCurrentSelectedImageIndex] = useState<number | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
   const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean | null>(null);
-  const [isPopupVisible, setIsPopupVisible] = useState<boolean>(false);
   const [handleDeleteImages, setHandleDeleteImages] = useState<() => void>(() => () => {});
-  const [popupMessage, setPopupMessage] = useState<string>('');
+  const [popupOptions, setPopupOptions] = useState<any>({ isVisible: false, message: '', isYesNo: false });
   const [visibleImages, setVisibleImages] = useState([] as any[]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingCompleted, setIsLoadingCompleted] = useState<boolean>(false);
@@ -56,6 +56,8 @@ const ImageGrid: React.FC = () => {
   const [imagesElements, setImagesElements] = useState([] as any[]);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isKeepButtonDisabled, setIsKeepButtonDisabled] = useState<boolean>(false);
+  const [queryImages, setQueryImages] = useState([] as any[]);
+  const imageBeingDeleted = useRef<{deleteErrorType: string, images: any[]}>({deleteErrorType: '', images: []});
   const squareRef = useRef<HTMLDivElement | null>(null);
 
   // Variables
@@ -72,6 +74,83 @@ const ImageGrid: React.FC = () => {
     },
   });
 
+  const deletePhotoMutation = useMutation(
+    async (imagePath: string) => {
+      const response = await axios.post('http://localhost:3080/api/deleteImage', { imagePath : imagePath,  });
+
+      return response.data;
+    },
+    {
+      onMutate: async (imagePath: string) => {
+        imageBeingDeleted.current.images = [{imagePath: imagePath, name: imagePath.split('\\').pop()}];
+      },
+      onError: (error: any) => {
+        debugger;
+        imageBeingDeleted.current["deleteErrorType"] = error.response.data.type;
+        console.error('Error deleting photo: ', error);
+
+        if (error.response.data.type && error.response.data.type === 'access') {
+          queryClient.invalidateQueries(['images']);
+        } else {
+          // queryClient.invalidateQueries(['images']);
+          fetchData(queryImages);
+          setPopupOptions({
+            isVisible: true,
+            isYesNo: false,
+            title: 'WARNING',
+            message: (
+              <div>
+                There was an error Deleting the Photo. Below photo(s) are restored.
+                  <ul style={{ listStyleType: 'disc', color: 'inherit', marginTop: '10px' }}>
+                  {imageBeingDeleted.current.images.map((image: any, index: number) => (
+                    <li key={index}>{image.name}</li>
+                  ))}
+                  </ul>
+              </div>
+            ),
+          });
+        }
+      }
+    }
+  );
+
+  useQuery(['images'], () => getPhotoListFromFolder(folder), {
+    initialData: [],
+    refetchOnWindowFocus: false,
+    onSuccess: (data) => {
+      setQueryImages(data);
+
+      if (imageBeingDeleted.current.images.length > 0 && imageBeingDeleted.current.deleteErrorType === 'access') {
+        // DO NOT DELETE COMMENT: imagesNotFound does not include the currentImagesBeingDeleted. 
+        // DO NOT DELETE COMMENT: That's why we need to find it seperately and concatenate
+        // DO NOT DELETE COMMENT: this is being called after invalidate query for 'images'
+        const imagesNotFound = images.filter((image: any) => !data.some((datum: any) => datum.name === image.fileName))
+        const currentImagesBeingDeleted = { fileName: imageBeingDeleted.current.images[0].name };
+        const allImagesNotFound = [...imagesNotFound, currentImagesBeingDeleted];
+        console.log('Difference between data and queryImages:', allImagesNotFound);
+
+        if (allImagesNotFound.length > 0) {
+          setPopupOptions({
+            isVisible: true,
+            isYesNo: false,
+            title: 'WARNING',
+            message: (
+              <div>
+                The below pictures could not be found in the directory. They will be removed from the grid.
+                  <ul style={{ listStyleType: 'disc', color: 'inherit', marginTop: '10px' }}>
+                  {allImagesNotFound.map((image: any, index: number) => (
+                    <li key={index}>{image.fileName}</li>
+                  ))}
+                  </ul>
+              </div>
+            ),
+          });
+        }
+        imageBeingDeleted.current.deleteErrorType = '';
+      }
+    }
+  });
+
   const getVisibleImages = () => {
     const mainElement = document.getElementById('main-element');
 
@@ -79,7 +158,7 @@ const ImageGrid: React.FC = () => {
 
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
-    let currentImagesElements = [];
+    let currentImagesElements: HTMLImageElement[] = [];
 
     if (imagesElements.length === 0) {
       currentImagesElements.push(...Array.from(mainElement.getElementsByTagName('img')));
@@ -140,67 +219,63 @@ const ImageGrid: React.FC = () => {
     });
   }
 
+  const fetchData = async (queryImages) => {
+    let transformedImages: any[] = [];
+    try {
+      setTotalNumberOfImages(queryImages.length);
+      for (let i = 0; i < queryImages.length; i++) {
+        const photo = queryImages[i];
+        setCachedImageCount(prevCount => prevCount + 1);
+
+        const image: any = {};
+        image['id'] = i;
+        image['fileName'] = photo.name;
+        image['height'] = photo.dimensions.height;
+        image['width'] = photo.dimensions.width;
+        image['isKept'] = false;
+        image['deleteClickedOnce'] = false;
+        image['markedForDeletion'] = false;
+
+        image['pathXS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
+        image['pathS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
+        image['pathM'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
+        image['pathL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
+        image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 3}`;
+        image['pathXXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${photo.dimensions.height}`;
+
+        const MCached = await loadImageFromIndexedDB(image['pathM']) || image['pathM'];
+        if (MCached === image['pathM']) {
+          await saveImageToIndexedDB(image['pathM'], image['pathM']);
+          image['pathM'] = await loadImageFromIndexedDB(image['pathM'])
+        } else {
+          image['pathM'] = MCached;
+        }
+        
+        image['path'] = image['pathM'];
+        transformedImages.push(image);
+      }
+
+      setIsCachingCompleted(true);
+
+      if (isOpenOnlyKept === 'true') {
+        setImages(transformedImages.filter(image => image.isKept));
+      } else {
+        setImages(transformedImages);
+      }
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
   // Side Effects
   useEffect(() => {
-    const fetchData = async () => {
-      // setIsLoading(true);
-
-      try {
-        // const port = findPortByServiceName();
-        // setIsCachingCompleted(false);
-        const res = await axios.get(`http://localhost:3080/api/photoList?folder=${folder}`);
-        setTotalNumberOfImages(res.data.length);
-        let images = [];
-
-        for (let i = 0; i < res.data.length; i++) {
-          const photo = res.data[i];
-          setCachedImageCount(prevCount => prevCount + 1);
-
-          const image: any = {};
-          image['id'] = i;
-          image['fileName'] = photo.name;
-          image['height'] = photo.dimensions.height;
-          image['width'] = photo.dimensions.width;
-          image['isKept'] = false;
-          image['deleteClickedOnce'] = false;
-          image['markedForDeletion'] = false;
-
-          image['pathXS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
-          image['pathS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
-          image['pathM'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
-          image['pathL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
-          image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 3}`;
-          image['pathXXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${photo.dimensions.height}`;
-
-          const MCached = await loadImageFromIndexedDB(image['pathM']) || image['pathM'];
-          if (MCached === image['pathM']) {
-            await saveImageToIndexedDB(image['pathM'], image['pathM']);
-            image['pathM'] = await loadImageFromIndexedDB(image['pathM'])
-          } else {
-            image['pathM'] = MCached;
-          }
-          
-          image['path'] = image['pathM'];
-          images.push(image);
-        }
-
-        setIsCachingCompleted(true);
-
-        if (isOpenOnlyKept === 'true') {
-          setImages(images.filter(image => image.isKept));
-        } else {
-          setImages(images);
-        }
-
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
     if (folder) {
-      fetchData();
+      if(queryImages) {
+        fetchData(queryImages);
+      }
     }
-  }, [folder]);
+  }, [queryImages]);
 
   useEffect(() => {
     if (isDeleting) {
@@ -238,9 +313,9 @@ const ImageGrid: React.FC = () => {
   }, [isLoadingCompletedAtStart]);
 
   useEffect(() => {
-    numberOfKeptImages = images.filter(image => image.isKept).length;
-    if (images.length > 0) setFirstRowWidth(calculateFirstRowWidth());
-  }, [images]);
+    numberOfKeptImages = queryImages.filter(image => image.isKept).length;
+    if (queryImages.length > 0) setFirstRowWidth(calculateFirstRowWidth(queryImages));
+  }, [queryImages]);
 
   useEffect(() => {
     if (isGalleriaClosed) {
@@ -249,7 +324,6 @@ const ImageGrid: React.FC = () => {
       const cleanup = applyMouseAndTouchEvents(
         setZoomScale, 
         setIsDragging,
-        // setIsScrolling, 
         setIsZooming, 
         setIsLongTouch,
         squareRef, 
@@ -287,41 +361,6 @@ const ImageGrid: React.FC = () => {
     };
   }, []);
 
-  // useEffect(() => {
-  //   const updateImagePaths = async () => {
-  //     if (!isGalleriaClosed && images.some((image) => image.id === currentSelectedImageIndex)) {
-  //       const updatePaths = async (prevImages: any[]) => {
-  //         const index = currentSelectedImageIndex;
-  //         if (index === null) return prevImages;
-
-  //         const previousElement = index > 0 ? prevImages[index - 1] : null;
-  //         const currentElement = prevImages[index];
-  //         const nextElement = index < prevImages.length - 1 ? prevImages[index + 1] : null;
-
-  //         if (previousElement) previousElement.path = await loadImageFromIndexedDB(`http://localhost:3080/api/photos?folder=${folder}&image=${previousElement.fileName}&height=${previousElement.height}`) || `http://localhost:3080/api/photos?folder=${folder}&image=${previousElement.fileName}&height=${previousElement.height}`;
-  //         if (currentElement) currentElement.path = await loadImageFromIndexedDB(`http://localhost:3080/api/photos?folder=${folder}&image=${currentElement.fileName}&height=${currentElement.height}`) || `http://localhost:3080/api/photos?folder=${folder}&image=${currentElement.fileName}&height=${currentElement.height}`;
-  //         if (nextElement) nextElement.path = await loadImageFromIndexedDB(`http://localhost:3080/api/photos?folder=${folder}&image=${nextElement.fileName}&height=${nextElement.height}`) || `http://localhost:3080/api/photos?folder=${folder}&image=${nextElement.fileName}&height=${nextElement.height}`;
-
-  //         return prevImages.map((prevImage, i) => (
-  //           i === index - 1 ? 
-  //           previousElement : i === index ? 
-  //           currentElement : i === index + 1 ? 
-  //           nextElement : {
-  //             ...prevImage, path: `http://localhost:3080/api/photos?folder=${folder}&image=${prevImage.fileName}&height=${imageHeight * 2}`
-  //           }
-  //         ));
-  //       };
-
-  //       setImages(prevImages => {
-  //         updatePaths(prevImages).then(updatedImages => setImages(updatedImages));
-  //         return prevImages;
-  //       });
-  //     }
-  //   };
-
-  //   updateImagePaths();
-  // }, [currentSelectedImageIndex]);
-
   useEffect(() => {
     const fetchXXLImage = async () => {
       if (images.length > 0) {
@@ -331,7 +370,7 @@ const ImageGrid: React.FC = () => {
           if (i >= images.length) return;
           if (image['pathXXL'].includes('blob')) return;
 
-          let XXLCached = null;
+          let XXLCached: string | null = null;
           while (XXLCached === null) {
             if (image['pathXXL']) {
               XXLCached = await loadImageFromIndexedDB(image['pathXXL']) || image['pathXXL'];
@@ -346,7 +385,6 @@ const ImageGrid: React.FC = () => {
           }
 
           image['pathXXL'] = XXLCached;
-          // setImages(images.map((img, index) => index === i ? image : img));  
         }
       };
     }
@@ -354,7 +392,7 @@ const ImageGrid: React.FC = () => {
   }, [currentSelectedImageIndex]);
   
   // Functions
-  function calculateFirstRowWidth () {
+  function calculateFirstRowWidth (images: any[]) {
     let result = padding; 
     const ratio = defaultRowHeight / images[0]!.height;
 
@@ -386,10 +424,6 @@ const ImageGrid: React.FC = () => {
       if (isDragging) {
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
       }
-      // if (isScrolling) {
-      //   setIsScrolling(false);
-      //   return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
-      // }
       if (isDeleting) {
         setIsDeleting(false);
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
@@ -420,11 +454,6 @@ const ImageGrid: React.FC = () => {
   const openGalleria = (event: any) => {
     event.preventDefault();
     setIsGalleriaClosed(false);
-  }
-
-  const updateImages = (images: any[]) => {
-    // Here we will make a call to DB. 
-    // If the call is successful, we will keep the state as updated if wrong we will invalidate the query for images.
   }
 
   const squareSelection = (event: any) => {
@@ -573,13 +602,31 @@ const ImageGrid: React.FC = () => {
     if (isZooming) return false;
     if (deleteIcon) {
       if (!image.deleteClickedOnce) {
+        // if delete icon was never clicked this will update the icon color
         image.deleteClickedOnce = true;
         setImages(images.map(img => img.id === image.id ? image : img)); // updates the deleteClickedOnce property of the current image
+        // setQueryImages((previousQueryImages: any) => previousQueryImages.filter((i: any) => i.name !== image.fileName)); // updates the deleteClickedOnce property of the current image
         startTimer(image, setImages);
         return false;
       } else {
+        // if delete icon is clicked twice it will come here
+        // Optimistically update the UI        
+        queryClient.setQueryData('images', (oldImages: any) => {
+          return oldImages.filter((img: any) => img.id !== image.id);
+        });
+
+        setImages((previousImages: any[]) => {
+          return previousImages.filter(img => img.id !== image.id);
+        })
+        
+        const deletedImage = queryImages.find(i => i.name === image.fileName);
+        const imagePath = deletedImage.directory + '\\' + deletedImage.name;
+        // setImageBeingDeleted([imagePath]);
+
+        // Perform the mutation
+        deletePhotoMutation.mutate(imagePath);
         stopTimer(image);
-        setImages(images.filter(img => img.id !== image.id)); // removes the deleted image from the array
+        image.deleteClickedOnce = false;
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
         setSelectedImageIds(prevIds => prevIds.filter(id => id !== image.id));
         setCurrentSelectedImageIndex((prevIndex: number | null) => { 
@@ -693,10 +740,10 @@ const ImageGrid: React.FC = () => {
     setSelectedImageIds([]);
     setCurrentSelectedImageIndex(() => {
       return null;
-  })};
+    });
+  };
 
   const handleDeleteMarkedImages = () => {
-    // const updatedImages = images.filter(image => !image.markedForDeletion || image.isKept);
     setImages((previousImages: any[]) => {
       return previousImages.filter(image => !image.markedForDeletion || image.isKept);
     });
@@ -723,7 +770,7 @@ const ImageGrid: React.FC = () => {
       }
 
       // To get the number of images that are loaded make the calculation here -- tech debt
-      setIsLoadingCompleted(() => { 
+      setIsLoadingCompleted(() => {
         if (images.length > 0 && loadedImageCount === images.length - 1 && !isLoadingCompletedAtStart) {
           setIsLoadingCompletedAtStart(true);
           return true;
@@ -838,9 +885,8 @@ const ImageGrid: React.FC = () => {
           className='col-1 d-flex justify-content-center align-items-center'
           style={{ pointerEvents: `${images.some((i: any) => i.markedForDeletion === true) ? 'auto' : 'none'}` }}
           onClick={() => {
-            setIsPopupVisible(true)
             setHandleDeleteImages(() => handleDeleteMarkedImages);
-            setPopupMessage('You are about to delete the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?');
+            setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'  });
           }}
           data-toggle="modal" data-target="#exampleModalCenter">
           <i
@@ -867,9 +913,8 @@ const ImageGrid: React.FC = () => {
           className='col-1 d-flex justify-content-center align-items-center'
           style={{ pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
           onClick={() => {
-            setIsPopupVisible(true)
             setHandleDeleteImages(() => handleDeleteSelectedImages);
-            setPopupMessage('You are about to delete the SELECTED images. KEPT images will retain. Are you sure you want to proceed?');
+            setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete the SELECTED images. KEPT images will retain. Are you sure you want to proceed?' });
           }}
           data-toggle="modal" data-target="#exampleModalCenter">
           <i
@@ -984,9 +1029,8 @@ const ImageGrid: React.FC = () => {
       />
     }
     <ModalPopup 
-      message ={popupMessage}
-      setIsDeletePopupVisible={setIsPopupVisible}
-      isDeletePopupVisible={isPopupVisible}
+      popupOptions ={popupOptions}
+      setPopupOptions={setPopupOptions}
       handleDeleteImages={handleDeleteImages}
     ></ModalPopup>
 
