@@ -75,14 +75,20 @@ const ImageGrid: React.FC = () => {
   });
 
   const deletePhotoMutation = useMutation(
-    async (imagePath: string) => {
-      const response = await axios.post('http://localhost:3080/api/deleteImage', { imagePath : imagePath,  });
+    async (image: any) => {
+      const deletedImage = queryImages.find(i => i.name === image.name);
+      const imagePath = deletedImage.directory + '\\' + deletedImage.name;
+
+      const response = await axios.post('http://localhost:3080/api/deleteImage', { imagePath : imagePath });
 
       return response.data;
     },
     {
-      onMutate: async (imagePath: string) => {
-        imageBeingDeleted.current.images = [{imagePath: imagePath, name: imagePath.split('\\').pop()}];
+      onMutate: async (image: any) => {
+        const deletedImage = queryImages.find(i => i.name === image.name);
+        const imagePath = deletedImage.directory + '\\' + deletedImage.name;
+        // We need to know the image being deleted if a single image is being deleted. We add it to the 
+        imageBeingDeleted.current.images = [{imagePath: imagePath, name: deletedImage.name}];
       },
       onError: (error: any) => {
         debugger;
@@ -602,15 +608,15 @@ const ImageGrid: React.FC = () => {
     if (isZooming) return false;
     if (deleteIcon) {
       if (!image.deleteClickedOnce) {
-        // if delete icon was never clicked this will update the icon color
+        // DO NOT DELETE COMMENT: if delete icon was never clicked this will update the icon color
         image.deleteClickedOnce = true;
         setImages(images.map(img => img.id === image.id ? image : img)); // updates the deleteClickedOnce property of the current image
         // setQueryImages((previousQueryImages: any) => previousQueryImages.filter((i: any) => i.name !== image.fileName)); // updates the deleteClickedOnce property of the current image
         startTimer(image, setImages);
         return false;
       } else {
-        // if delete icon is clicked twice it will come here
-        // Optimistically update the UI        
+        // DO NOT DELETE COMMENT: if delete icon is clicked twice it will come here
+        // DO NOT DELETE COMMENT: Optimistically update the UI        
         queryClient.setQueryData('images', (oldImages: any) => {
           return oldImages.filter((img: any) => img.id !== image.id);
         });
@@ -618,13 +624,12 @@ const ImageGrid: React.FC = () => {
         setImages((previousImages: any[]) => {
           return previousImages.filter(img => img.id !== image.id);
         })
-        
-        const deletedImage = queryImages.find(i => i.name === image.fileName);
-        const imagePath = deletedImage.directory + '\\' + deletedImage.name;
+      
         // setImageBeingDeleted([imagePath]);
 
         // Perform the mutation
-        deletePhotoMutation.mutate(imagePath);
+        const deletedImage = queryImages.find(qi => qi.name === image.fileName);
+        deletePhotoMutation.mutate(deletedImage);
         stopTimer(image);
         image.deleteClickedOnce = false;
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
@@ -735,8 +740,16 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleDeleteSelectedImages = () => {
-    const updatedImages = images.filter(image => !selectedImageIds.includes(image.id) || image.isKept);
-    setImages(updatedImages);
+    const leftImages = images.filter(image => !selectedImageIds.includes(image.id) || image.isKept);
+    const selectedImages = images.filter(image => selectedImageIds.includes(image.id) || image.isKept);
+    debugger;
+    selectedImages.forEach((i: any)=> {
+      const deletedImage = queryImages.find(qi => qi.name === i.fileName);
+
+      deletePhotoMutation.mutate(deletedImage);
+    })
+
+    setImages(leftImages);
     setSelectedImageIds([]);
     setCurrentSelectedImageIndex(() => {
       return null;
