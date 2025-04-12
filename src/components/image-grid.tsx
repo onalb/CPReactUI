@@ -757,10 +757,9 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleDeleteSelectedImages = () => {
-    const leftImages = images.filter(image => !selectedImageIds.includes(image.id) || image.isKept);
-    const selectedImages = images.filter(image => selectedImageIds.includes(image.id) || image.isKept);
+    const imagesToDelete = images.filter(image => selectedImageIds.includes(image.id) || image.isKept);
 
-    selectedImages.forEach((selectedImage: any)=> {
+    imagesToDelete.forEach((selectedImage: any)=> {
       selectedImage.isDeleted = true;
       deletePhotoMutation.mutate(selectedImage);
     })
@@ -772,16 +771,13 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleDeleteMarkedImages = () => {
-    setImages((previousImages: any[]) => {
-      return previousImages.filter(image => !image.markedForDeletion || image.isKept);
-    });
+    const imagesToDelete = images.filter(image => image.markedForDeletion);
 
-    setSelectedImageIds([]);
+    imagesToDelete.forEach((selectedImage: any)=> {
+      selectedImage.isDeleted = true;
+      deletePhotoMutation.mutate(selectedImage);
+    })
   };
-
-  const handleOnloadCaptureImg = (e: any) => {
-
-  }
 
   const handleOnloadImg = () => {
     //  DO NOT DELETE COMMENT: This if statement is put here so that if an image is deleted after the initial load the following updates will not happen
