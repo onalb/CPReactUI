@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import '../styles/ImageZoom.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -14,7 +14,7 @@ import { openDB } from 'idb';
 import ImageCard from './image-card';
 import { useMutation, useQueryClient } from 'react-query';
 import { useQuery } from 'react-query';
-import { getPhotoListFromFolder, getPhotoFromFolder } from '../services/PhotoService';
+import { getPhotoListFromFolder, deletePhotoListFromFolder } from '../services/PhotoService';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
@@ -26,7 +26,7 @@ const ImageGrid: React.FC = () => {
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
   const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
-   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 Prague');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 Prague');
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\24\\don's olds mobile");
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\23");
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
@@ -50,13 +50,12 @@ const ImageGrid: React.FC = () => {
   const [handleDeleteImages, setHandleDeleteImages] = useState<() => void>(() => () => {});
   const [popupOptions, setPopupOptions] = useState<any>({ isVisible: false, message: '', isYesNo: false });
   const [visibleImages, setVisibleImages] = useState([] as any[]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isLoadingCompleted, setIsLoadingCompleted] = useState<boolean>(false);
+  // const [isLoading, setIsLoading] = useState<boolean>(false);
+  // const [isLoadingCompleted, setIsLoadingCompleted] = useState<boolean>(false);
   const [isLoadingCompletedAtStart, setIsLoadingCompletedAtStart] = useState<boolean>(false);
   const [imagesElements, setImagesElements] = useState([] as any[]);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isKeepButtonDisabled, setIsKeepButtonDisabled] = useState<boolean>(false);
-  const [queryImages, setQueryImages] = useState([] as any[]);
   const imageBeingDeleted = useRef<{deleteErrorType: string, images: any[]}>({deleteErrorType: '', images: []});
   const squareRef = useRef<HTMLDivElement | null>(null);
 
@@ -76,30 +75,24 @@ const ImageGrid: React.FC = () => {
 
   const deletePhotoMutation = useMutation(
     async (image: any) => {
-      const deletedImage = queryImages.find(i => i.name === image.name);
-      const imagePath = deletedImage.directory + '\\' + deletedImage.name;
-
-      const response = await axios.post('http://localhost:3080/api/deleteImage', { imagePath : imagePath });
-
+      const response = await deletePhotoListFromFolder(image["fullImageDirectory"]);
       return response.data;
     },
     {
-      onMutate: async (image: any) => {
-        const deletedImage = queryImages.find(i => i.name === image.name);
-        const imagePath = deletedImage.directory + '\\' + deletedImage.name;
-        // We need to know the image being deleted if a single image is being deleted. We add it to the 
-        imageBeingDeleted.current.images = [{imagePath: imagePath, name: deletedImage.name}];
-      },
-      onError: (error: any) => {
-        debugger;
+      onError: async (error: any) => {
         imageBeingDeleted.current["deleteErrorType"] = error.response.data.type;
         console.error('Error deleting photo: ', error);
 
         if (error.response.data.type && error.response.data.type === 'access') {
           queryClient.invalidateQueries(['images']);
         } else {
-          // queryClient.invalidateQueries(['images']);
-          fetchData(queryImages);
+          const prepedImages: any[] = await prepImagesData(images);
+
+          if (isOpenOnlyKept === 'true') {
+            setImages(prepedImages.filter(image => image.isKept));
+          } else {
+            setImages(prepedImages);
+          }
           setPopupOptions({
             isVisible: true,
             isYesNo: false,
@@ -123,9 +116,29 @@ const ImageGrid: React.FC = () => {
   useQuery(['images'], () => getPhotoListFromFolder(folder), {
     initialData: [],
     refetchOnWindowFocus: false,
-    onSuccess: (data) => {
-      setQueryImages(data);
+    onSuccess: async (data) => {
+      if (data.length > 0) setFirstRowWidth(calculateFirstRowWidth(data));
 
+      if (images.length === 0) {
+        const prepedImages: any[] = await prepImagesData(data);
+        
+        if (isOpenOnlyKept === 'true') {
+          setImages(prepedImages.filter(image => image.isKept));
+        } else {
+          setImages(prepedImages);
+        }
+      } else if (imageBeingDeleted.current.images.length > 0) {
+        setImages((prevImages: any[]) => {
+          return prevImages.map((img: any) => {
+            if (imageBeingDeleted.current.images.some((image: any) => image.name === img.fileName)) {
+              return { ...img, isDeleted: true };
+            } else {
+              return img;
+            }
+          });
+        })
+      }
+      
       if (imageBeingDeleted.current.images.length > 0 && imageBeingDeleted.current.deleteErrorType === 'access') {
         // DO NOT DELETE COMMENT: imagesNotFound does not include the currentImagesBeingDeleted. 
         // DO NOT DELETE COMMENT: That's why we need to find it seperately and concatenate
@@ -225,12 +238,13 @@ const ImageGrid: React.FC = () => {
     });
   }
 
-  const fetchData = async (queryImages) => {
-    let transformedImages: any[] = [];
+  const prepImagesData = async (data) => {
+    let prepedImages: any[] = [];
     try {
-      setTotalNumberOfImages(queryImages.length);
-      for (let i = 0; i < queryImages.length; i++) {
-        const photo = queryImages[i];
+      setTotalNumberOfImages(data.length);
+      
+      for (let i = 0; i < data.length; i++) {
+        const photo = data[i];
         setCachedImageCount(prevCount => prevCount + 1);
 
         const image: any = {};
@@ -241,6 +255,11 @@ const ImageGrid: React.FC = () => {
         image['isKept'] = false;
         image['deleteClickedOnce'] = false;
         image['markedForDeletion'] = false;
+        image['isDeleted'] = false;
+        // image['isDeleted'] = images.filter(i => i.fileName === photo.name).length > 0 ? images.filter(i => i.fileName === photo.name)[0].isDeleted : false;
+        image['imageDirectory'] = photo.directory;
+        image['fullImageDirectory'] = photo.directory + '\\' + photo.name;
+        // image['isDeleted'] = i === 0 || i === 1 ? true : false;
 
         image['pathXS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
         image['pathS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
@@ -258,30 +277,16 @@ const ImageGrid: React.FC = () => {
         }
         
         image['path'] = image['pathM'];
-        transformedImages.push(image);
+        prepedImages.push(image);
       }
 
-      setIsCachingCompleted(true);
-
-      if (isOpenOnlyKept === 'true') {
-        setImages(transformedImages.filter(image => image.isKept));
-      } else {
-        setImages(transformedImages);
-      }
-
+      data.length && setIsCachingCompleted(true);
     } catch (error) {
       console.error('Error fetching data:', error);
+    } finally {
+      return prepedImages;
     }
   };
-
-  // Side Effects
-  useEffect(() => {
-    if (folder) {
-      if(queryImages) {
-        fetchData(queryImages);
-      }
-    }
-  }, [queryImages]);
 
   useEffect(() => {
     if (isDeleting) {
@@ -317,11 +322,6 @@ const ImageGrid: React.FC = () => {
       };
     }
   }, [isLoadingCompletedAtStart]);
-
-  useEffect(() => {
-    numberOfKeptImages = queryImages.filter(image => image.isKept).length;
-    if (queryImages.length > 0) setFirstRowWidth(calculateFirstRowWidth(queryImages));
-  }, [queryImages]);
 
   useEffect(() => {
     if (isGalleriaClosed) {
@@ -565,14 +565,16 @@ const ImageGrid: React.FC = () => {
             setCurrentSelectedImageIndex(index);
             setSelectedImageIds((prevIds) => [...prevIds, imageId]);
           } else {
-            if (currentSelectedImageIndex === index || selectedImageIds.includes(imageId)) {
+            if (!isLongTouch && !event.ctrlKey && currentSelectedImageIndex === index) {
+              // DO NOT DELETE COMMENT: When clciked on a current selected picture make it not currently selected
               setCurrentSelectedImageIndex(null);
-            } else {
+            } else if (!selectedImageIds.includes(imageId)) {
+              // DO NOT DELETE COMMENT: When clicked on a NOT selected image make it currently selected
               setCurrentSelectedImageIndex(index);
             }
 
             setSelectedImageIds((prevIds) =>
-              prevIds.includes(imageId)
+              prevIds.includes(imageId) && !isLongTouch && !event.ctrlKey
                 ? prevIds.filter((id) => id !== imageId) // Deselect if already selected
                 : [...prevIds, imageId] // Select if not already selected
             );
@@ -610,26 +612,29 @@ const ImageGrid: React.FC = () => {
       if (!image.deleteClickedOnce) {
         // DO NOT DELETE COMMENT: if delete icon was never clicked this will update the icon color
         image.deleteClickedOnce = true;
-        setImages(images.map(img => img.id === image.id ? image : img)); // updates the deleteClickedOnce property of the current image
-        // setQueryImages((previousQueryImages: any) => previousQueryImages.filter((i: any) => i.name !== image.fileName)); // updates the deleteClickedOnce property of the current image
+        // DO NOT DELETE COMMENT: updates the deleteClickedOnce property of the current image
+        setImages(images.map(img => img.id === image.id ? image : img)); 
         startTimer(image, setImages);
         return false;
       } else {
         // DO NOT DELETE COMMENT: if delete icon is clicked twice it will come here
-        // DO NOT DELETE COMMENT: Optimistically update the UI        
-        queryClient.setQueryData('images', (oldImages: any) => {
-          return oldImages.filter((img: any) => img.id !== image.id);
-        });
-
-        setImages((previousImages: any[]) => {
-          return previousImages.filter(img => img.id !== image.id);
+        // DO NOT DELETE COMMENT: Optimistically update the UI
+        setImages((oldImages: any[]) => {
+          return oldImages.map((img: any) => {
+            if (img.fileName === image.fileName) {
+              return  { ...img, isDeleted: true }
+            } else {
+              return img;
+            }
+          })
         })
-      
-        // setImageBeingDeleted([imagePath]);
 
-        // Perform the mutation
-        const deletedImage = queryImages.find(qi => qi.name === image.fileName);
-        deletePhotoMutation.mutate(deletedImage);
+        queryClient.setQueryData('images', (oldImages: any) => {
+          return oldImages.filter((img: any) => img.name !== image.fileName);
+        })
+        
+        deletePhotoMutation.mutate(image);
+
         stopTimer(image);
         image.deleteClickedOnce = false;
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
@@ -684,13 +689,14 @@ const ImageGrid: React.FC = () => {
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (event) => {
     if (squareRef.current) {
       const squareRect = squareRef.current.getBoundingClientRect();
       const isAClick = squareRect.right - squareRect.left === 4 && squareRect.bottom - squareRect.top === 4;
       const deselectedImages: number[] = [];
       const newSelectedImageIds = images.filter(image => {
-        const index = images.findIndex(img => img.id === image.id); // fix it
+        let isMouseOnImage = false;
+        const index = image.id;
         const imageElement = document.getElementById(`image-${image.id}`);
 
         if (imageElement) {
@@ -703,6 +709,15 @@ const ImageGrid: React.FC = () => {
           );
 
           if (isIntersecting) {
+            isMouseOnImage = (
+              event.clientX >= imageRect.left &&
+              event.clientX <= imageRect.right &&
+              event.clientY >= imageRect.top &&
+              event.clientY <= imageRect.bottom
+            );
+          }
+
+          if (isIntersecting) {
             if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImageIndex === index) {
               setCurrentSelectedImageIndex(null);
               deselectedImages.push(image.id);
@@ -711,14 +726,16 @@ const ImageGrid: React.FC = () => {
               deselectedImages.push(image.id);
               return false;
             } else {
-              setCurrentSelectedImageIndex(index);
+              isMouseOnImage && !isAClick && setCurrentSelectedImageIndex(index);
             }
 
             return true;
           }
         }
+
         return false;
       }).map(image => image.id);
+
       setSelectedImageIds(prevIds => Array.from(new Set([...prevIds, ...newSelectedImageIds])).filter(id => !deselectedImages.includes(id)));
       document.body.removeChild(squareRef.current);
       squareRef.current = null;
@@ -742,14 +759,12 @@ const ImageGrid: React.FC = () => {
   const handleDeleteSelectedImages = () => {
     const leftImages = images.filter(image => !selectedImageIds.includes(image.id) || image.isKept);
     const selectedImages = images.filter(image => selectedImageIds.includes(image.id) || image.isKept);
-    debugger;
-    selectedImages.forEach((i: any)=> {
-      const deletedImage = queryImages.find(qi => qi.name === i.fileName);
 
-      deletePhotoMutation.mutate(deletedImage);
+    selectedImages.forEach((selectedImage: any)=> {
+      selectedImage.isDeleted = true;
+      deletePhotoMutation.mutate(selectedImage);
     })
 
-    setImages(leftImages);
     setSelectedImageIds([]);
     setCurrentSelectedImageIndex(() => {
       return null;
@@ -769,8 +784,8 @@ const ImageGrid: React.FC = () => {
   }
 
   const handleOnloadImg = () => {
-    // This if statement is put here so taht if an image is deleted after the initial load the following updates will not happen
-    // If following updates happen upon image deletion, clicks freeze until all the images are parsed again and all thse updates complete.
+    //  DO NOT DELETE COMMENT: This if statement is put here so that if an image is deleted after the initial load the following updates will not happen
+    //  DO NOT DELETE COMMENT: If following updates happen upon image deletion, clicks freeze until all the images are parsed again and all thse updates complete.
     if(!isLoadingCompletedAtStart) {
       if (isGalleriaClosed !== true) {
         setLoadedImageCount(loadedImageCount + 1);
@@ -782,15 +797,13 @@ const ImageGrid: React.FC = () => {
         }
       }
 
-      // To get the number of images that are loaded make the calculation here -- tech debt
-      setIsLoadingCompleted(() => {
-        if (images.length > 0 && loadedImageCount === images.length - 1 && !isLoadingCompletedAtStart) {
+        const deletedImgCount = images.filter((i: any) => i['isDeleted'] === true).length;
+        if (images.length > 0 && loadedImageCount === (images.length - deletedImgCount - 1) && !isLoadingCompletedAtStart) {
           setIsLoadingCompletedAtStart(true);
           return true;
         } 
 
-        return false
-      });
+      // To get and display the number of images that are loaded make the calculation here -- tech debt
     }
   }
 
@@ -1012,7 +1025,7 @@ const ImageGrid: React.FC = () => {
       onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
       onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
     >
-      {images.map((image, index) => (
+      {images.map((image, index) => !image["isDeleted"] && (
         <ImageCard 
           image={image}
           index={index}
@@ -1023,7 +1036,7 @@ const ImageGrid: React.FC = () => {
           currentSelectedImageIndex={currentSelectedImageIndex}
           isDragging={isDragging}
           selectedImageIds={selectedImageIds}
-          setIsLoading={setIsLoading}
+          // setIsLoading={setIsLoading}
           handleOnloadImg={handleOnloadImg}
           setIsDeleting={setIsDeleting}
         />

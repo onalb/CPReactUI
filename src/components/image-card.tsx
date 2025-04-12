@@ -17,7 +17,7 @@ interface ImageCardProps {
   currentSelectedImageIndex: number | null;
   isDragging: boolean;
   selectedImageIds: number[];
-  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  // setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   handleOnloadImg: () => void;
   setIsDeleting: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -32,7 +32,7 @@ const ImageCard = memo(({
   currentSelectedImageIndex,
   selectedImageIds,
   isDragging,
-  setIsLoading,
+  // setIsLoading,
   handleOnloadImg,
   setIsDeleting
 }: ImageCardProps) => {

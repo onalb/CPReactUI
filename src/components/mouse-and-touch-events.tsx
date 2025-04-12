@@ -107,11 +107,11 @@ const applyMouseAndTouchEvents = (
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (event) => {
     isDragging = false;
 
     if (isLongTouch) {
-      handleClientMouseUp();
+      handleClientMouseUp(event);
     }
 
     if (longTapTimeout) {

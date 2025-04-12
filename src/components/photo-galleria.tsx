@@ -34,6 +34,8 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   let currentSelectedImageIndexOnGalleria = currentSelectedImageIndex || 0;
   let loadedImageCount = 0;
   const currentSelectedImageOnGalleria = imagesOnGalleria[currentSelectedImageIndexOnGalleria];
+  const deletedImageCount = imagesOnGalleria.filter((image) => image.isDeleted).length;
+
   removeTrackedEventListeners(window, 'mousedown');
   removeTrackedEventListeners(window, 'mousemove');
   removeTrackedEventListeners(window, 'mouseup');
@@ -293,7 +295,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
 
   const handleImageLoad = (index: number) => {
     loadedImageCount++;
-    if (loadedImageCount === imagesOnGalleria.length) {
+    if (loadedImageCount === imagesOnGalleria.length - deletedImageCount) {
       setLoading(false);
     }
   };
@@ -455,7 +457,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
               onTouchStart={handleReelOnMouseDown}
               onWheel={handleReelOnWheel}
             >
-              {imagesOnGalleria.map((image, index) => (
+              {imagesOnGalleria.map((image, index) => !image['isDeleted'] && (
                 // <LazyLoadImage
                 //   id={index.toString()}
                 //   key={index}
