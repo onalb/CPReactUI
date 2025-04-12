@@ -726,7 +726,7 @@ const ImageGrid: React.FC = () => {
               deselectedImages.push(image.id);
               return false;
             } else {
-              isMouseOnImage && !isAClick && setCurrentSelectedImageIndex(index);
+              isMouseOnImage && setCurrentSelectedImageIndex(index);
             }
 
             return true;

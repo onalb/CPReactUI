@@ -23,7 +23,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   isKeepButtonDisabled
 }) => {
   const [imagesOnGalleria, setImagesOnGalleria] = useState<any[]>(images);
-  const [selectedImage, setSelectedImage] = useState<any>(imagesOnGalleria[currentSelectedImageIndex || 0]);
+  const [selectedImage, setSelectedImage] = useState<any>(imagesOnGalleria[currentSelectedImageIndex || images.find(img => !img.isDeleted)?.id] || imagesOnGalleria[0]);
   const [isDraggingReel, setIsDraggingReel] = useState<boolean>(false);
   const [isAutoNextOn, setIsAutoNextOn] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(1);
