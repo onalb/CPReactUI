@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/photo-galleria.css'; // Import the CSS file
-import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { removeTrackedEventListeners } from './tracked-event-handler';
 
 interface PhotoGalleriaProps {
   images: any[];
   setIsGalleriaClosed: React.Dispatch<React.SetStateAction<boolean | null>>;
-  setCurrentSelectedImageIndex: React.Dispatch<React.SetStateAction<number | null>>;
-  currentSelectedImageIndex: number | null;
+  setCurrentSelectedImage: (imageId: number) => void;
+  getCurrentSelectedImage: () => any;
   handleDeleteOnClick: (e: any, image: any, index: number, deleteIcon: any) => boolean;
   handleKeepOnClick: (e: any, image: any ) => boolean;
   isKeepButtonDisabled?: boolean;
@@ -16,25 +15,35 @@ interface PhotoGalleriaProps {
 const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({ 
   images, 
   setIsGalleriaClosed, 
-  setCurrentSelectedImageIndex, 
-  currentSelectedImageIndex, 
+  setCurrentSelectedImage,
+  getCurrentSelectedImage,
   handleDeleteOnClick, 
   handleKeepOnClick,
   isKeepButtonDisabled
 }) => {
-  const [imagesOnGalleria, setImagesOnGalleria] = useState<any[]>(images);
-  const [selectedImage, setSelectedImage] = useState<any>(imagesOnGalleria[currentSelectedImageIndex || images.find(img => !img.isDeleted)?.id] || imagesOnGalleria[0]);
+  const [imagesOnGalleria, setImagesOnGalleria] = useState<any[]>(images.filter((image) => !image.isDeleted));
+  const [selectedImage, setSelectedImage] = useState<any>(imagesOnGalleria[getCurrentSelectedImage().id || 0]);
   const [isDraggingReel, setIsDraggingReel] = useState<boolean>(false);
   const [isAutoNextOn, setIsAutoNextOn] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
-
+  const [currentSelectedImageIndexOnGalleria, setCurrentSelectedImageIndexOnGalleria] = useState<number>(0);
   const thumbnailReelRef = useRef<HTMLDivElement | null>(null);
-  let animationFrameId: number | null = null;
-  let currentSelectedImageIndexOnGalleria = currentSelectedImageIndex || 0;
-  let loadedImageCount = 0;
-  const currentSelectedImageOnGalleria = imagesOnGalleria[currentSelectedImageIndexOnGalleria];
   const deletedImageCount = imagesOnGalleria.filter((image) => image.isDeleted).length;
+  let animationFrameId: number | null = null;
+  let loadedImageCount = 0;
+  let currentSelectedImageOnGalleria = getCurrentSelectedImage();
+  let currentSelectedImageIndex: number = 0;
+
+  useEffect(() => {
+    if (currentSelectedImageOnGalleria.index === -1 && imagesOnGalleria.length > 0) {
+      currentSelectedImageIndex = 0;
+      setCurrentSelectedImage(imagesOnGalleria[0].id);
+    } else {
+      currentSelectedImageIndex = currentSelectedImageOnGalleria.index;
+      setCurrentSelectedImageIndexOnGalleria(imagesOnGalleria.findIndex((image) => image.id === currentSelectedImageOnGalleria.id));
+    }
+  }, [currentSelectedImageOnGalleria, imagesOnGalleria, setCurrentSelectedImage]);
 
   removeTrackedEventListeners(window, 'mousedown');
   removeTrackedEventListeners(window, 'mousemove');
@@ -55,12 +64,18 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
       }, 150);
     }
 
+    if (getCurrentSelectedImage().index >= 0) {
+      currentSelectedImageIndex = getCurrentSelectedImage().index;
+    } else {
+      setCurrentSelectedImage(imagesOnGalleria[0].id);
+      currentSelectedImageIndex = 0;
+    }
 
-    centerThumbnail(currentSelectedImageIndexOnGalleria);
+    centerThumbnail(currentSelectedImageIndex);
   }, []);
 
   useEffect(() => {
-    setImagesOnGalleria(images);
+    setImagesOnGalleria(images.filter((image) => !image.isDeleted));
 
     setSelectedImage((prevSelectedImage: any) => {
       if (scale > 1) {
@@ -69,7 +84,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
         return {...prevSelectedImage, path: prevSelectedImage.pathL};
       }
     });
-  }, [images, scale, currentSelectedImageIndex]);
+  }, [images, scale]);
 
   const scrollThumbnails = (direction: 'left' | 'right', increment: number) => {
     if (direction === 'left') {
@@ -95,17 +110,36 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
       let cumulativeWidth = 0;
       const thumbnailExterior = 16;
       for (let i = 0; i < index; i++) {
-        cumulativeWidth += thumbnailReelRef.current.children[i].clientWidth + thumbnailExterior;
+        if (images[i].isDeleted) {
+          index++;
+          continue;
+        }
+        const children = Array.from(thumbnailReelRef.current.children)
+        const child = children.find(
+          (child) => {
+            return Number(child.id) === i
+          }
+        ) as HTMLElement;
+
+        if (child) {
+          cumulativeWidth += child.clientWidth + thumbnailExterior;
+        }
       }
-      const thumbnailWidth = thumbnailReelRef.current.children[index].clientWidth + thumbnailExterior;
-      const scrollPosition = cumulativeWidth - reelWidth / 2 + thumbnailWidth / 2;
-      thumbnailReelRef.current.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+      const child = Array.from(thumbnailReelRef.current.children).find(
+        (child) => Number(child.id) === index
+      ) as HTMLElement;
+
+      if (child) {
+        const thumbnailWidth = child.clientWidth + thumbnailExterior;
+        const scrollPosition = cumulativeWidth - reelWidth / 2 + thumbnailWidth / 2;
+        thumbnailReelRef.current.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+      }
     }
   };
 
   const handleThumbnailClick = (image: any, index: number) => {
     setSelectedImage(image);
-    setCurrentSelectedImageIndex(index);
+    setCurrentSelectedImage(image.id);
     centerThumbnail(index);
   };
 
@@ -200,7 +234,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
     const target = e.currentTarget as HTMLImageElement;
     target.style.transform = 'scale(1)';
     setTimeout(() => {
-      if (Number(target.id) !== selectedImage.id) { //get image index from the target element and compare with currentSelectedImageIndexOnGalleria
+      if (Number(target.id) !== selectedImage.id) { //get image index from the target element and compare with currentSelectedImageIndex
         target.style.border = `4px solid ${imagesOnGalleria.find(img => img.id === Number(target.id))?.isKept ? 'rgb(150, 255, 175)' : 'rgba(0, 0, 0, 0.70)'}`;
       }
     }, 300); // Delay border change to match the transition duration
@@ -269,20 +303,18 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   const handleDeleteOnClickOnGalleria = (e: any, image: any, index: number, deleteIcon: any) => {
     if (handleDeleteOnClick(e, image, index, deleteIcon)) {
       let nextImage;
-      if (index + 1 === imagesOnGalleria.length) {
-        nextImage = imagesOnGalleria.find((img, idx) => idx === index - 1)
+      if (index === imagesOnGalleria.at(-1)?.id) {
+        nextImage = imagesOnGalleria[imagesOnGalleria.findIndex((img) => img.id === image.id) -1]
         if (nextImage) {
-          currentSelectedImageIndexOnGalleria = index - 1;
-          setCurrentSelectedImageIndex(index - 1);
+          currentSelectedImageIndex = index - 1;
+          setCurrentSelectedImage(nextImage.id);
           setSelectedImage(nextImage);
         }
       } else {
-        nextImage = imagesOnGalleria.find((img, idx) => idx === index + 1)
-        if (nextImage) {
-          currentSelectedImageIndexOnGalleria = index;
-          setCurrentSelectedImageIndex(index);
-          setSelectedImage(nextImage);
-        }
+        nextImage = imagesOnGalleria[imagesOnGalleria.findIndex((img) => img.id === image.id) + 1]
+          currentSelectedImageIndex = index;
+          setCurrentSelectedImage(nextImage.id);
+          setSelectedImage(image);
       }
     }
   }
@@ -336,9 +368,9 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
         <i className="bi bi-x text-secondary" style={{ fontSize: '3em' }}></i>
       </button>
       <div className='row h-25 mt-8'>
-        <div className='col'>
+        <div className='col' onMouseDown={handleSelectedImageOnMouseDown}>
           <img 
-            id={`image-${currentSelectedImageIndex}`}
+            id={`image-${getCurrentSelectedImage().id}`}
             src={selectedImage.path} 
             alt="Selected" 
             className="col p-0 position-absolute" 
@@ -351,20 +383,19 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
               objectFit: 'contain',
             }}
             onWheel={handleSelectedImageOnWheel}
-            onMouseDown={handleSelectedImageOnMouseDown}
           />
         </div>
       </div>
       <div id="reel" className="row position-absolute bottom-0 start-50 translate-middle-x m-0 my-4" style={{ width: '100%' }}>
         <div className="container">
           <div className="row justify-content-center">
-            <button className={`col-1 btn py-1.5 my-2 fs-3 me-auto no-focus-border ${currentSelectedImageIndex === 0 ? 'disabled' : ''}`}              
+            <button className={`col-1 btn py-1.5 my-2 fs-3 me-auto no-focus-border ${getCurrentSelectedImage().id === 0 ? 'disabled' : ''}`}              
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
               onClick={() => scrollThumbnails('left', 10)}>
               <i className="pi bi-arrow-left-circle-fill text-secondary"></i>
             </button>
-            <button className={`nav-button col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center ${currentSelectedImageIndex === 0 ? 'disabled' : ''}`}            
+            <button className={`nav-button col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center ${getCurrentSelectedImage().id === 0 ? 'disabled' : ''}`}            
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
               onClick={() => scrollThumbnails('left', 1)}
@@ -377,10 +408,10 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
               style={{ height: '8vh', width: '8vh' }}
               className={`delete-btn col-1 btn btn-dark align-self-center mx-1 ${currentSelectedImageOnGalleria.isKept ? ' disabled' : ''}`}
               onMouseUp={(e) => {
-                handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndexOnGalleria, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
+                handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndex, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
               }}
               onTouchEnd={(e) => {
-                handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndexOnGalleria, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
+                handleDeleteOnClickOnGalleria(e, currentSelectedImageOnGalleria, currentSelectedImageIndex, e.currentTarget.querySelector(`i#delete-icon-${currentSelectedImageOnGalleria.id}`));
               }}>
                 <i 
                 id={`delete-icon-${currentSelectedImageOnGalleria.id}`}
@@ -413,9 +444,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
               style={{ height: '8vh', width: '8vh'}}
               className="keep-btn col-1 btn btn-dark align-self-center ml-2"
               disabled={isKeepButtonDisabled}
-              // onMouseDown={(e) => {
-
-              // } }
               onMouseUp={(e) => {
                 handleKeepOnClick(e, currentSelectedImageOnGalleria) &&
                 isAutoNextOn && scrollThumbnails('right', 1);
@@ -436,13 +464,13 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
                 title={`${currentSelectedImageOnGalleria.isKept ? 'UNKEEP' : 'KEEP'}`}
               ></i>
             </button>
-            <button className={`nav-button col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center ${currentSelectedImageIndex === images.length - 1 ? 'disabled' : ''}`}       
+            <button className={`nav-button col-1 btn py-1.5 my-2 d-flex justify-content-center align-items-center ${currentSelectedImageIndexOnGalleria === imagesOnGalleria.length - 1 ? 'disabled' : ''}`}       
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
               onClick={() => scrollThumbnails('right', 1)}>
                 <i className="bi bi-chevron-compact-right text-secondary" style={{ fontSize: '3em' }}></i>
             </button>
-            <button className={`col-1 btn py-1.5 my-2 fs-3 ms-auto ${currentSelectedImageIndex === images.length - 1 ? 'disabled' : ''}`}           
+            <button className={`col-1 btn py-1.5 my-2 fs-3 ms-auto ${currentSelectedImageIndexOnGalleria === imagesOnGalleria.length - 1 ? 'disabled' : ''}`}           
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
               onClick={() => scrollThumbnails('right', 10)}>
@@ -458,23 +486,6 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
               onWheel={handleReelOnWheel}
             >
               {imagesOnGalleria.map((image, index) => !image['isDeleted'] && (
-                // <LazyLoadImage
-                //   id={index.toString()}
-                //   key={index}
-                //   src={image.path}
-                //   alt={`Thumbnail ${index}`}
-                //   className="thumbnail mx-1 cursor-pointer"
-                //   onClick={() => handleThumbnailImageClick(image, index)}
-                //   style={{ 
-                //     border: index === currentSelectedImageIndex ? '4px solid deeppink' : image.isKept ? '4px solid orange' : '4px solid rgba(0, 0, 0, 0.70)',
-                //     transform: 'scale(1)',
-                //     transition: 'transform 0.3s ease-in-out, border 0.3s ease-in-out',
-                //   }}
-                //   onMouseEnter={handleThumbnailMouseEnter}
-                //   onMouseLeave={handleThumbnailMouseLeave}
-                //   onLoad={handleImageLoad}
-                //   effect="blur" // Add this line for blur effect while loading
-                // />
                 <img
                   id={image.id}
                   key={index}
@@ -483,7 +494,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
                   className="thumbnail mx-1 cursor-pointer"
                   onClick={() => handleThumbnailImageClick(image, index)}
                   style={{ 
-                    border: image.id === imagesOnGalleria[currentSelectedImageIndex || 0].id ? '4px solid deeppink' : image.isKept ? '4px solid rgb(150, 255, 175)' : '4px solid rgba(0, 0, 0, 0.70)',
+                    border: image.id === currentSelectedImageOnGalleria.id ? '4px solid deeppink' : image.isKept ? '4px solid rgb(150, 255, 175)' : '4px solid rgba(0, 0, 0, 0.70)',
                     transform: 'scale(1)',
                     transition: 'transform 0.3s ease-in-out, border 0.3s ease-in-out'
                   }}

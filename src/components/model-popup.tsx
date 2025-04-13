@@ -17,7 +17,7 @@ const ModalPopup: React.FC<ModelPopupProps> = ({ popupOptions, setPopupOptions, 
                 label="No" 
                 icon="pi pi-times" 
                 onClick={() => setPopupOptions(prev => ({ ...prev, isVisible: false }))} 
-                className="p-button-text no-button" />
+                className="p-button-text no-button no-selection-removal-on-click" />
             <Button 
                 label="Yes" 
                 icon="pi pi-check" 
@@ -26,14 +26,14 @@ const ModalPopup: React.FC<ModelPopupProps> = ({ popupOptions, setPopupOptions, 
                     handleDeleteImages();
                 }} 
                 autoFocus
-                className="yes-button"
+                className="yes-button no-selection-removal-on-click"
             /></>)
             : 
             (<><Button 
                 label="OK" 
                 icon="pi pi-times" 
                 onClick={() => setPopupOptions(prev => ({ ...prev, isVisible: false }))} 
-                className="p-button-text no-button" /></>)
+                className="p-button-text no-button no-selection-removal-on-click" /></>)
         }
         </div>
     );

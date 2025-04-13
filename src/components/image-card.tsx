@@ -14,7 +14,7 @@ interface ImageCardProps {
   handleKeepOnClick: (event: React.MouseEvent | React.TouchEvent, image: any) => void;
   handleMarkForDeletionOnClick: (event: React.MouseEvent | React.TouchEvent, image: any, index: number, icon: HTMLElement | null) => void;
   handleDeleteOnClick: (event: React.MouseEvent | React.TouchEvent, image: any, index: number, icon: HTMLElement | null) => boolean;
-  currentSelectedImageIndex: number | null;
+  getCurrentSelectedImage: () => any;
   isDragging: boolean;
   selectedImageIds: number[];
   // setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
@@ -29,7 +29,7 @@ const ImageCard = memo(({
   handleKeepOnClick,
   handleMarkForDeletionOnClick,
   handleDeleteOnClick,
-  currentSelectedImageIndex,
+  getCurrentSelectedImage,
   selectedImageIds,
   isDragging,
   // setIsLoading,
@@ -53,7 +53,7 @@ const ImageCard = memo(({
             return !isDragging ? handleImageClick(image.id, index, e) : null;
           }}
           style={{
-            borderColor: currentSelectedImageIndex === index ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'rgb(150, 255, 175)' : 'rgba(255, 255, 255, 0.5)',
+            borderColor: getCurrentSelectedImage().id === image.id ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'rgb(150, 255, 175)' : 'rgba(255, 255, 255, 0.5)',
             opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
             height: '300px'
           }} 

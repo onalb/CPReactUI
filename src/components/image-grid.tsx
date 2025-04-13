@@ -44,7 +44,6 @@ const ImageGrid: React.FC = () => {
   const [isZooming, setIsZooming] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
-  const [currentSelectedImageIndex, setCurrentSelectedImageIndex] = useState<number | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
   const [isGalleriaClosed, setIsGalleriaClosed] = useState<boolean | null>(null);
   const [handleDeleteImages, setHandleDeleteImages] = useState<() => void>(() => () => {});
@@ -59,12 +58,15 @@ const ImageGrid: React.FC = () => {
   const imageBeingDeleted = useRef<{deleteErrorType: string, images: any[]}>({deleteErrorType: '', images: []});
   const squareRef = useRef<HTMLDivElement | null>(null);
 
+  // Calculations
+  const numberOfDeletedImages = images.filter((image: any) => image.isDeleted).length;
+  let numberOfKeptImages = images.filter(image => !image.isDeleted && image.isKept).length;
+
   // Variables
   const padding = 10;
   const columnGap = 2;
   const defaultRowHeight = 300;
   const imageHeight = 300;
-  let numberOfKeptImages = images.filter(image => image.isKept).length;
   let clickTimeout: NodeJS.Timeout | null = null;
 
   const dbPromise = openDB('image-store', 1, {
@@ -79,6 +81,17 @@ const ImageGrid: React.FC = () => {
       return response.data;
     },
     {
+      onMutate: async (imageToDelete: any) => {
+        setImages((prevImages: any[]) => {
+          return prevImages.map((img: any) => {
+            if (imageToDelete.fileName === img.fileName) {
+              return { ...img, isDeleted: true };
+            } else {
+              return img;
+            }
+          });
+        });
+      },
       onError: async (error: any) => {
         imageBeingDeleted.current["deleteErrorType"] = error.response.data.type;
         console.error('Error deleting photo: ', error);
@@ -169,6 +182,25 @@ const ImageGrid: React.FC = () => {
       }
     }
   });
+
+  const setCurrentSelectedImage = (imageId: number | null) => {
+    setImages((prevImages: any[]) => {
+      return prevImages.map((img: any) => {
+        if (img.id === imageId) {
+          img["isCurrentSelectedImage"] = true;
+        } else {
+          img["isCurrentSelectedImage"] = false;
+        }
+        return img;
+      });
+    });
+  };
+
+  const getCurrentSelectedImage = () => {
+    const currentSelectedImage = images.find((image: any) => image.isCurrentSelectedImage) || null;
+    const index = currentSelectedImage ? images.findIndex((image: any) => image.id === currentSelectedImage.id) : -1;
+    return { ...currentSelectedImage, index }
+  }
 
   const getVisibleImages = () => {
     const mainElement = document.getElementById('main-element');
@@ -288,6 +320,35 @@ const ImageGrid: React.FC = () => {
     }
   };
 
+  const fetchXXLImage = async (currentSelectedImageIndex: number | null) => {
+    // DO NOT DELETE COMMENT: This function is to cache the XXL images in the IndexedDB once the image is clicked
+    if (images.length - numberOfDeletedImages > 0) {
+      for (let i = currentSelectedImageIndex || 0; i < (currentSelectedImageIndex || 0) + 5; i++) {
+        console.log('currentSelectedImageIndex:', currentSelectedImageIndex, 'i:', i, 'images.length:', images.length, 'numberOfDeletedImages:', numberOfDeletedImages);
+        const image = images[i || 0];
+
+        if (i >= images.length - numberOfDeletedImages) return;
+        if (image['pathXXL'].includes('blob')) return;
+
+        let XXLCached: string | null = null;
+        while (XXLCached === null) {
+          if (image['pathXXL']) {
+            XXLCached = await loadImageFromIndexedDB(image['pathXXL']) || image['pathXXL'];
+          }
+          
+          if (XXLCached === image['pathXXL']) {
+            await saveImageToIndexedDB(image['pathXXL'], image['pathXXL']);
+            XXLCached = await loadImageFromIndexedDB(image['pathXXL']);
+          } else {
+            image['pathXXL'] = XXLCached;
+          }
+        }
+
+        image['pathXXL'] = XXLCached;
+      }
+    };
+  }
+
   useEffect(() => {
     if (isDeleting) {
       getVisibleImages();
@@ -367,35 +428,10 @@ const ImageGrid: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchXXLImage = async () => {
-      if (images.length > 0) {
-        for (let i = currentSelectedImageIndex || 0; i < (currentSelectedImageIndex || 0) + 5; i++) {
-          const image = images[i || 0];
-
-          if (i >= images.length) return;
-          if (image['pathXXL'].includes('blob')) return;
-
-          let XXLCached: string | null = null;
-          while (XXLCached === null) {
-            if (image['pathXXL']) {
-              XXLCached = await loadImageFromIndexedDB(image['pathXXL']) || image['pathXXL'];
-            }
-            
-            if (XXLCached === image['pathXXL']) {
-              await saveImageToIndexedDB(image['pathXXL'], image['pathXXL']);
-              XXLCached = await loadImageFromIndexedDB(image['pathXXL']);
-            } else {
-              image['pathXXL'] = XXLCached;
-            }
-          }
-
-          image['pathXXL'] = XXLCached;
-        }
-      };
-    }
-    fetchXXLImage();
-  }, [currentSelectedImageIndex]);
+  // useEffect(() => {
+    
+  //   fetchXXLImage(currentSelectedImageIndex);
+  // }, [currentSelectedImageIndex]);
   
   // Functions
   function calculateFirstRowWidth (images: any[]) {
@@ -495,7 +531,7 @@ const ImageGrid: React.FC = () => {
         }
       } else {
         setSelectedImageIds([]);
-        setCurrentSelectedImageIndex(null);
+        setCurrentSelectedImage(null);
       }
     }
   };
@@ -518,9 +554,16 @@ const ImageGrid: React.FC = () => {
   const handleClickOutside = (event: any) => {
     if (!event.ctrlKey && !isDragging && !isLongTouch && ((event.pointerType && event.pointerType === 'mouse') || (event.type === 'touchend'))) {
       const target = event.target as HTMLElement;
-      if (target.tagName !== 'IMG' && target.tagName !== 'BUTTON' && target.tagName !== 'I' && !target.classList.contains('no-selection-removal-on-click')) {
+      if (target.tagName !== 'IMG' 
+        && target.tagName !== 'BUTTON' 
+        && target.tagName !== 'I' 
+        && target.tagName !== 'path' 
+        && !(target.classList.contains('no-selection-removal-on-click') 
+        || target.classList.contains('p-icon') 
+        || target.classList.contains('p-button-label') 
+        || target.classList.contains('p-button-icon'))) {
         setSelectedImageIds([]);
-        setCurrentSelectedImageIndex(null);
+        setCurrentSelectedImage(null);
       }
     };
   };
@@ -532,7 +575,7 @@ const ImageGrid: React.FC = () => {
         clearTimeout(clickTimeout);
 
         // Set the clicked image as the current selected image
-        setCurrentSelectedImageIndex(index);
+        setCurrentSelectedImage(imageId);
 
         // Add the image to the selectedImageIds
         setSelectedImageIds((prevIds) => Array.from(new Set([...prevIds, imageId])));
@@ -555,22 +598,22 @@ const ImageGrid: React.FC = () => {
         clickTimeout = setTimeout(() => {
           clickTimeout = null;
 
-          if (event.shiftKey && currentSelectedImageIndex !== null) {
-            const start = Math.min(currentSelectedImageIndex, index);
-            const end = Math.max(currentSelectedImageIndex, index);
+          if (event.shiftKey && getCurrentSelectedImage().index !== null) {
+            const start = Math.min(getCurrentSelectedImage().index, index);
+            const end = Math.max(getCurrentSelectedImage().index, index);
             const newSelectedImageIds = images.slice(start, end + 1).map((img) => img.id);
             setSelectedImageIds((prevIds) => Array.from(new Set([...prevIds, ...newSelectedImageIds])));
-            setCurrentSelectedImageIndex(index);
-          } else if (event.shiftKey && currentSelectedImageIndex === null) {
-            setCurrentSelectedImageIndex(index);
+            setCurrentSelectedImage(imageId);
+          } else if (event.shiftKey && getCurrentSelectedImage().index === null) {
+            setCurrentSelectedImage(imageId);
             setSelectedImageIds((prevIds) => [...prevIds, imageId]);
           } else {
-            if (!isLongTouch && !event.ctrlKey && currentSelectedImageIndex === index) {
-              // DO NOT DELETE COMMENT: When clciked on a current selected picture make it not currently selected
-              setCurrentSelectedImageIndex(null);
+            if (!isLongTouch && !event.ctrlKey && getCurrentSelectedImage().id === imageId) {
+              // DO NOT DELETE COMMENT: When clicked on a current selected picture make it not currently selected
+              setCurrentSelectedImage(null);
             } else if (!selectedImageIds.includes(imageId)) {
               // DO NOT DELETE COMMENT: When clicked on a NOT selected image make it currently selected
-              setCurrentSelectedImageIndex(index);
+              setCurrentSelectedImage(imageId);
             }
 
             setSelectedImageIds((prevIds) =>
@@ -619,6 +662,8 @@ const ImageGrid: React.FC = () => {
       } else {
         // DO NOT DELETE COMMENT: if delete icon is clicked twice it will come here
         // DO NOT DELETE COMMENT: Optimistically update the UI
+        createParticles(e.clientX, e.clientY, zoomScale, 'delete');
+        
         setImages((oldImages: any[]) => {
           return oldImages.map((img: any) => {
             if (img.fileName === image.fileName) {
@@ -637,26 +682,56 @@ const ImageGrid: React.FC = () => {
 
         stopTimer(image);
         image.deleteClickedOnce = false;
-        createParticles(e.clientX, e.clientY, zoomScale, 'delete');
-        setSelectedImageIds(prevIds => prevIds.filter(id => id !== image.id));
-        setCurrentSelectedImageIndex((prevIndex: number | null) => { 
-           if (prevIndex === null) {
-             return null;
-           } else if (prevIndex! > index) {
-             return prevIndex - 1;
-           } else {
-              return prevIndex + 1;
-           }
-        });
 
-        if (currentSelectedImageIndex === images.findIndex(img => img.id === image.id)) {
-          setCurrentSelectedImageIndex(null);
+        setSelectedImageIds(prevIds => prevIds.filter(id => id !== image.id));
+        // setCurrentSelectedImageIndex((prevIndex: number | null) => { 
+        //    if (prevIndex === null) {
+        //      return null;
+        //    } else if (prevIndex! > index) {
+        //      return prevIndex - 1;
+        //    } else {
+        //       return prevIndex + 1;
+        //    }
+        // });
+
+        if (getCurrentSelectedImage().id === image.id) {
+          setCurrentSelectedImage(null);
         }
+
         return true;
       }
     }
+
     return false;
   }
+
+  const handleDeleteSelectedImages = () => {
+    const imagesToDelete = images.filter(image => selectedImageIds.includes(image.id) && !image.isKept);
+
+    imagesToDelete.forEach((selectedImage: any)=> {
+      selectedImage.isDeleted = true;
+      queryClient.setQueryData('images', (oldImages: any) => {
+        return oldImages.filter((img: any) => img.name !== selectedImage.fileName);
+      })
+      
+      deletePhotoMutation.mutate(selectedImage);
+    })
+
+    setSelectedImageIds([]);
+    setCurrentSelectedImage(null);
+  };
+
+  const handleDeleteMarkedImages = () => {
+    const imagesToDelete = images.filter(image => image.markedForDeletion && !image.isKept && !image.isDeleted);
+    imagesToDelete.forEach((markedImage: any) => {
+      queryClient.setQueryData('images', (oldImages: any) => {
+        return oldImages.filter((img: any) => img.name !== markedImage.fileName);
+      })
+
+      markedImage.isDeleted = true;
+      deletePhotoMutation.mutate(markedImage);
+    })
+  };
 
   const handleMarkForDeletionOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
     if (isZooming || !deleteIcon) return false;
@@ -718,15 +793,15 @@ const ImageGrid: React.FC = () => {
           }
 
           if (isIntersecting) {
-            if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImageIndex === index) {
-              setCurrentSelectedImageIndex(null);
+            if (isAClick && selectedImageIds.includes(image.id) && getCurrentSelectedImage().index === index) {
+              setCurrentSelectedImage(null);
               deselectedImages.push(image.id);
               return false;
-            } else if (isAClick && selectedImageIds.includes(image.id) && currentSelectedImageIndex !== index) {
+            } else if (isAClick && selectedImageIds.includes(image.id) && getCurrentSelectedImage().index !== index) {
               deselectedImages.push(image.id);
               return false;
             } else {
-              isMouseOnImage && setCurrentSelectedImageIndex(index);
+              isMouseOnImage && setCurrentSelectedImage(index);
             }
 
             return true;
@@ -754,29 +829,6 @@ const ImageGrid: React.FC = () => {
     e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .9)';
     const headerHandle: HTMLElement = document.querySelector('.header-handle') as HTMLElement;
     if (headerHandle) (headerHandle).style.backgroundColor = 'rgba(32, 32, 32, .9)';
-  };
-
-  const handleDeleteSelectedImages = () => {
-    const imagesToDelete = images.filter(image => selectedImageIds.includes(image.id) || image.isKept);
-
-    imagesToDelete.forEach((selectedImage: any)=> {
-      selectedImage.isDeleted = true;
-      deletePhotoMutation.mutate(selectedImage);
-    })
-
-    setSelectedImageIds([]);
-    setCurrentSelectedImageIndex(() => {
-      return null;
-    });
-  };
-
-  const handleDeleteMarkedImages = () => {
-    const imagesToDelete = images.filter(image => image.markedForDeletion);
-
-    imagesToDelete.forEach((selectedImage: any)=> {
-      selectedImage.isDeleted = true;
-      deletePhotoMutation.mutate(selectedImage);
-    })
   };
 
   const handleOnloadImg = () => {
@@ -1021,7 +1073,7 @@ const ImageGrid: React.FC = () => {
       onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
       onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
     >
-      {images.map((image, index) => !image["isDeleted"] && (
+      {images.filter((i: any) => !i.isDeleted).map((image, index) => (
         <ImageCard 
           image={image}
           index={index}
@@ -1029,7 +1081,7 @@ const ImageGrid: React.FC = () => {
           handleKeepOnClick={handleKeepOnClick}
           handleMarkForDeletionOnClick={handleMarkForDeletionOnClick}
           handleDeleteOnClick={handleDeleteOnClick}
-          currentSelectedImageIndex={currentSelectedImageIndex}
+          getCurrentSelectedImage={getCurrentSelectedImage}
           isDragging={isDragging}
           selectedImageIds={selectedImageIds}
           // setIsLoading={setIsLoading}
@@ -1043,8 +1095,8 @@ const ImageGrid: React.FC = () => {
       <PhotoGalleria 
         images={images} 
         setIsGalleriaClosed={setIsGalleriaClosed} 
-        setCurrentSelectedImageIndex={setCurrentSelectedImageIndex} 
-        currentSelectedImageIndex={currentSelectedImageIndex}
+        setCurrentSelectedImage={setCurrentSelectedImage} 
+        getCurrentSelectedImage={getCurrentSelectedImage}
         handleDeleteOnClick={handleDeleteOnClick}
         handleKeepOnClick={handleKeepOnClick}
         isKeepButtonDisabled={isKeepButtonDisabled}
