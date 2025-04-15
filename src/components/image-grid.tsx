@@ -93,6 +93,7 @@ const ImageGrid: React.FC = () => {
         });
       },
       onError: async (error: any) => {
+        imageBeingDeleted.current.images.push(images.find((img: any) => img.fullImageDirectory === error.response.data.imagePath));
         imageBeingDeleted.current["deleteErrorType"] = error.response.data.type;
         console.error('Error deleting photo: ', error);
 
@@ -157,11 +158,22 @@ const ImageGrid: React.FC = () => {
         // DO NOT DELETE COMMENT: That's why we need to find it seperately and concatenate
         // DO NOT DELETE COMMENT: this is being called after invalidate query for 'images'
         const imagesNotFound = images.filter((image: any) => !data.some((datum: any) => datum.name === image.fileName))
-        const currentImagesBeingDeleted = { fileName: imageBeingDeleted.current.images[0].name };
-        const allImagesNotFound = [...imagesNotFound, currentImagesBeingDeleted];
-        console.log('Difference between data and queryImages:', allImagesNotFound);
+        // const currentImagesBeingDeleted = { fileName: imageBeingDeleted.current.images[0].fileName };
+        // const allImagesNotFound = [...imagesNotFound, currentImagesBeingDeleted];
+        console.log('Difference between data and queryImages:', imagesNotFound);
 
-        if (allImagesNotFound.length > 0) {
+        // DO NOT DELETE COMMENT: This is to remove/delete the not found images from UI optimistically
+        setImages((prevImages: any[]) => {
+          return prevImages.map((img: any) => {
+            if (imagesNotFound.some((image: any) => image.fileName === img.fileName)) {
+              return { ...img, isDeleted: true };
+            } else {
+              return img;
+            }
+          });
+        })
+
+        if (imagesNotFound.length > 0) {
           setPopupOptions({
             isVisible: true,
             isYesNo: false,
@@ -170,7 +182,7 @@ const ImageGrid: React.FC = () => {
               <div>
                 The below pictures could not be found in the directory. They will be removed from the grid.
                   <ul style={{ listStyleType: 'disc', color: 'inherit', marginTop: '10px' }}>
-                  {allImagesNotFound.map((image: any, index: number) => (
+                  {imagesNotFound.map((image: any, index: number) => (
                     <li key={index}>{image.fileName}</li>
                   ))}
                   </ul>
@@ -194,6 +206,8 @@ const ImageGrid: React.FC = () => {
         return img;
       });
     });
+
+    fetchXXLImage(getCurrentSelectedImage().index);
   };
 
   const getCurrentSelectedImage = () => {
@@ -288,10 +302,8 @@ const ImageGrid: React.FC = () => {
         image['deleteClickedOnce'] = false;
         image['markedForDeletion'] = false;
         image['isDeleted'] = false;
-        // image['isDeleted'] = images.filter(i => i.fileName === photo.name).length > 0 ? images.filter(i => i.fileName === photo.name)[0].isDeleted : false;
         image['imageDirectory'] = photo.directory;
         image['fullImageDirectory'] = photo.directory + '\\' + photo.name;
-        // image['isDeleted'] = i === 0 || i === 1 ? true : false;
 
         image['pathXS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
         image['pathS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
@@ -322,12 +334,11 @@ const ImageGrid: React.FC = () => {
 
   const fetchXXLImage = async (currentSelectedImageIndex: number | null) => {
     // DO NOT DELETE COMMENT: This function is to cache the XXL images in the IndexedDB once the image is clicked
-    if (images.length - numberOfDeletedImages > 0) {
+    if (images.filter((i: any) => !i.isDeleted).length > 0) {
       for (let i = currentSelectedImageIndex || 0; i < (currentSelectedImageIndex || 0) + 5; i++) {
-        console.log('currentSelectedImageIndex:', currentSelectedImageIndex, 'i:', i, 'images.length:', images.length, 'numberOfDeletedImages:', numberOfDeletedImages);
-        const image = images[i || 0];
+        const image = images[i >= 0 ? i : 0];
 
-        if (i >= images.length - numberOfDeletedImages) return;
+        if (i >= images.filter((i: any) => !i.isDeleted).length) return;
         if (image['pathXXL'].includes('blob')) return;
 
         let XXLCached: string | null = null;
@@ -416,7 +427,6 @@ const ImageGrid: React.FC = () => {
     
     return () => {
       removeTrackedEventListeners(window, 'click');
-      // removeTrackedEventListeners(window,'touchend');
     };
   }, [isDragging, isLongTouch]);
 
@@ -428,10 +438,6 @@ const ImageGrid: React.FC = () => {
     };
   }, []);
 
-  // useEffect(() => {
-    
-  //   fetchXXLImage(currentSelectedImageIndex);
-  // }, [currentSelectedImageIndex]);
   
   // Functions
   function calculateFirstRowWidth (images: any[]) {

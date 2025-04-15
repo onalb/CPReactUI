@@ -276,7 +276,7 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
 
   const handleSelectedImageOnMouseDown = (e: any) => {
     e.preventDefault();
-    const img = e.currentTarget as HTMLImageElement;
+    const img = e.currentTarget.querySelector('img') as HTMLImageElement;
     img.style.cursor = 'grabbing';
     const startX = e.pageX;
     const startY = e.pageY;
