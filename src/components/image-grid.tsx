@@ -55,6 +55,7 @@ const ImageGrid: React.FC = () => {
   const [imagesElements, setImagesElements] = useState([] as any[]);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isKeepButtonDisabled, setIsKeepButtonDisabled] = useState<boolean>(false);
+  const [isNotificationReceived, setIsNotificationReceived] = useState<boolean>(false);
   const imageBeingDeleted = useRef<{deleteErrorType: string, images: any[]}>({deleteErrorType: '', images: []});
   const squareRef = useRef<HTMLDivElement | null>(null);
 
@@ -75,6 +76,7 @@ const ImageGrid: React.FC = () => {
     },
   });
 
+  // React-Queries
   const deletePhotoMutation = useMutation(
     async (image: any) => {
       const response = await deletePhotoListFromFolder(image["fullImageDirectory"]);
@@ -132,8 +134,9 @@ const ImageGrid: React.FC = () => {
     refetchOnWindowFocus: false,
     onSuccess: async (data) => {
       if (data.length > 0) setFirstRowWidth(calculateFirstRowWidth(data));
-
-      if (images.length === 0) {
+      // DO NOT DELETE: Only if this is the first time loading the page or if a notification is received prep the images again. 
+      if (images.length === 0 || isNotificationReceived) {
+        setIsNotificationReceived(false);
         const prepedImages: any[] = await prepImagesData(data);
         
         if (isOpenOnlyKept === 'true') {
@@ -261,9 +264,11 @@ const ImageGrid: React.FC = () => {
     try {
       const db = await dbPromise;
       const blob = await db.get('images', key);
+
       if (blob) {
-      return URL.createObjectURL(blob);
+        return URL.createObjectURL(blob);
       }
+
       return null;
     } catch (error) {
       console.error('Error loading image from IndexedDB:', error);
@@ -359,6 +364,105 @@ const ImageGrid: React.FC = () => {
       }
     };
   }
+  
+  // Functions
+  function calculateFirstRowWidth (images: any[]) {
+    let result = padding; 
+    const ratio = defaultRowHeight / images[0]!.height;
+
+    for (let i = 0; i < numberOfColumns; i++) {
+      if (images[i]) {
+        result += images[i]!.width * ratio + columnGap;
+      }
+    }
+
+    result -= columnGap;
+    return result;
+  }
+
+  function varyImageQualityWithZoom () {
+    setImages((prevImages) => {
+      // This means zooming out
+      if (zoomScale < prevZoomScale && Math.ceil(zoomScale) < zoomStop) {
+        setZoomStop(Math.ceil(zoomScale));
+        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
+      };
+
+      setPrevZoomScale(zoomScale);
+
+      if (Math.ceil(zoomScale) > zoomStop) {
+        setZoomStop(Math.ceil(zoomScale));
+        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
+      }
+
+      if (isDragging) {
+        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
+      }
+      if (isDeleting) {
+        setIsDeleting(false);
+        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
+      }
+
+      return [...prevImages];
+    });
+  }
+
+  const updateImagesWithNewHeight = (images: any, zoomScale: number, imagesToUpdate: any[]) => {
+    const result = images.map((image: any) => {
+      if (imagesToUpdate.some(imageToUpdate => imageToUpdate.id === image.id)) {
+        return {
+            ...image,
+            path: `${zoomScale < 2 ? image.pathM : zoomScale < 3 ? image.pathL : zoomScale < 4 ? image.pathXL : image.pathXXL}`
+        };
+      } else {
+        return {
+          ...image,
+          path: image.pathM
+      };
+      }
+    });
+
+    return result;
+  }
+
+  const openGalleria = (event: any) => {
+    event.preventDefault();
+    setIsGalleriaClosed(false);
+  }
+
+  const squareSelection = (event: any) => {
+    const square = document.createElement('div');
+    square.id = 'mouse-square';
+    square.style.left = `${event.clientX}px`;
+    square.style.top = `${event.clientY}px`;
+    square.onmousemove = (e) => handleMouseMove(e, { x: event.clientX, y: event.clientY });
+    squareRef.current = square;
+    document.body.appendChild(square);
+  }
+
+  // Effects
+  useEffect(() => {
+    const socket = new WebSocket('ws://localhost:8080');
+  
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'add' || data.type === 'remove') {
+        setPopupOptions({
+          isVisible: true,
+          isYesNo: false,
+          title: data.type === 'add' ? 'Image(s) added' : 'Image(s) Removed',
+          message: data.type === 'add' ? 'New image(s) added into your folder!' : 'Image(s) removed from your folder!',
+        });
+
+        setIsNotificationReceived(true);
+        queryClient.invalidateQueries(['images']);
+      }
+    };
+  
+    return () => {
+      socket.close();
+    };
+  }, []);
 
   useEffect(() => {
     if (isDeleting) {
@@ -437,82 +541,6 @@ const ImageGrid: React.FC = () => {
       window.removeEventListener('wheel', handleWheel);
     };
   }, []);
-
-  
-  // Functions
-  function calculateFirstRowWidth (images: any[]) {
-    let result = padding; 
-    const ratio = defaultRowHeight / images[0]!.height;
-
-    for (let i = 0; i < numberOfColumns; i++) {
-      if (images[i]) {
-        result += images[i]!.width * ratio + columnGap;
-      }
-    }
-
-    result -= columnGap;
-    return result;
-  }
-
-  function varyImageQualityWithZoom () {
-    setImages((prevImages) => {
-      // This means zooming out
-      if (zoomScale < prevZoomScale && Math.ceil(zoomScale) < zoomStop) {
-        setZoomStop(Math.ceil(zoomScale));
-        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
-      };
-
-      setPrevZoomScale(zoomScale);
-
-      if (Math.ceil(zoomScale) > zoomStop) {
-        setZoomStop(Math.ceil(zoomScale));
-        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
-      }
-
-      if (isDragging) {
-        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
-      }
-      if (isDeleting) {
-        setIsDeleting(false);
-        return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
-      }
-
-      return [...prevImages];
-    });
-  }
-
-  const updateImagesWithNewHeight = (images: any, zoomScale: number, imagesToUpdate: any[]) => {
-    const result = images.map((image: any) => {
-      if (imagesToUpdate.some(imageToUpdate => imageToUpdate.id === image.id)) {
-        return {
-            ...image,
-            path: `${zoomScale < 2 ? image.pathM : zoomScale < 3 ? image.pathL : zoomScale < 4 ? image.pathXL : image.pathXXL}`
-        };
-      } else {
-        return {
-          ...image,
-          path: image.pathM
-      };
-      }
-    });
-
-    return result;
-  }
-
-  const openGalleria = (event: any) => {
-    event.preventDefault();
-    setIsGalleriaClosed(false);
-  }
-
-  const squareSelection = (event: any) => {
-    const square = document.createElement('div');
-    square.id = 'mouse-square';
-    square.style.left = `${event.clientX}px`;
-    square.style.top = `${event.clientY}px`;
-    square.onmousemove = (e) => handleMouseMove(e, { x: event.clientX, y: event.clientY });
-    squareRef.current = square;
-    document.body.appendChild(square);
-  }
 
   // User-Event handlers
   const handleKeyDown = (event: any) => {
@@ -690,15 +718,6 @@ const ImageGrid: React.FC = () => {
         image.deleteClickedOnce = false;
 
         setSelectedImageIds(prevIds => prevIds.filter(id => id !== image.id));
-        // setCurrentSelectedImageIndex((prevIndex: number | null) => { 
-        //    if (prevIndex === null) {
-        //      return null;
-        //    } else if (prevIndex! > index) {
-        //      return prevIndex - 1;
-        //    } else {
-        //       return prevIndex + 1;
-        //    }
-        // });
 
         if (getCurrentSelectedImage().id === image.id) {
           setCurrentSelectedImage(null);
@@ -1080,20 +1099,19 @@ const ImageGrid: React.FC = () => {
       onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
     >
       {images.filter((i: any) => !i.isDeleted).map((image, index) => (
-        <ImageCard 
-          image={image}
-          index={index}
-          handleImageClick={handleImageClick}
-          handleKeepOnClick={handleKeepOnClick}
-          handleMarkForDeletionOnClick={handleMarkForDeletionOnClick}
-          handleDeleteOnClick={handleDeleteOnClick}
-          getCurrentSelectedImage={getCurrentSelectedImage}
-          isDragging={isDragging}
-          selectedImageIds={selectedImageIds}
-          // setIsLoading={setIsLoading}
-          handleOnloadImg={handleOnloadImg}
-          setIsDeleting={setIsDeleting}
-        />
+          <ImageCard 
+            image={image}
+            index={index}
+            handleImageClick={handleImageClick}
+            handleKeepOnClick={handleKeepOnClick}
+            handleMarkForDeletionOnClick={handleMarkForDeletionOnClick}
+            handleDeleteOnClick={handleDeleteOnClick}
+            getCurrentSelectedImage={getCurrentSelectedImage}
+            isDragging={isDragging}
+            selectedImageIds={selectedImageIds}
+            handleOnloadImg={handleOnloadImg}
+            setIsDeleting={setIsDeleting}
+          />
       ))}
     </div>
 
