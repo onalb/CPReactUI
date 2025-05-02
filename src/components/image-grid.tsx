@@ -14,7 +14,7 @@ import { openDB } from 'idb';
 import ImageCard from './image-card';
 import { useMutation, useQueryClient } from 'react-query';
 import { useQuery } from 'react-query';
-import { getPhotoListFromFolder, deletePhotoListFromFolder } from '../services/PhotoService';
+import { getPhotoListFromFolder, deletePhotoListFromFolder, toggleKeepPhoto } from '../services/PhotoService';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
@@ -77,6 +77,35 @@ const ImageGrid: React.FC = () => {
   });
 
   // React-Queries
+  const toggleKeepPhotoMutation = useMutation(
+    async (image: any) => {
+      const response = await toggleKeepPhoto(encodeURIComponent(image["imageDirectory"]), encodeURIComponent(image["fileName"]));
+      return response.data;
+    },
+    {
+      onMutate: async (imageToKeep: any) => {
+        setImages((prevImages: any[]) => {
+          return prevImages.map((img: any) => {
+            if (imageToKeep.fileName === img.fileName) {
+              return { ...img, isKept: !img.isKept };
+            } else {
+              return img;
+            }
+          });
+        });
+      },
+      onError: async (error: any) => {
+        console.error('Error toggling keep status: ', error);
+        setPopupOptions({
+          isVisible: true,
+          isYesNo: false,
+          title: 'WARNING',
+          message: 'There was an error toggling the keep status of the photo.',
+        });
+      }
+    }
+  )
+
   const deletePhotoMutation = useMutation(
     async (image: any) => {
       const response = await deletePhotoListFromFolder(image["fullImageDirectory"]);
@@ -293,29 +322,29 @@ const ImageGrid: React.FC = () => {
     let prepedImages: any[] = [];
     try {
       setTotalNumberOfImages(data.length);
-      
       for (let i = 0; i < data.length; i++) {
         const photo = data[i];
+        const image: any = {};
+
         setCachedImageCount(prevCount => prevCount + 1);
 
-        const image: any = {};
         image['id'] = i;
         image['fileName'] = photo.name;
         image['height'] = photo.dimensions.height;
         image['width'] = photo.dimensions.width;
-        image['isKept'] = false;
+        image['isKept'] = photo.isKept || false;
         image['deleteClickedOnce'] = false;
         image['markedForDeletion'] = false;
         image['isDeleted'] = false;
         image['imageDirectory'] = photo.directory;
         image['fullImageDirectory'] = photo.directory + '\\' + photo.name;
 
-        image['pathXS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
-        image['pathS'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
-        image['pathM'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
-        image['pathL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
-        image['pathXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${imageHeight * 3}`;
-        image['pathXXL'] = `http://localhost:3080/api/photos?folder=${folder}&image=${photo.name}&height=${photo.dimensions.height}`;
+        image['pathXS'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
+        image['pathS'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
+        image['pathM'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
+        image['pathL'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
+        image['pathXL'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight * 3}`;
+        image['pathXXL'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${photo.dimensions.height}`;
 
         const MCached = await loadImageFromIndexedDB(image['pathM']) || image['pathM'];
         if (MCached === image['pathM']) {
@@ -668,18 +697,14 @@ const ImageGrid: React.FC = () => {
     setTimeout(() => {
       setIsKeepButtonDisabled(false);
     }, 400);
-  
-    setImages((prevImages) => {
-      const updatedImage = { ...image, isKept: !image.isKept };
-      const updatedImages = prevImages.map(img => img.id === updatedImage.id ? updatedImage : img);
-  
-      if (!image.isKept) {
-        createParticles(e.clientX, e.clientY, zoomScale, 'keep');
-      }
-  
-      return updatedImages;
-    });
-  
+
+      
+    if (!image.isKept) {
+      createParticles(e.clientX, e.clientY, zoomScale, 'keep');
+    }
+
+    toggleKeepPhotoMutation.mutate(image);
+
     return true;
   };
 

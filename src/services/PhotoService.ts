@@ -1,6 +1,5 @@
 import axios from "axios";
 
-
 export const getPhotoListFromFolder = async (folder: string) => {
     const response = await axios.get(`http://localhost:3080/api/photoList?folder=${folder}`);
     return response.data;
@@ -15,5 +14,10 @@ export const getPhotoFromFolder = async(folder: string, photoName: string): Prom
 
 export const deletePhotoListFromFolder = async (imagePath: string) => {
     const response = await axios.post('http://localhost:3080/api/deleteImage', { imagePath : imagePath });
+    return response.data;
+};
+
+export const toggleKeepPhoto = async (imagePath: string, imageName: string) => {
+    const response = await axios.post('http://localhost:3080/api/toggleKeepImage', { imagePath : imagePath, imageName: imageName });
     return response.data;
 };
