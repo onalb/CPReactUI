@@ -162,17 +162,19 @@ const ImageGrid: React.FC = () => {
     initialData: [],
     refetchOnWindowFocus: false,
     onSuccess: async (data) => {
-      if (data.length > 0) setFirstRowWidth(calculateFirstRowWidth(data));
+      if (data.length > 0) {
+        if (isOpenOnlyKept === 'true') {
+          data = data.filter(image => image.isKept);
+        } 
+
+        setFirstRowWidth(calculateFirstRowWidth(data));
+      }
       // DO NOT DELETE: Only if this is the first time loading the page or if a notification is received prep the images again. 
       if (images.length === 0 || isNotificationReceived) {
         setIsNotificationReceived(false);
         const prepedImages: any[] = await prepImagesData(data);
-        
-        if (isOpenOnlyKept === 'true') {
-          setImages(prepedImages.filter(image => image.isKept));
-        } else {
-          setImages(prepedImages);
-        }
+
+        setImages(prepedImages);
       } else if (imageBeingDeleted.current.images.length > 0) {
         setImages((prevImages: any[]) => {
           return prevImages.map((img: any) => {
