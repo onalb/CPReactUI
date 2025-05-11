@@ -12,8 +12,8 @@ export const getPhotoFromFolder = async(folder: string, photoName: string): Prom
     return data;
 }
 
-export const deletePhotoListFromFolder = async (imagePath: string) => {
-    const response = await axios.post('http://localhost:3080/api/deleteImage', { imagePath : imagePath });
+export const deletePhotoListFromFolder = async (fullImageDirectory: string, fileName: string, imageDirectory: string) => {
+    const response = await axios.post('http://localhost:3080/api/deleteImage', { fullImageDirectory : fullImageDirectory, fileName: fileName, imageDirectory: imageDirectory });
     return response.data;
 };
 

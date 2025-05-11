@@ -60,7 +60,6 @@ const ImageGrid: React.FC = () => {
   const squareRef = useRef<HTMLDivElement | null>(null);
 
   // Calculations
-  const numberOfDeletedImages = images.filter((image: any) => image.isDeleted).length;
   let numberOfKeptImages = images.filter(image => !image.isDeleted && image.isKept).length;
 
   // Variables
@@ -108,7 +107,7 @@ const ImageGrid: React.FC = () => {
 
   const deletePhotoMutation = useMutation(
     async (image: any) => {
-      const response = await deletePhotoListFromFolder(image["fullImageDirectory"]);
+      const response = await deletePhotoListFromFolder(image["fullImageDirectory"], image["fileName"], image["imageDirectory"]);
       return response.data;
     },
     {
