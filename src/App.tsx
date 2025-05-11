@@ -12,11 +12,11 @@ const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <Router>
         <div style={styles.container}>
-          <Routes>
+            <Routes>
             <Route path="/" element={<ImageGrid />} />
-            <Route path="/:isOpenOnlyKept" element={<ImageGrid />} />
-            <Route path="/full-size-image/:imagePath/:imageName" element={<FullSizeImage />} />
-          </Routes>
+            <Route path="/:isOpenOnlyKept/:imagePath?/:imageName?" element={<ImageGrid />} />
+            <Route path="/full-size-image/:imagePath?/:imageName?" element={<FullSizeImage />} />
+            </Routes>
         </div>
       </Router>
     </QueryClientProvider>

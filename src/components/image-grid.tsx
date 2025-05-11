@@ -26,8 +26,8 @@ const ImageGrid: React.FC = () => {
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
-  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 In Flames');
-  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
+  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 In Flames');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 Prague');
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\24\\don's olds mobile");
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\23");
@@ -62,6 +62,7 @@ const ImageGrid: React.FC = () => {
   const [isHeaderOpened, setIsHeaderOpened] = useState<boolean>(false);
   const imageBeingDeleted = useRef<{deleteErrorType: string, images: any[]}>({deleteErrorType: '', images: []});
   const squareRef = useRef<HTMLDivElement | null>(null);
+  const isOpenedOnBrowser = typeof navigator !== 'undefined' && navigator.userAgent !== undefined && !navigator.userAgent.includes('Electron');
 
   // Calculations
   let numberOfKeptImages = images.filter(image => !image.isDeleted && image.isKept).length;
@@ -317,9 +318,9 @@ const ImageGrid: React.FC = () => {
     }
   };
 
-  const getImage = async (url: string, title: string) => {
+  const openNewTabInElectron = async (urlPath: string, imagePath: string, title: string) => {
     axios.post('http://localhost:3080/api/openNewTab', {
-      url: `http://localhost:3000/full-size-image/${url}/${title}`,
+      url: `http://localhost:3000/${urlPath}/${imagePath}/${title}`,
       title: title,
     })
     .then((response) => {
@@ -351,7 +352,7 @@ const ImageGrid: React.FC = () => {
         image['imageDirectory'] = photo.directory;
         image['fullImageDirectory'] = photo.directory + '\\' + photo.name;
 
-        image['pathXS'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight / 4}`;
+        image['pathXS'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight / 8}`;
         image['pathS'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
         image['pathM'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
         image['pathL'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
@@ -657,7 +658,6 @@ const ImageGrid: React.FC = () => {
 
         // Open the image in a new tab
         const clickedImage = images.find((img) => img.id === imageId);
-        const isOpenedOnBrowser = typeof navigator !== 'undefined' && navigator.userAgent !== undefined && !navigator.userAgent.includes('Electron');
         const imagePath = encodeURIComponent(clickedImage.pathXXL);
         const imageName = encodeURIComponent(clickedImage.fileName);
 
@@ -666,7 +666,7 @@ const ImageGrid: React.FC = () => {
             window.open(`/full-size-image/${imagePath}/${imageName}`, '_blank');
           }
         } else {
-          getImage(imagePath, imageName);
+          openNewTabInElectron('full-size-image', imagePath, imageName);
         }
       } else {
         // Single click detected, start a timeout to wait for a potential double-click
@@ -927,7 +927,12 @@ const ImageGrid: React.FC = () => {
   }
 
   const openKeptOnNewTab = () => {
-    window.open('http://localhost:3000/true', '_blank'); // fix
+    if (isOpenedOnBrowser) {
+      window.open('http://localhost:3000/true', '_blank'); // fix
+    } else {
+      const folderName = folder.split('\\').pop();
+      openNewTabInElectron('true', 'null', `Kept Images: ${folderName}`);
+    }
   }
 
   const selectAllImages = () => {
@@ -945,7 +950,7 @@ const ImageGrid: React.FC = () => {
     images && images.length > 0 ? (
     <>
     <div
-      className='header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0'
+      className='header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0 no-selection-removal-on-click'
       style={{
         backgroundColor: 'rgba(32, 32, 32, .9)',
         width: '100%',
@@ -1180,7 +1185,7 @@ const ImageGrid: React.FC = () => {
     ></ModalPopup>
 
     {!isLoadingCompletedAtStart && (
-      LoadingSpinner({text: 'Loading images...'})
+      LoadingSpinner({text: 'Rendering images...'})
     )}
     </>
     ) : (<>{(isImageListFetched ?
