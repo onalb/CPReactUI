@@ -25,6 +25,7 @@ const ImageGrid: React.FC = () => {
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 In Flames');
   const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 Prague');
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\24\\don's olds mobile");
@@ -663,8 +664,15 @@ const ImageGrid: React.FC = () => {
           clickTimeout = null;
 
           if (event.shiftKey && getCurrentSelectedImage().index !== null) {
-            const start = Math.min(getCurrentSelectedImage().index, index);
-            const end = Math.max(getCurrentSelectedImage().index, index);
+            const start = Math.min(
+              getCurrentSelectedImage().index,
+              images.findIndex((img) => img.id === imageId && !img.isDeleted)
+            );
+            const end = Math.max(
+              getCurrentSelectedImage().index, 
+              images.findIndex((img) => img.id === imageId && !img.isDeleted)
+            );
+
             const newSelectedImageIds = images.slice(start, end + 1).map((img) => img.id);
             setSelectedImageIds((prevIds) => Array.from(new Set([...prevIds, ...newSelectedImageIds])));
             setCurrentSelectedImage(imageId);
