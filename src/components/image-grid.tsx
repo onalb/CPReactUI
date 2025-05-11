@@ -57,6 +57,7 @@ const ImageGrid: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isKeepButtonDisabled, setIsKeepButtonDisabled] = useState<boolean>(false);
   const [isNotificationReceived, setIsNotificationReceived] = useState<boolean>(false);
+  const [isHeaderOpened, setIsHeaderOpened] = useState<boolean>(false);
   const imageBeingDeleted = useRef<{deleteErrorType: string, images: any[]}>({deleteErrorType: '', images: []});
   const squareRef = useRef<HTMLDivElement | null>(null);
 
@@ -881,6 +882,7 @@ const ImageGrid: React.FC = () => {
     e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .8)';
     const headerHandle: HTMLElement = document.querySelector('.header-handle') as HTMLElement;
     if (headerHandle) (headerHandle).style.backgroundColor = 'rgba(32, 32, 32, .8)';
+    setIsHeaderOpened(true);
   };
 
   const handleMouseLeaveHeader = (e: any) => {
@@ -888,6 +890,7 @@ const ImageGrid: React.FC = () => {
     e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .9)';
     const headerHandle: HTMLElement = document.querySelector('.header-handle') as HTMLElement;
     if (headerHandle) (headerHandle).style.backgroundColor = 'rgba(32, 32, 32, .9)';
+    setIsHeaderOpened(false);
   };
 
   const handleOnloadImg = () => {
@@ -945,6 +948,7 @@ const ImageGrid: React.FC = () => {
       }}
       onMouseEnter={handleMouseEnterHeader}
       onMouseLeave={handleMouseLeaveHeader}
+      onTouchStart={isHeaderOpened ? handleMouseLeaveHeader : handleMouseEnterHeader}
     >
       <div
         className='header-handle'
@@ -1076,7 +1080,7 @@ const ImageGrid: React.FC = () => {
           <i
           className={`col bi bi-tv`}
           style={{        
-            display: 'block', fontSize: '45px', color: 'white',
+            display: 'block', fontSize: '45px', color: 'white', padding: '0px',
             transition: 'color 0.3s ease, background-color 0.3s ease',
             textAlign: 'center',
           }}
