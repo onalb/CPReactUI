@@ -15,6 +15,7 @@ import ImageCard from './image-card';
 import { useMutation, useQueryClient } from 'react-query';
 import { useQuery } from 'react-query';
 import { getPhotoListFromFolder, deletePhotoListFromFolder, toggleKeepPhoto } from '../services/PhotoService';
+import LoadingSpinner from './loading-spinner';
 
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
@@ -53,6 +54,7 @@ const ImageGrid: React.FC = () => {
   // const [isLoading, setIsLoading] = useState<boolean>(false);
   // const [isLoadingCompleted, setIsLoadingCompleted] = useState<boolean>(false);
   const [isLoadingCompletedAtStart, setIsLoadingCompletedAtStart] = useState<boolean>(false);
+  const [isImageListFetched, setIsImageListFetched] = useState<boolean>(false);
   const [imagesElements, setImagesElements] = useState([] as any[]);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isKeepButtonDisabled, setIsKeepButtonDisabled] = useState<boolean>(false);
@@ -159,10 +161,17 @@ const ImageGrid: React.FC = () => {
     }
   );
 
-  useQuery(['images'], () => getPhotoListFromFolder(folder), {
+  useQuery(['images'], async() => {
+    const data = await getPhotoListFromFolder(folder);
+    if (data.length > 0) setIsImageListFetched(true);
+    return data
+  }, 
+  {
     initialData: [],
     refetchOnWindowFocus: false,
     onSuccess: async (data) => {
+      setIsImageListFetched(true);
+
       if (data.length > 0) {
         if (isOpenOnlyKept === 'true') {
           data = data.filter(image => image.isKept);
@@ -1171,30 +1180,11 @@ const ImageGrid: React.FC = () => {
     ></ModalPopup>
 
     {!isLoadingCompletedAtStart && (
-      <div className='loading-spinner' style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 9999,
-        backdropFilter: 'blur(5px)'
-      }}>
-        <div style={{ textAlign: 'center', color: 'white' }}>
-          <div className="spinner-border" role="status" style={{ width: '3rem', height: '3rem' }}>
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p>Loading images...</p>
-        </div>
-      </div>
+      LoadingSpinner({text: 'Loading images...'})
     )}
     </>
-    ) : (<>{!isCachingCompleted &&
-      <div className='loading-spinner' 
+    ) : (<>{(isImageListFetched ?
+      (!isCachingCompleted && <div className='loading-spinner' 
         style={{
           position: 'fixed',
           top: 0,
@@ -1222,7 +1212,10 @@ const ImageGrid: React.FC = () => {
           <p>{`Loaded ${cachedImageCount} of ${totalNumberOfImages} images`}</p>
         </div>
       </div>
-    }</>)
+    ) : (
+      LoadingSpinner({text: 'Fetching Image List ...'})
+    )
+  )}</>)
   );
 };
 
