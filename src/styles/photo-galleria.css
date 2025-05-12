@@ -30,6 +30,7 @@
 
 .photo-galleria {
   opacity: 0;
+  touch-action: none;
 }
 
 .galleria-container {

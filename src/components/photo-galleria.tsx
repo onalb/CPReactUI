@@ -28,6 +28,8 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
   const [scale, setScale] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [currentSelectedImageIndexOnGalleria, setCurrentSelectedImageIndexOnGalleria] = useState<number>(0);
+  const [isPinching, setIsPinching] = useState(false);
+  const [initialPinchDistance, setInitialPinchDistance] = useState(0);
   const thumbnailReelRef = useRef<HTMLDivElement | null>(null);
   const deletedImageCount = imagesOnGalleria.filter((image) => image.isDeleted).length;
   let animationFrameId: number | null = null;
@@ -240,6 +242,67 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
     }, 300); // Delay border change to match the transition duration
   }
 
+  const handleSelectedImageOnTouchStart = (e: React.TouchEvent<HTMLImageElement>) => {
+  if (e.touches.length > 1) {
+    e.preventDefault(); // Prevent default pinch-to-zoom behavior
+  }
+
+  if (e.touches.length === 1) {
+    const img = e.currentTarget.querySelector('img') as HTMLImageElement;
+    img.style.cursor = 'grabbing';
+    const startX = e.touches[0].pageX;
+    const startY = e.touches[0].pageY;
+    const startLeft = img.offsetLeft;
+    const startTop = img.offsetTop;
+
+    const onTouchMove = (moveEvent: TouchEvent) => {
+      const deltaX = moveEvent.touches[0].pageX - startX;
+      const deltaY = moveEvent.touches[0].pageY - startY;
+      img.style.left = `${startLeft + deltaX}px`;
+      img.style.top = `${startTop + deltaY}px`;
+    };
+
+    const onTouchEnd = () => {
+      img.style.cursor = 'grab';
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+  }
+  if (e.touches.length === 2) {
+    // Start pinch-to-zoom
+    const distance = getDistance(e.touches[0] as Touch, e.touches[1] as Touch);
+    setInitialPinchDistance(distance);
+    setIsPinching(true);
+  }
+};
+
+const handleSelectedImageOnTouchMove = (e: React.TouchEvent<HTMLImageElement>) => {
+  e.preventDefault();
+  if (isPinching && e.touches.length === 2) {
+    const distance = getDistance(e.touches[0] as Touch, e.touches[1] as Touch);
+    const scaleRatio = distance / initialPinchDistance;
+    const newScale = Math.min(Math.max(scale * scaleRatio, 1), 3); // Clamp scale between 1 and 3
+    setScale(newScale);
+  }
+};
+
+const handleSelectedImageOnTouchEnd = (e: React.TouchEvent<HTMLImageElement>) => {
+  e.preventDefault();
+  if (isPinching) {
+    setIsPinching(false);
+  }
+};
+
+// Helper function to calculate the distance between two touch points
+const getDistance = (touch1: Touch, touch2: Touch) => {
+  const dx = touch2.clientX - touch1.clientX;
+  const dy = touch2.clientY - touch1.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+};
+
   const handleSelectedImageOnWheel = (e: React.WheelEvent<HTMLImageElement>) => {
     const img = e.currentTarget as HTMLImageElement;
     // const rect = img.getBoundingClientRect();
@@ -368,7 +431,9 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
         <i className="bi bi-x text-secondary" style={{ fontSize: '3em' }}></i>
       </button>
       <div className='row h-25 mt-8'>
-        <div className='col' onMouseDown={handleSelectedImageOnMouseDown}>
+        <div className='col' 
+          onMouseDown={handleSelectedImageOnMouseDown}
+          onTouchStart={handleSelectedImageOnTouchStart}>
           <img 
             id={`image-${getCurrentSelectedImage().id}`}
             src={selectedImage.path} 
@@ -383,6 +448,9 @@ const PhotoGalleria: React.FC<PhotoGalleriaProps> = ({
               objectFit: 'contain',
             }}
             onWheel={handleSelectedImageOnWheel}
+            onTouchStart={handleSelectedImageOnTouchStart}
+            onTouchMove={handleSelectedImageOnTouchMove}
+            onTouchEnd={handleSelectedImageOnTouchEnd}
           />
         </div>
       </div>
