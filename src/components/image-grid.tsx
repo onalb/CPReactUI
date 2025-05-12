@@ -530,7 +530,8 @@ const ImageGrid: React.FC = () => {
         handleMouseUp, 
         squareSelection,
         getVisibleImages,
-        images.length
+        images.length,
+        openImageOnNewTab
       );
 
       return () => {
@@ -554,7 +555,8 @@ const ImageGrid: React.FC = () => {
         handleMouseUp, 
         squareSelection,
         getVisibleImages,
-        images.length
+        images.length,
+        openImageOnNewTab
       );
         addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
         addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
@@ -644,30 +646,34 @@ const ImageGrid: React.FC = () => {
     };
   };
 
+  const openImageOnNewTab = (imageId: number) => {
+        // Set the clicked image as the current selected image
+    setCurrentSelectedImage(imageId);
+
+    // Add the image to the selectedImageIds
+    setSelectedImageIds((prevIds) => Array.from(new Set([...prevIds, imageId])));
+
+    // Open the image in a new tab
+    const clickedImage = images.find((img) => img.id === imageId);
+    const imagePath = encodeURIComponent(clickedImage.pathXXL);
+    const imageName = encodeURIComponent(clickedImage.fileName);
+
+    if (isOpenedOnBrowser) {
+      if (clickedImage) {
+        window.open(`/full-size-image/${imagePath}/${imageName}`, '_blank');
+      }
+    } else {
+      openNewTabInElectron('full-size-image', imagePath, imageName);
+    }
+  }
+
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging && !isZooming) {
       if (clickTimeout) {
         // Double-click detected
         clearTimeout(clickTimeout);
 
-        // Set the clicked image as the current selected image
-        setCurrentSelectedImage(imageId);
-
-        // Add the image to the selectedImageIds
-        setSelectedImageIds((prevIds) => Array.from(new Set([...prevIds, imageId])));
-
-        // Open the image in a new tab
-        const clickedImage = images.find((img) => img.id === imageId);
-        const imagePath = encodeURIComponent(clickedImage.pathXXL);
-        const imageName = encodeURIComponent(clickedImage.fileName);
-
-        if (isOpenedOnBrowser) {
-          if (clickedImage) {
-            window.open(`/full-size-image/${imagePath}/${imageName}`, '_blank');
-          }
-        } else {
-          openNewTabInElectron('full-size-image', imagePath, imageName);
-        }
+        openImageOnNewTab(imageId);
       } else {
         // Single click detected, start a timeout to wait for a potential double-click
         clickTimeout = setTimeout(() => {
@@ -931,7 +937,7 @@ const ImageGrid: React.FC = () => {
       window.open('http://localhost:3000/true', '_blank'); // fix
     } else {
       const folderName = folder.split('\\').pop();
-      openNewTabInElectron('true', 'null', `Kept Images: ${folderName}`);
+      openNewTabInElectron('true', 'null', `Kept in: ${folderName}`);
     }
   }
 

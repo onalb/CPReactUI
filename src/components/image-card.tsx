@@ -41,6 +41,7 @@ const ImageCard = memo(({
       <div style={{ height: '300px', minWidth: '200px' }}>
         <img
           id={`image-${image.id}`}
+          data-name={image.fileName}
           src={image.path}
           alt={`Image ${index}`}
           className="img no-drag"

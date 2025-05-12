@@ -9,7 +9,8 @@ const applyMouseAndTouchEvents = (
   handleClientMouseUp: any, 
   squareSelection: any,
   getVisibleImages: any,
-  numberOfImages: number
+  numberOfImages: number,
+  openImageOnNewTab: any,
 ) => {
   let isDragging = false;
   let lastPosX = 0;
@@ -18,6 +19,7 @@ const applyMouseAndTouchEvents = (
   let isTouchDragging = false;
   let touchMoved = false;
   let clickDispatched = false;
+  let doubleClickDispatched = false;
   let longTapTimeout: number | null = null;
   let isLongTouch = false;
   let startPoint: any = null;
@@ -29,6 +31,7 @@ const applyMouseAndTouchEvents = (
     const touches = event.touches && event.touches[0] || event;
 
     longTapTimeout = window.setTimeout(() => {
+      debugger;
       isLongTouch = true;
       setIsLongTouch(true);
       isDragging = false;
@@ -146,7 +149,6 @@ const applyMouseAndTouchEvents = (
   const handleWheel = debounce((event: any) => {
     event.preventDefault();
     if (event.ctrlKey) {
-      // setIsScrolling(true);
       const dy = event.deltaY;
       const mainElement = document.getElementById('main-element');
 
@@ -168,7 +170,6 @@ const applyMouseAndTouchEvents = (
         }
       }
     } else if (event.shiftKey) {
-      // setIsScrolling(true);
       const dx = event.deltaY;
       const mainElement = document.getElementById('main-element');
 
@@ -213,20 +214,35 @@ const applyMouseAndTouchEvents = (
     event.preventDefault();
     touchMoved = false;
 
-    if (!clickDispatched) {
-      const clickEvent = new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX: event.touches[0].clientX,
-        clientY: event.touches[0].clientY,
-      });
+    // Detect double touch
+    if (event.touches.length === 1) {
+      if (doubleClickDispatched) {
+        // Double touch detected
+        const target = event.target as HTMLElement;
+        if (target && target.tagName === 'IMG') {
+          const imageId = Number(target.getAttribute('id')?.split('-').pop());
+          openImageOnNewTab(imageId);
+          console.log('Data-name property value:', imageId);
+        }
+        console.log('Double touch detected');
+        doubleClickDispatched = false;
 
-      event.target && event.target.dispatchEvent(clickEvent);
-      clickDispatched = true;
+        // Dispatch a custom double-touch event
+        const doubleTouchEvent = new CustomEvent('doubletouch', {
+          detail: {
+            clientX: event.touches[0].clientX,
+            clientY: event.touches[0].clientY,
+          },
+        });
+        event.target?.dispatchEvent(doubleTouchEvent);
+      } else {
+        // Single touch detected, start a timeout to wait for a potential double touch
+        doubleClickDispatched = true;
+        setTimeout(() => {
+          doubleClickDispatched = false;
+        }, 300); // Timeout for detecting double touch (300ms is a common threshold)
+      }
     }
-
-    applyLongTouch(event);
 
     if (event.touches.length === 2) {
       setIsZooming(true);
