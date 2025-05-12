@@ -26,8 +26,8 @@ const ImageGrid: React.FC = () => {
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
-  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 In Flames');
-  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 In Flames');
+  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 Prague');
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\24\\don's olds mobile");
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\23");
@@ -318,10 +318,16 @@ const ImageGrid: React.FC = () => {
     }
   };
 
-  const openNewTabInElectron = async (urlPath: string, imagePath: string, title: string) => {
+  const openNewTabInElectron = async (
+    urlPath: string, 
+    imagePath: string,
+    title: string,
+    originalImagePath: string, 
+  ) => {
     axios.post('http://localhost:3080/api/openNewTab', {
-      url: `http://localhost:3000/${urlPath}/${imagePath}/${title}`,
+      url: `http://localhost:3000/${urlPath}/${imagePath}/${title}/${originalImagePath}`,
       title: title,
+      originalImagePath: originalImagePath,
     })
     .then((response) => {
       console.log('Response from server:', response.data);
@@ -647,6 +653,7 @@ const ImageGrid: React.FC = () => {
   };
 
   const openImageOnNewTab = (imageId: number) => {
+    debugger
         // Set the clicked image as the current selected image
     setCurrentSelectedImage(imageId);
 
@@ -657,13 +664,14 @@ const ImageGrid: React.FC = () => {
     const clickedImage = images.find((img) => img.id === imageId);
     const imagePath = encodeURIComponent(clickedImage.pathXXL);
     const imageName = encodeURIComponent(clickedImage.fileName);
+    const originalImagePath = encodeURIComponent(clickedImage.fullImageDirectory);
 
     if (isOpenedOnBrowser) {
       if (clickedImage) {
-        window.open(`/full-size-image/${imagePath}/${imageName}`, '_blank');
+        window.open(`/full-size-image/${imagePath}/${imageName}/${originalImagePath}`, '_blank');
       }
     } else {
-      openNewTabInElectron('full-size-image', imagePath, imageName);
+      openNewTabInElectron('full-size-image', imagePath, imageName, originalImagePath);
     }
   }
 

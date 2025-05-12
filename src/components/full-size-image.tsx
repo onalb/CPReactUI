@@ -2,10 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import '../styles/photo-galleria.css'; // Import the CSS file
 import { removeTrackedEventListeners } from './tracked-event-handler';
 import { useParams } from 'react-router-dom';
+import { openFolder } from '../services/PhotoService';
 
 const FullSizeImage: React.FC<any> = () => {
   const { imagePath } = useParams<{ imagePath: string }>();
   const { imageName } = useParams<{ imageName: string }>();
+  const { originalImagePath } = useParams<{ originalImagePath: string }>();
+
   const [scale, setScale] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [isPinching, setIsPinching] = useState(false);
@@ -33,7 +36,7 @@ const FullSizeImage: React.FC<any> = () => {
 
   const handleSelectedImageOnWheel = (e: React.WheelEvent<HTMLImageElement>) => {
     const img = e.currentTarget as HTMLImageElement;
-    const scaleRatio = 0.003;
+    const scaleRatio = 0.001;
     let newScale = scale;
     if (!(scale + e.deltaY * -scaleRatio < 1 || scale + e.deltaY * -scaleRatio > 10)) {
       newScale = scale + e.deltaY * -scaleRatio;
@@ -109,7 +112,7 @@ const FullSizeImage: React.FC<any> = () => {
     e.preventDefault();
     if (isPinching && e.touches.length === 2) {
       const distance = getDistance(e.touches[0] as Touch, e.touches[1] as Touch);
-      const scaleRatio = distance / initialPinchDistance;
+      const scaleRatio = (distance / initialPinchDistance) / 10;
       const newScale = Math.min(Math.max(scale * scaleRatio, 1), 10); // Clamp scale between 1 and 10
       setScale(newScale);
     }
@@ -191,6 +194,7 @@ const FullSizeImage: React.FC<any> = () => {
               onTouchMove={handleSelectedImageOnTouchMove}
               onTouchEnd={handleSelectedImageOnTouchEnd}
               onLoad={handleOnLoadImage}
+              onDoubleClick={() => openFolder(`${originalImagePath}`)}
             />
           </div>
         </div>

@@ -15,7 +15,7 @@ const App: React.FC = () => {
             <Routes>
             <Route path="/" element={<ImageGrid />} />
             <Route path="/:isOpenOnlyKept/:imagePath?/:imageName?" element={<ImageGrid />} />
-            <Route path="/full-size-image/:imagePath?/:imageName?" element={<FullSizeImage />} />
+            <Route path="/full-size-image/:imagePath?/:imageName?/:originalImagePath?" element={<FullSizeImage />} />
             </Routes>
         </div>
       </Router>

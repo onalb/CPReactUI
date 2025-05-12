@@ -21,3 +21,9 @@ export const toggleKeepPhoto = async (imagePath: string, imageName: string) => {
     const response = await axios.post('http://localhost:3080/api/toggleKeepImage', { imagePath : imagePath, imageName: imageName });
     return response.data;
 };
+
+export const openFolder = async (filePath: string) => {
+    debugger;
+    const response = await axios.post('http://localhost:3080/api/openFolder', { filePath : filePath });
+    return response.data;
+};
