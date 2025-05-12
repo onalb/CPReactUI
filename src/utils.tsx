@@ -4,7 +4,6 @@ const findPortByServiceName = () => {
     const serviceName = 'cherrypick.api';
   return new Promise((resolve, reject) => {
     exec('netstat -ano', (error: Error, stdout: string, stderr: string) => {
-        debugger;
       if (error) {
         return reject(`Error executing netstat: ${error.message}`);
       }

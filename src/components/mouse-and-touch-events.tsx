@@ -31,7 +31,6 @@ const applyMouseAndTouchEvents = (
     const touches = event.touches && event.touches[0] || event;
 
     longTapTimeout = window.setTimeout(() => {
-      debugger;
       isLongTouch = true;
       setIsLongTouch(true);
       isDragging = false;
