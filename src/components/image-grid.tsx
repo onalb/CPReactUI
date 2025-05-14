@@ -320,12 +320,11 @@ const ImageGrid: React.FC = () => {
 
   const openNewTabInElectron = async (
     urlPath: string, 
-    imagePath: string,
     title: string,
     originalImagePath?: string, 
   ) => {
     axios.post('http://localhost:3080/api/openNewTab', {
-      url: `http://localhost:3000/${urlPath}/${imagePath}/${title}/${originalImagePath}`,
+      url: `http://localhost:3000/${urlPath}`,
       title: title,
       originalImagePath: originalImagePath,
     })
@@ -673,7 +672,8 @@ const ImageGrid: React.FC = () => {
         window.open(`/full-size-image/${imagePath}/${imageName}/${originalImagePath}`, '_blank');
       }
     } else {
-      openNewTabInElectron('full-size-image', imagePath, imageName, originalImagePath);
+      openNewTabInElectron(`full-size-image/${imagePath}/${imageName}/${originalImagePath}`, imageName, originalImagePath);
+      // openNewTabInElectron('full-size-image', imagePath, imageName, originalImagePath);
     }
   }
 
@@ -947,7 +947,7 @@ const ImageGrid: React.FC = () => {
       window.open('http://localhost:3000/true', '_blank'); // fix
     } else {
       const folderName = folder.split('\\').pop();
-      openNewTabInElectron('true', 'null', `Kept in: ${folderName}`);
+      openNewTabInElectron('true', `Kept in: ${folderName}`);
     }
   }
 
@@ -1130,25 +1130,26 @@ const ImageGrid: React.FC = () => {
           key='open-kept'
           className='col-1 d-flex justify-content-center align-items-center'
           style={{ pointerEvents: `${numberOfKeptImages > 0 ? 'auto' : 'none'}` }}
-          onClick={() => openKeptOnNewTab()}>
+          onClick={() => openKeptOnNewTab()}
+          onTouchEnd={() => openKeptOnNewTab()}>
           <i
-          className={`col bi bi-bag-check`}
-          style={{        
-            fontSize: '45px', 
-            color: `${numberOfKeptImages > 0 ? 'white' : 'gray'}`,
-            transition: 'color 0.3s ease, background-color 0.3s ease',
-            textAlign: 'center',
-          }}
-          data-bs-toggle="tooltip"
-          data-bs-placement="top"
-          title='OPEN KEPT'
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'white';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
+            className={`col bi bi-bag-check`}
+            style={{        
+              fontSize: '45px', 
+              color: `${numberOfKeptImages > 0 ? 'white' : 'gray'}`,
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center',
+            }}
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title='OPEN KEPT'
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           ></i>
         </div>
       </div>
