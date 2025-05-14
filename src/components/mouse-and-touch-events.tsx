@@ -1,16 +1,18 @@
 import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-event-handler';
 
 const applyMouseAndTouchEvents = (
-  setZoomScale: any, 
-  setIsDragging: any, 
-  setIsZooming: any, 
-  setIsLongTouch: any, 
+  elementId: string,
   squareRef: any, 
-  handleClientMouseUp: any, 
-  squareSelection: any,
-  getVisibleImages: any,
-  numberOfImages: number,
-  openImageOnNewTab: any,
+  numberOfImages: number = 1,
+  setZoomScale?: any, 
+  setIsDragging?: any, 
+  setIsZooming?: any, 
+  setIsLongTouch?: any, 
+  handleClientMouseUp?: any, 
+  getVisibleImages?: any,
+  squareSelection?: any,
+  openImageOnNewTab?: any,
+
 ) => {
   let isDragging = false;
   let lastPosX = 0;
@@ -102,7 +104,7 @@ const applyMouseAndTouchEvents = (
       const dy = event.clientY - lastPosY;
       setIsDragging(dx || dy ? true : false);
       view.pan({ x: dx, y: dy });
-      view.applyTo(document.getElementById('main-element'));
+      view.applyTo(document.getElementById(elementId));
       lastPosX = event.clientX;
       lastPosY = event.clientY;
       getVisibleImages();
@@ -149,7 +151,7 @@ const applyMouseAndTouchEvents = (
     event.preventDefault();
     if (event.ctrlKey) {
       const dy = event.deltaY;
-      const mainElement = document.getElementById('main-element');
+      const mainElement = document.getElementById(elementId);
 
       if (mainElement) {
         const rect = mainElement.getBoundingClientRect();
@@ -170,7 +172,7 @@ const applyMouseAndTouchEvents = (
       }
     } else if (event.shiftKey) {
       const dx = event.deltaY;
-      const mainElement = document.getElementById('main-element');
+      const mainElement = document.getElementById(elementId);
 
       if (mainElement) {
         const rect = mainElement.getBoundingClientRect();
@@ -189,9 +191,7 @@ const applyMouseAndTouchEvents = (
           view.applyTo(mainElement);
         }
       }
-    }
-    
-    else {
+    } else {
       const at = { x: event.clientX, y: event.clientY };
       const amount = event.deltaY < 0 ? 1 + zoomSettings.speed : 1 - zoomSettings.speed;
       const newScale = view.getScale() * amount * 2;
@@ -199,7 +199,7 @@ const applyMouseAndTouchEvents = (
         return;
       }
       view.scaleAt(at, amount, setZoomScale);
-      view.applyTo(document.getElementById('main-element'));
+      view.applyTo(document.getElementById(elementId));
     }
 
     getVisibleImages();
@@ -285,13 +285,13 @@ const applyMouseAndTouchEvents = (
         };
         
         view.scaleAt(at, amount, setZoomScale);
-        view.applyTo(document.getElementById('main-element'));
+        view.applyTo(document.getElementById(elementId));
         initialDistance = currentDistance;
 
         const dx = at.x - lastPosX;
         const dy = at.y - lastPosY;
         view.pan({ x: dx, y: dy });
-        view.applyTo(document.getElementById('main-element'));
+        view.applyTo(document.getElementById(elementId));
         lastPosX = at.x;
         lastPosY = at.y;
       } else if (event.touches.length === 1 && isTouchDragging) {
@@ -302,7 +302,7 @@ const applyMouseAndTouchEvents = (
         
         if (Math.abs(touchDeltaX) > 50 || Math.abs(touchDeltaY) > 50) {
           view.pan({ x: dx, y: dy });
-          view.applyTo(document.getElementById('main-element'));
+          view.applyTo(document.getElementById(elementId));
           lastPosX = event.touches[0].clientX;
           lastPosY = event.touches[0].clientY;
         } else {
@@ -343,7 +343,7 @@ const applyMouseAndTouchEvents = (
   };
 
   const loadImages = (event: any) => {
-    const mainElement = document.getElementById('main-element');
+    const mainElement = document.getElementById(elementId);
 
     if (mainElement) {
         view.move({ x: 0, y: 0 });
@@ -371,7 +371,7 @@ const applyMouseAndTouchEvents = (
   };
 };
 
-const view = (() => {
+export const view = (() => {
   const matrix = [1, 0, 0, 1, 0, 0];
   var m = matrix;
   var scale = 1;

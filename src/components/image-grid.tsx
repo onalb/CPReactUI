@@ -322,7 +322,7 @@ const ImageGrid: React.FC = () => {
     urlPath: string, 
     imagePath: string,
     title: string,
-    originalImagePath: string, 
+    originalImagePath?: string, 
   ) => {
     axios.post('http://localhost:3080/api/openNewTab', {
       url: `http://localhost:3000/${urlPath}/${imagePath}/${title}/${originalImagePath}`,
@@ -528,16 +528,17 @@ const ImageGrid: React.FC = () => {
       addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
 
       const cleanup = applyMouseAndTouchEvents(
+        'main-element',
+        squareRef,
+        images.length,
         setZoomScale, 
         setIsDragging,
         setIsZooming, 
         setIsLongTouch, 
-        squareRef, 
         handleMouseUp, 
-        squareSelection,
         getVisibleImages,
-        images.length,
-        openImageOnNewTab
+        squareSelection,
+        openImageOnNewTab,
       );
 
       return () => {
@@ -553,16 +554,17 @@ const ImageGrid: React.FC = () => {
       addTrackedEventListener(window, 'click', handleClickOutside);
       addTrackedEventListener(window, 'touchend', handleClickOutside);
       const cleanup = applyMouseAndTouchEvents(
+        'main-element',
+        squareRef,
+        images.length,
         setZoomScale, 
         setIsDragging,
         setIsZooming, 
-        setIsLongTouch,
-        squareRef, 
+        setIsLongTouch, 
         handleMouseUp, 
-        squareSelection,
         getVisibleImages,
-        images.length,
-        openImageOnNewTab
+        squareSelection,
+        openImageOnNewTab,
       );
         addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
         addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
@@ -663,7 +665,7 @@ const ImageGrid: React.FC = () => {
     // Open the image in a new tab
     const clickedImage = images.find((img) => img.id === imageId);
     const imagePath = encodeURIComponent(clickedImage.pathXXL);
-    const imageName = encodeURIComponent(clickedImage.fileName);
+    const imageName = clickedImage.fileName;
     const originalImagePath = encodeURIComponent(clickedImage.fullImageDirectory);
 
     if (isOpenedOnBrowser) {
