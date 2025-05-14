@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import applyMouseAndTouchEvents from './mouse-and-touch-events';
 import { removeTrackedEventListeners } from './tracked-event-handler';
 import { useParams } from 'react-router-dom';
@@ -10,7 +10,7 @@ const FullSizeImage: React.FC = () => {
     imageName: string;
     originalImagePath: string;
   }>();
-
+  
   // States
   const [origin, setOrigin] = useState('0 0');
   const [isLoadingCompletedAtStart, setIsLoadingCompletedAtStart] = useState<boolean>(true);
@@ -18,6 +18,27 @@ const FullSizeImage: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
+
+  // Double tap detection hook
+  function useDoubleTap(callback: () => void, delay = 300) {
+    const lastTap = useRef<number | null>(null);
+
+    function onTouchEnd() {
+      const now = Date.now();
+      if (lastTap.current && now - lastTap.current < delay) {
+        callback();
+        lastTap.current = null;
+      } else {
+        lastTap.current = now;
+      }
+    }
+
+    return { onTouchEnd };
+  }
+
+  const { onTouchEnd } = useDoubleTap(() => {
+    originalImagePath && openFolder(originalImagePath)
+  });
 
   useEffect(() => {
     if (isLoadingCompletedAtStart) {
@@ -70,6 +91,7 @@ const FullSizeImage: React.FC = () => {
           maxHeight: '75%',
         }}
         onDoubleClick={() => openFolder(originalImagePath)}
+        onTouchEnd={onTouchEnd}
       />
     </div>)}
     </>
