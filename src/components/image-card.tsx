@@ -6,7 +6,7 @@ interface ImageCardProps {
     path: string;
     fileName: string;
     isKept: boolean;
-    markedForDeletion: boolean;
+    isMarkedForDeletion: boolean;
     deleteClickedOnce: boolean;
   };
   index: number;
@@ -121,9 +121,9 @@ const ImageCard = memo(({
           <i
             id={`mark-for-deletion-icon-${image.id}`}
             style={{
-              transform: image.markedForDeletion ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
+              transform: image.isMarkedForDeletion ? 'scale(1.2)' : 'scale(1)', // Scale icon on click
             }}
-            className={`bi bi-cart-x pointer${image.markedForDeletion ? ' clicked-orange' : ''}`}
+            className={`bi bi-cart-x pointer${image.isMarkedForDeletion ? ' clicked-orange' : ''}`}
             data-bs-toggle="tooltip"
             data-bs-placement="top"
             title='Mark for Deletion'

@@ -14,7 +14,7 @@ import { openDB } from 'idb';
 import ImageCard from './image-card';
 import { useMutation, useQueryClient } from 'react-query';
 import { useQuery } from 'react-query';
-import { getPhotoListFromFolder, deletePhotoListFromFolder, toggleKeepPhoto } from '../services/PhotoService';
+import { getPhotoListFromFolder, deletePhotoListFromFolder, toggleKeepPhoto, toggleMarkForDeletion } from '../services/PhotoService';
 import LoadingSpinner from './loading-spinner';
 
 // Place these outside your component so they persist across renders
@@ -108,6 +108,35 @@ const ImageGrid: React.FC = () => {
           isYesNo: false,
           title: 'WARNING',
           message: 'There was an error toggling the keep status of the photo.',
+        });
+      }
+    }
+  )
+
+  const toggleMarkForDeletionMutation = useMutation(
+    async (image: any) => {
+      const response = await toggleMarkForDeletion(encodeURIComponent(image["imageDirectory"]), encodeURIComponent(image["fileName"]));
+      return response.data;
+    },
+    {
+      onMutate: async (imageToMarkForDeletion: any) => {
+        setImages((prevImages: any[]) => {
+          return prevImages.map((img: any) => {
+            if (imageToMarkForDeletion.fileName === img.fileName) {
+              return { ...img, isMarkedForDeletion: !img.isMarkedForDeletion };
+            } else {
+              return img;
+            }
+          });
+        });
+      },
+      onError: async (error: any) => {
+        console.error('Error toggling MarkForDeletion status: ', error);
+        setPopupOptions({
+          isVisible: true,
+          isYesNo: false,
+          title: 'WARNING',
+          message: 'There was an error toggling the MarkForDeletion status of the photo.',
         });
       }
     }
@@ -355,7 +384,7 @@ const ImageGrid: React.FC = () => {
         image['width'] = photo.dimensions.width;
         image['isKept'] = photo.isKept || false;
         image['deleteClickedOnce'] = false;
-        image['markedForDeletion'] = false;
+        image['isMarkedForDeletion'] = photo.isMarkedForDeletion || false;
         image['isDeleted'] = false;
         image['imageDirectory'] = photo.directory;
         image['fullImageDirectory'] = photo.directory + '\\' + photo.name;
@@ -736,7 +765,7 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleKeepOnClick = (e: any, image: any): boolean => {
-    if (isKeepButtonDisabled) return false;
+    if (isZooming || isDragging) return false;
 
     setIsKeepButtonDisabled(true);
     setTimeout(() => {
@@ -753,8 +782,26 @@ const ImageGrid: React.FC = () => {
     return true;
   };
 
+  const handleMarkForDeletionOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
+    if (isZooming || isDragging) return false;
+
+    // setIsMarkedForDeletionButtonDisabled(true);
+    // setTimeout(() => {
+    //   setIsKeepButtonDisabled(false);
+    // }, 400);
+
+      
+    if (!image.isKept) {
+      createParticles(e.clientX, e.clientY, zoomScale, 'keep');
+    }
+
+    toggleMarkForDeletionMutation.mutate(image);
+
+    return true;
+  };
+
   const handleDeleteOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
-    if (isZooming) return false;
+    if (isZooming || isDragging) return false;
     if (deleteIcon) {
       if (!image.deleteClickedOnce) {
         // DO NOT DELETE COMMENT: if delete icon was never clicked this will update the icon color
@@ -822,7 +869,7 @@ const ImageGrid: React.FC = () => {
   }
 
   const handleDeleteMarkedImages = () => {
-    const imagesToDelete = images.filter(image => image.markedForDeletion && !image.isKept && !image.isDeleted);
+    const imagesToDelete = images.filter(image => image.isMarkedForDeletion && !image.isKept && !image.isDeleted);
     imagesToDelete.forEach((markedImage: any) => {
       queryClient.setQueryData('images', (oldImages: any) => {
         return oldImages.filter((img: any) => img.name !== markedImage.fileName);
@@ -831,19 +878,6 @@ const ImageGrid: React.FC = () => {
       markedImage.isDeleted = true;
       deletePhotoMutation.mutate(markedImage);
     })
-  };
-
-  const handleMarkForDeletionOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
-    if (isZooming || !deleteIcon) return false;
-
-    image.markedForDeletion = !image.markedForDeletion;
-    setImages(images.map(img => img.id === image.id ? image : img));
-
-    if (image.markedForDeletion) {
-      createParticles(e.clientX, e.clientY, zoomScale, 'keep');
-    }
-
-    return image.markedForDeletion;
   };
 
   const handleMouseDown = (event: React.MouseEvent) => {
@@ -1066,12 +1100,12 @@ const ImageGrid: React.FC = () => {
         <div
           key='delete-marked'
           className='col-1 d-flex justify-content-center align-items-center'
-          style={{ pointerEvents: `${images.some((i: any) => i.markedForDeletion === true) ? 'auto' : 'none'}` }}
+          style={{ pointerEvents: `${images.some((i: any) => i.isMarkedForDeletion === true) ? 'auto' : 'none'}` }}
           data-toggle="modal" data-target="#exampleModalCenter">
           <i
             className={`col bi bi-cart-x`}
             style={{        
-              display: 'block', fontSize: '45px', color: `${images.some((i: any) => i.markedForDeletion === true) ? 'white' : 'gray'}`,
+              display: 'block', fontSize: '45px', color: `${images.some((i: any) => i.isMarkedForDeletion === true) ? 'white' : 'gray'}`,
               transition: 'color 0.3s ease, background-color 0.3s ease',
               textAlign: 'center',
             }}
