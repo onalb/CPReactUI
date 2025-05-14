@@ -806,6 +806,11 @@ const ImageGrid: React.FC = () => {
     setCurrentSelectedImage(null);
   };
 
+  const handleDeleteSelectedImagesOnClick = (e: any) => {
+    setHandleDeleteImages(() => handleDeleteSelectedImages);
+    setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete the SELECTED images. KEPT images will retain. Are you sure you want to proceed?' });
+  }
+
   const handleDeleteMarkedImages = () => {
     const imagesToDelete = images.filter(image => image.markedForDeletion && !image.isKept && !image.isDeleted);
     imagesToDelete.forEach((markedImage: any) => {
@@ -981,7 +986,7 @@ const ImageGrid: React.FC = () => {
       onTouchStart={isHeaderOpened ? handleMouseLeaveHeader : handleMouseEnterHeader}
     >
       <div
-        className='header-handle'
+        className='header-handle no-selection-removal-on-click'
         style={{
           width: '150px',
           height: '25px',
@@ -1079,10 +1084,6 @@ const ImageGrid: React.FC = () => {
           key='delete-selected'
           className='col-1 d-flex justify-content-center align-items-center'
           style={{ pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
-          onClick={() => {
-            setHandleDeleteImages(() => handleDeleteSelectedImages);
-            setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete the SELECTED images. KEPT images will retain. Are you sure you want to proceed?' });
-          }}
           data-toggle="modal" data-target="#exampleModalCenter">
           <i
             className={`col bi bi-trash3-fill`}
@@ -1101,37 +1102,38 @@ const ImageGrid: React.FC = () => {
               e.currentTarget.style.color = 'white';
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
+            onClick={handleDeleteSelectedImagesOnClick}
+            onTouchEnd={handleDeleteSelectedImagesOnClick}
           ></i>
         </div>
         <div
           key='open-galleria'
-          className='col-1 d-flex justify-content-center align-items-center'
-          onClick={openGalleria}>
+          className='col-1 d-flex justify-content-center align-items-center'>
           <i
-          className={`col bi bi-tv`}
-          style={{        
-            display: 'block', fontSize: '45px', color: 'white', padding: '0px',
-            transition: 'color 0.3s ease, background-color 0.3s ease',
-            textAlign: 'center',
-          }}
-          data-bs-toggle="tooltip"
-          data-bs-placement="top"
-          title='OPEN GALLERIA'
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'white';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
+            className={`col bi bi-tv`}
+            style={{        
+              display: 'block', fontSize: '45px', color: 'white', padding: '0px',
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center',
+            }}
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title='OPEN GALLERIA'
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            onClick={openGalleria}
+            onTouchEnd={openGalleria}
           ></i>
         </div>
         <div 
           key='open-kept'
           className='col-1 d-flex justify-content-center align-items-center'
-          style={{ pointerEvents: `${numberOfKeptImages > 0 ? 'auto' : 'none'}` }}
-          onClick={() => openKeptOnNewTab()}
-          onTouchEnd={() => openKeptOnNewTab()}>
+          style={{ pointerEvents: `${numberOfKeptImages > 0 ? 'auto' : 'none'}` }}>
           <i
             className={`col bi bi-bag-check`}
             style={{        
@@ -1150,6 +1152,8 @@ const ImageGrid: React.FC = () => {
               e.currentTarget.style.color = 'white';
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
+            onClick={openKeptOnNewTab}
+            onTouchEnd={openKeptOnNewTab}
           ></i>
         </div>
       </div>

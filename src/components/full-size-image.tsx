@@ -23,7 +23,10 @@ const FullSizeImage: React.FC = () => {
   function useDoubleTap(callback: () => void, delay = 300) {
     const lastTap = useRef<number | null>(null);
 
-    function onTouchEnd() {
+    function onTouchEnd(e: React.TouchEvent) {
+      // Only trigger on single-finger tap
+      if (e.touches.length > 0 || e.changedTouches.length !== 1) return;
+
       const now = Date.now();
       if (lastTap.current && now - lastTap.current < delay) {
         callback();

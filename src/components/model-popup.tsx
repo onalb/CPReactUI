@@ -17,6 +17,7 @@ const ModalPopup: React.FC<ModelPopupProps> = ({ popupOptions, setPopupOptions, 
                 label="No" 
                 icon="pi pi-times" 
                 onClick={() => setPopupOptions(prev => ({ ...prev, isVisible: false }))} 
+                onTouchEnd={() => setPopupOptions(prev => ({ ...prev, isVisible: false }))}
                 className="p-button-text no-button no-selection-removal-on-click" />
             <Button 
                 label="Yes" 
@@ -24,7 +25,11 @@ const ModalPopup: React.FC<ModelPopupProps> = ({ popupOptions, setPopupOptions, 
                 onClick={() => {
                     setPopupOptions(prev => ({ ...prev, isVisible: false }));
                     handleDeleteImages();
-                }} 
+                }}
+                onTouchEnd={() => {
+                    setPopupOptions(prev => ({ ...prev, isVisible: false }));
+                    handleDeleteImages();
+                }}
                 autoFocus
                 className="yes-button no-selection-removal-on-click"
             /></>)
@@ -32,7 +37,8 @@ const ModalPopup: React.FC<ModelPopupProps> = ({ popupOptions, setPopupOptions, 
             (<><Button 
                 label="OK" 
                 icon="pi pi-times" 
-                onClick={() => setPopupOptions(prev => ({ ...prev, isVisible: false }))} 
+                onClick={() => setPopupOptions(prev => ({ ...prev, isVisible: false }))}
+                onTouchEnd={() => setPopupOptions(prev => ({ ...prev, isVisible: false }))}
                 className="p-button-text no-button no-selection-removal-on-click" /></>)
         }
         </div>
@@ -44,7 +50,7 @@ const ModalPopup: React.FC<ModelPopupProps> = ({ popupOptions, setPopupOptions, 
                 header={popupOptions.title} 
                 visible={popupOptions.isVisible} 
                 style={{ width: '50vw', backgroundColor: 'rgba(20, 20, 20, 0.85)', color: 'white', border: '1px solid rgba(50, 50, 50, 0.85)'}} 
-                onHide={() => { if (!popupOptions.isVisible) return; setPopupOptions(prev => ({ ...prev, isVisible: false })); }} 
+                onHide={() => { if (!popupOptions.isVisible) return; setPopupOptions(prev => ({ ...prev, isVisible: false })); }}
                 footer={footerContent}
                 pt={{ 
                     root: { className: 'delete-popup-background' },
