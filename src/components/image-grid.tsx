@@ -1041,35 +1041,32 @@ const ImageGrid: React.FC = () => {
         </div>
         <div
           key='select-all'
-          className='col-1 d-flex justify-content-center align-items-center'
-          onClick={() => selectAllImages()}>
+          className='col-1 d-flex justify-content-center align-items-center'>
           <i
-          className={`col bi bi-check2-all`}
-          style={{        
-            display: 'block', fontSize: '45px', color: 'white',
-            transition: 'color 0.3s ease, background-color 0.3s ease',
-            textAlign: 'center',
-          }}
-          data-bs-toggle="tooltip"
-          data-bs-placement="top"
-          title='SELECT ALL'
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'white';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
+            className={`col bi bi-check2-all`}
+            style={{        
+              display: 'block', fontSize: '45px', color: 'white',
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center',
+            }}
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title='SELECT ALL'
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            onClick={() => selectAllImages()}
+            onTouchEnd={() => selectAllImages()}
           ></i>
         </div>
         <div
           key='delete-marked'
           className='col-1 d-flex justify-content-center align-items-center'
           style={{ pointerEvents: `${images.some((i: any) => i.markedForDeletion === true) ? 'auto' : 'none'}` }}
-          onClick={() => {
-            setHandleDeleteImages(() => handleDeleteMarkedImages);
-            setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'  });
-          }}
           data-toggle="modal" data-target="#exampleModalCenter">
           <i
             className={`col bi bi-cart-x`}
@@ -1087,6 +1084,14 @@ const ImageGrid: React.FC = () => {
             onMouseLeave={(e) => {
               e.currentTarget.style.color = 'white';
               e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            onClick={() => {
+              setHandleDeleteImages(() => handleDeleteMarkedImages);
+              setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'  });
+            }}
+            onTouchEnd={() => {
+              setHandleDeleteImages(() => handleDeleteMarkedImages);
+              setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'  });
             }}
           ></i>
         </div>
