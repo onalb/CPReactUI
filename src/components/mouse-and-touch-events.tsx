@@ -218,12 +218,6 @@ const applyMouseAndTouchEvents = (
       if (doubleClickDispatched) {
         // Double touch detected
         const target = event.target as HTMLElement;
-        if (target && target.tagName === 'IMG') {
-          const imageId = Number(target.getAttribute('id')?.split('-').pop());
-          openImageOnNewTab(imageId);
-          console.log('Data-name property value:', imageId);
-        }
-        console.log('Double touch detected');
         doubleClickDispatched = false;
 
         // Dispatch a custom double-touch event

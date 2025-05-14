@@ -17,6 +17,10 @@ import { useQuery } from 'react-query';
 import { getPhotoListFromFolder, deletePhotoListFromFolder, toggleKeepPhoto } from '../services/PhotoService';
 import LoadingSpinner from './loading-spinner';
 
+// Place these outside your component so they persist across renders
+let clickTimeout: NodeJS.Timeout | null = null;
+let lastClickedImageId: number | null = null;
+
 const ImageGrid: React.FC = () => {
   const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
   const queryClient = useQueryClient();
@@ -72,7 +76,6 @@ const ImageGrid: React.FC = () => {
   const columnGap = 2;
   const defaultRowHeight = 300;
   const imageHeight = 300;
-  let clickTimeout: NodeJS.Timeout | null = null;
 
   const dbPromise = openDB('image-store', 1, {
     upgrade(db) {
@@ -654,8 +657,7 @@ const ImageGrid: React.FC = () => {
   };
 
   const openImageOnNewTab = (imageId: number) => {
-    debugger
-        // Set the clicked image as the current selected image
+    // Set the clicked image as the current selected image
     setCurrentSelectedImage(imageId);
 
     // Add the image to the selectedImageIds
@@ -678,18 +680,28 @@ const ImageGrid: React.FC = () => {
   }
 
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging && !isZooming) {
-      if (clickTimeout) {
-        // Double-click detected
-        clearTimeout(clickTimeout);
+    // Copy event properties you need
+    const shiftKey = (event as any).shiftKey;
+    const ctrlKey = (event as any).ctrlKey;
 
+    if (!isDragging && !isZooming) {
+      if (clickTimeout && lastClickedImageId === imageId) {
+        clearTimeout(clickTimeout);
+        clickTimeout = null;
+        lastClickedImageId = null;
         openImageOnNewTab(imageId);
       } else {
-        // Single click detected, start a timeout to wait for a potential double-click
-        clickTimeout = setTimeout(() => {
+        if (clickTimeout) {
+          clearTimeout(clickTimeout);
           clickTimeout = null;
+        }
 
-          if (event.shiftKey && getCurrentSelectedImage().index !== null) {
+        lastClickedImageId = imageId;
+        clickTimeout = setTimeout(() => {
+        clickTimeout = null;
+        lastClickedImageId = null;
+        
+        if (event.shiftKey && getCurrentSelectedImage().index !== null) {
             const start = Math.min(
               getCurrentSelectedImage().index,
               images.findIndex((img) => img.id === imageId && !img.isDeleted)
@@ -707,20 +719,18 @@ const ImageGrid: React.FC = () => {
             setSelectedImageIds((prevIds) => [...prevIds, imageId]);
           } else {
             if (!isLongTouch && !event.ctrlKey && getCurrentSelectedImage().id === imageId) {
-              // DO NOT DELETE COMMENT: When clicked on a current selected picture make it not currently selected
               setCurrentSelectedImage(null);
             } else if (!selectedImageIds.includes(imageId)) {
-              // DO NOT DELETE COMMENT: When clicked on a NOT selected image make it currently selected
               setCurrentSelectedImage(imageId);
             }
 
             setSelectedImageIds((prevIds) =>
               prevIds.includes(imageId) && !isLongTouch && !event.ctrlKey
-                ? prevIds.filter((id) => id !== imageId) // Deselect if already selected
-                : [...prevIds, imageId] // Select if not already selected
+                ? prevIds.filter((id) => id !== imageId)
+                : [...prevIds, imageId]
             );
           }
-        }, 300); // Timeout for detecting double-click (300ms is a common threshold)
+        }, 300);
       }
     }
   };
