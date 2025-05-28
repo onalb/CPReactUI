@@ -994,10 +994,10 @@ const ImageGrid: React.FC = () => {
 
   const openKeptOnNewTab = () => {
     if (isOpenedOnBrowser) {
-      window.open(`http://localhost:3000/image-grid/true/${folderPath}`, '_blank'); // fix
+      window.open(`http://localhost:3000/image-grid/true/${encodeURIComponent(folderPath || '')}`, '_blank'); // fix
     } else {
       const folderName = folder.split('\\').pop();
-      openNewTabInElectron(`image-grid/true/${folderPath}`, `Kept in: ${folderName}`);
+      openNewTabInElectron(`image-grid/true/${encodeURIComponent(folderPath || '')}`, `Kept in: ${folderName}`);
     }
   }
 
