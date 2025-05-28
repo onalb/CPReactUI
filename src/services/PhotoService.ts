@@ -31,3 +31,8 @@ export const openFolder = async (filePath: string) => {
     const response = await axios.post('http://localhost:3080/api/openFolder', { filePath : filePath });
     return response.data;
 };
+
+export const openFolderInNewTab = async (isOpenedOnBrowser: boolean) => {
+    const response = await axios.get(`http://localhost:3080/api/openFolderInNewTab?isOpenedOnBrowser=${isOpenedOnBrowser}`);
+    return response.data;
+};

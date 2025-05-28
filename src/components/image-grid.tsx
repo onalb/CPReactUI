@@ -22,7 +22,7 @@ let clickTimeout: NodeJS.Timeout | null = null;
 let lastClickedImageId: number | null = null;
 
 const ImageGrid: React.FC = () => {
-  const { isOpenOnlyKept } = useParams<{ isOpenOnlyKept: string }>();
+  const { isOpenOnlyKept, folderPath } = useParams<{ isOpenOnlyKept: string, folderPath: string }>();
   const queryClient = useQueryClient();
 
   //User Editable Paramters
@@ -31,12 +31,13 @@ const ImageGrid: React.FC = () => {
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 In Flames');
-  const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
+  // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\25 Strasbourg train');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 Prague');
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\24\\don's olds mobile");
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\23");
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
+  const [folder, setFolder] = useState<string>(folderPath || '');
   const [images, setImages] = useState([] as any[]);
   const [totalNumberOfImages, setTotalNumberOfImages] = useState<number>(0);
   const [loadedImageCount, setLoadedImageCount] = useState<number>(0);
@@ -356,7 +357,7 @@ const ImageGrid: React.FC = () => {
     originalImagePath?: string, 
   ) => {
     axios.post('http://localhost:3080/api/openNewTab', {
-      url: `http://localhost:3000/${urlPath}`,
+      url: `http://localhost:3000/${encodeURI(urlPath)}`,
       title: title,
       originalImagePath: originalImagePath,
     })
@@ -993,10 +994,10 @@ const ImageGrid: React.FC = () => {
 
   const openKeptOnNewTab = () => {
     if (isOpenedOnBrowser) {
-      window.open('http://localhost:3000/true', '_blank'); // fix
+      window.open(`http://localhost:3000/image-grid/true/${folderPath}`, '_blank'); // fix
     } else {
       const folderName = folder.split('\\').pop();
-      openNewTabInElectron('true', `Kept in: ${folderName}`);
+      openNewTabInElectron(`image-grid/true/${folderPath}`, `Kept in: ${folderName}`);
     }
   }
 
