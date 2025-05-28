@@ -357,7 +357,7 @@ const ImageGrid: React.FC = () => {
     originalImagePath?: string, 
   ) => {
     axios.post('http://localhost:3080/api/openNewTab', {
-      url: `http://localhost:3000/${encodeURI(urlPath)}`,
+      url: `http://localhost:3000/${(urlPath)}`,
       title: title,
       originalImagePath: originalImagePath,
     })

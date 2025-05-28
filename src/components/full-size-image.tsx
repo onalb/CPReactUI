@@ -5,9 +5,8 @@ import { useParams } from 'react-router-dom';
 import { openFolder } from '../services/PhotoService';
 
 const FullSizeImage: React.FC = () => {
-  const { imagePath, imageName, originalImagePath } = useParams<{
+  const { imagePath, originalImagePath } = useParams<{
     imagePath: string;
-    imageName: string;
     originalImagePath: string;
   }>();
   

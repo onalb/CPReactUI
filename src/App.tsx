@@ -14,9 +14,9 @@ const App: React.FC = () => {
       <Router>
         <div style={styles.container}>
             <Routes>
-            <Route path="/select-folder" element={<SelectFolder />} />
-            <Route path="/image-grid/:isOpenOnlyKept/:folderPath" element={<ImageGrid />} />
-            <Route path="/full-size-image/:imagePath?/:imageName?/:originalImagePath?" element={<FullSizeImage />} />
+              <Route path="/select-folder" element={<SelectFolder />} />
+              <Route path="/image-grid/:isOpenOnlyKept/:folderPath" element={<ImageGrid />} />
+              <Route path="/full-size-image/:imagePath?/:imageName?/:originalImagePath?" element={<FullSizeImage />} />
             </Routes>
         </div>
       </Router>
