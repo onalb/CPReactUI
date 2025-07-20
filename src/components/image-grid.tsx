@@ -356,7 +356,7 @@ const ImageGrid: React.FC = () => {
     title: string,
     originalImagePath?: string, 
   ) => {
-    axios.post('http://localhost:3080/api/openNewTab', {
+    axios.post('https://localhost:3080/api/openNewTab', {
       url: `http://localhost:3000/${(urlPath)}`,
       title: title,
       originalImagePath: originalImagePath,
@@ -368,6 +368,17 @@ const ImageGrid: React.FC = () => {
       console.error('Error making POST request:', error);
     });
   }
+
+  // Function to call openWithDialog API
+  const openWithDialog = async (filePath: string) => {
+    try {
+      await axios.post('https://localhost:3080/api/openWithDialog', {
+        filePath: encodeURIComponent(filePath),
+      });
+    } catch (error) {
+      console.error('Error calling openWithDialog:', error);
+    }
+  };
 
   const prepImagesData = async (data) => {
     let prepedImages: any[] = [];
@@ -390,12 +401,12 @@ const ImageGrid: React.FC = () => {
         image['imageDirectory'] = photo.directory;
         image['fullImageDirectory'] = photo.directory + '\\' + photo.name;
 
-        image['pathXS'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight / 8}`;
-        image['pathS'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
-        image['pathM'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
-        image['pathL'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
-        image['pathXL'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight * 3}`;
-        image['pathXXL'] = `http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${photo.dimensions.height}`;
+        image['pathXS'] = `https://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight / 8}`;
+        image['pathS'] = `https://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight / 2}`;
+        image['pathM'] = `https://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight}`;
+        image['pathL'] = `https://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight * 2}`;
+        image['pathXL'] = `https://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${imageHeight * 3}`;
+        image['pathXXL'] = `https://localhost:3080/api/photo?folder=${folder}&image=${photo.name}&height=${photo.dimensions.height}`;
 
         const MCached = await loadImageFromIndexedDB(image['pathM']) || image['pathM'];
         if (MCached === image['pathM']) {
@@ -1050,7 +1061,7 @@ const ImageGrid: React.FC = () => {
       <div className='row align-self-center w-100'>
         <div 
           key='select-folder'
-          className='col-7 d-flex align-items-center' 
+          className='col-6 d-flex align-items-center' 
           style={{ justifyContent: 'flex-start' }}>
           <div
             className='px-3'
@@ -1073,6 +1084,30 @@ const ImageGrid: React.FC = () => {
             >
             SELECT FOLDER
           </div>
+        </div>
+        <div
+          key='select-all'
+          className='col-1 d-flex justify-content-center align-items-center'>
+          <i
+            className={`col bi bi-check2-all`}
+            style={{        
+              display: 'block', fontSize: '45px', color: 'white',
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center',
+            }}
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title='OPEN WITH'
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            onClick={() => openWithDialog('C:\\Users\\burak\\Pictures\\DSC04127.JPG')}
+            onTouchEnd={() => openWithDialog('C:\\Users\\burak\\Pictures\\DSC04127.JPG')}
+          ></i>
         </div>
         <div
           key='select-all'

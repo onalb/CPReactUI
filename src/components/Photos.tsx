@@ -19,11 +19,11 @@ export const Photos = ({ folder }: IPhotos) => {
     useEffect(() => {
         async function fetchData() {
             await axios.get(
-                "http://localhost:3080/api/photoList?folder=" + folder
+                "https://localhost:3080/api/photoList?folder=" + folder
             ).then((res)=>{
                 let photoGrid = ''
                 res.data.map((photo: { name: any; }, i: any) => {
-                    photoGrid += `<img src="http://localhost:3080/api/photo?folder=${folder}&image=${photo.name}" height="300" alt="" loading="eager" />`
+                    photoGrid += `<img src="https://localhost:3080/api/photo?folder=${folder}&image=${photo.name}" height="300" alt="" loading="eager" />`
                  })
     
                 setPhotos(photoGrid);
