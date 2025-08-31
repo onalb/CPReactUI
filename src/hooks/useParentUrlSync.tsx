@@ -25,9 +25,20 @@ export const useParentUrlSync = () => {
     if (window.parent !== window && fullUrl !== lastSentUrl.current) {
       lastSentUrl.current = fullUrl;
       console.log('Sending URL change to parent:', fullUrl);
+      
+      // Extract folder name for image-grid URLs
+      let folderName: string | null = null;
+      const imageGridMatch = location.pathname.match(/\/image-grid\/[^\/]+\/(.+)/);
+      if (imageGridMatch) {
+        const encodedFolderPath = imageGridMatch[1];
+        const folderPath = decodeURIComponent(encodedFolderPath);
+        folderName = folderPath.split(/[/\\]/).pop() || folderPath;
+      }
+      
       window.parent.postMessage({ 
         type: 'iframe-url-change', 
-        url: fullUrl 
+        url: fullUrl,
+        folderName: folderName
       }, '*');
     }
   }, [location]);
