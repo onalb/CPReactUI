@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+// Extend Window interface to include electron
+declare global {
+  interface Window {
+    electron?: {
+      ipcRenderer: {
+        send: (channel: string, data?: any) => void;
+      };
+    };
+  }
+}
+
 interface DropZoneProps {}
 
 const DropZone: React.FC<DropZoneProps> = () => {

@@ -1,0 +1,1 @@
+export { useParentUrlSync } from './useParentUrlSync';
