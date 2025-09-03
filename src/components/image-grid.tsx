@@ -40,7 +40,7 @@ const ImageGrid: React.FC = () => {
   // const [folder, setFolder] = useState<string>("C:\\Users\\burak\\Pictures\\Lansdale\\23");
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\22 italy');
   // const [folder, setFolder] = useState<string>('C:\\Users\\burak\\Pictures\\24 Boston');
-  const [folder, setFolder] = useState<string>(folderPath || '');
+  const [folder, setFolder] = useState<string>(folderPath ? decodeURIComponent(folderPath) : '');
   const [images, setImages] = useState([] as any[]);
   const [totalNumberOfImages, setTotalNumberOfImages] = useState<number>(0);
   const [loadedImageCount, setLoadedImageCount] = useState<number>(0);
@@ -216,14 +216,22 @@ const ImageGrid: React.FC = () => {
   );
 
   useQuery(['images'], async() => {
+    console.log('Fetching images for folder:', folder);
+    if (!folder) {
+      console.log('No folder path provided');
+      return [];
+    }
     const data = await getPhotoListFromFolder(folder);
+    console.log('Received images data:', data);
     if (data.length > 0) setIsImageListFetched(true);
     return data
   }, 
   {
     initialData: [],
     refetchOnWindowFocus: false,
+    enabled: !!folder, // Only run query if folder is provided
     onSuccess: async (data) => {
+      console.log('Query onSuccess called with data:', data);
       setIsImageListFetched(true);
 
       if (data.length > 0) {
@@ -232,6 +240,11 @@ const ImageGrid: React.FC = () => {
         } 
 
         setFirstRowWidth(calculateFirstRowWidth(data, numberOfColumns));
+      } else {
+        // If no images are returned, set loading as completed
+        console.log('No images found, setting loading as completed');
+        setIsLoadingCompletedAtStart(true);
+        return;
       }
       // DO NOT DELETE: Only if this is the first time loading the page or if a notification is received prep the images again. 
       if (images.length === 0 || isNotificationReceived) {
@@ -290,6 +303,16 @@ const ImageGrid: React.FC = () => {
         }
         imageBeingDeleted.current.deleteErrorType = '';
       }
+    },
+    onError: (error: any) => {
+      console.error('Error fetching images:', error);
+      setIsLoadingCompletedAtStart(true); // Stop the loading spinner
+      setPopupOptions({
+        isVisible: true,
+        isYesNo: false,
+        title: 'ERROR',
+        message: 'Failed to load images from the selected folder. Please check if the folder exists and try again.',
+      });
     }
   });
 
@@ -520,11 +543,13 @@ const ImageGrid: React.FC = () => {
     }
     
     // Calculate content height: 
-    // (rows * (image height + button area)) + gaps between rows + container padding
+    // (rows * (image height + button area)) + gaps between rows
+    // Content height should be the actual content size for proper scroll boundaries
     const rowHeight = imageHeightScaled + buttonAreaHeight;
     const gapsBetweenRows = Math.max(0, numberOfRows - 1) * columnGap;
-    const contentHeight = (numberOfRows * rowHeight) + gapsBetweenRows + (padding * 2);
-    
+    const actualContentHeight = (numberOfRows * rowHeight) + gapsBetweenRows;
+    const contentHeight = Math.max(0, actualContentHeight - viewportSize.height);
+
     // Apply zoom scale to content dimensions
     const zoomedWidth = pureContentWidth * zoomScale;
     const zoomedHeight = contentHeight * zoomScale;
@@ -578,6 +603,13 @@ const ImageGrid: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Reset loading state when images change
+  useEffect(() => {
+    console.log('Images changed, resetting loading state. New images length:', images.length);
+    setLoadedImageCount(0);
+    setIsLoadingCompletedAtStart(false);
+  }, [images.length]);
 
   function varyImageQualityWithZoom () {
     setImages((prevImages) => {
@@ -1096,20 +1128,30 @@ const ImageGrid: React.FC = () => {
     //  DO NOT DELETE COMMENT: If following updates happen upon image deletion, clicks freeze until all the images are parsed again and all thse updates complete.
     if(!isLoadingCompletedAtStart) {
       if (isGalleriaClosed !== true) {
-        setLoadedImageCount(loadedImageCount + 1);
+        setLoadedImageCount(prevCount => {
+          const newCount = prevCount + 1;
+          console.log(`Image loaded: ${newCount}/${images.length}`);
+          
+          // Check if this is the last image to load
+          const deletedImgCount = images.filter((i: any) => i['isDeleted'] === true).length;
+          const targetCount = images.length - deletedImgCount - 1;
+          
+          console.log(`Loading progress: ${newCount}/${targetCount} (total images: ${images.length}, deleted: ${deletedImgCount})`);
+          
+          if (newCount === images.length - 1) {
+            setIsCachingCompleted(true);
+            setImagesElements(Array.from(document.getElementById('main-element')!.getElementsByTagName('img')));
+          }
+          
+          if (images.length > 0 && newCount === targetCount) {
+            console.log('All images loaded! Setting loading completed.');
+            setIsLoadingCompletedAtStart(true);
+          }
+          
+          return newCount;
+        });
         setIsCachingCompleted(false);
-
-        if (loadedImageCount === images.length - 1) {
-          setIsCachingCompleted(true);
-          setImagesElements(Array.from(document.getElementById('main-element')!.getElementsByTagName('img')));
-        }
       }
-
-        const deletedImgCount = images.filter((i: any) => i['isDeleted'] === true).length;
-        if (images.length > 0 && loadedImageCount === (images.length - deletedImgCount - 1) && !isLoadingCompletedAtStart) {
-          setIsLoadingCompletedAtStart(true);
-          return true;
-        } 
 
       // To get and display the number of images that are loaded make the calculation here -- tech debt
     }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import ImageGrid from './components/image-grid';
 import SelectFolder from './components/select-folder';
@@ -17,6 +17,7 @@ const AppContent: React.FC = () => {
   return (
     <div style={styles.container}>
       <Routes>
+        <Route path="/" element={<Navigate to="/drop-zone" replace />} />
         <Route path="/drop-zone" element={<DropZone />} />
         <Route path="/select-folder" element={<SelectFolder />} />
         <Route path="/image-grid/:isOpenOnlyKept/:folderPath" element={<ImageGrid />} />

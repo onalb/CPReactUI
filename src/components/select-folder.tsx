@@ -9,11 +9,16 @@ const SelectFolder: React.FC = () => {
     
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
+            console.log('Received WebSocket message:', data);
             if (data.type === 'openFolderInNewTab') {
                 const folderPath = data.data.folderPath;
+                console.log('Folder path received:', folderPath);
 
                 if (isOpenedOnBrowser) {
-                    window.open(`http://localhost:3000/image-grid/false/${folderPath}`, '_blank'); // fix
+                    const encodedFolderPath = encodeURIComponent(folderPath);
+                    const url = `http://localhost:3000/image-grid/false/${encodedFolderPath}`;
+                    console.log('Opening URL:', url);
+                    window.open(url, '_blank');
                 }
             }
         };
