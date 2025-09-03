@@ -186,7 +186,7 @@ const ImageGrid: React.FC = () => {
         console.error('Error deleting photo: ', error);
 
         if (error.response.data.type && error.response.data.type === 'access') {
-          queryClient.invalidateQueries(['images']);
+          queryClient.invalidateQueries(['images', folder]);
         } else {
           const prepedImages: any[] = await prepImagesData(images);
 
@@ -215,8 +215,8 @@ const ImageGrid: React.FC = () => {
     }
   );
 
-  useQuery(['images'], async() => {
-    console.log('Fetching images for folder:', folder);
+  useQuery(['images', folder, isOpenOnlyKept], async() => {
+    console.log('Fetching images for folder:', folder, 'isOpenOnlyKept:', isOpenOnlyKept);
     if (!folder) {
       console.log('No folder path provided');
       return [];
@@ -611,6 +611,16 @@ const ImageGrid: React.FC = () => {
     setIsLoadingCompletedAtStart(false);
   }, [images.length]);
 
+  // Reset state when switching between "all images" and "kept only" views
+  useEffect(() => {
+    console.log('isOpenOnlyKept changed:', isOpenOnlyKept);
+    setImages([]);
+    setLoadedImageCount(0);
+    setIsLoadingCompletedAtStart(false);
+    setSelectedImageIds([]);
+    setCurrentSelectedImage(null);
+  }, [isOpenOnlyKept, folderPath]);
+
   function varyImageQualityWithZoom () {
     setImages((prevImages) => {
       // This means zooming out
@@ -686,7 +696,7 @@ const ImageGrid: React.FC = () => {
         });
 
         setIsNotificationReceived(true);
-        queryClient.invalidateQueries(['images']);
+        queryClient.invalidateQueries(['images', folder]);
       }
     };
   
@@ -981,7 +991,7 @@ const ImageGrid: React.FC = () => {
           })
         })
 
-        queryClient.setQueryData('images', (oldImages: any) => {
+        queryClient.setQueryData(['images', folder, isOpenOnlyKept], (oldImages: any) => {
           return oldImages.filter((img: any) => img.name !== image.fileName);
         })
         
@@ -1008,7 +1018,7 @@ const ImageGrid: React.FC = () => {
 
     imagesToDelete.forEach((selectedImage: any)=> {
       selectedImage.isDeleted = true;
-      queryClient.setQueryData('images', (oldImages: any) => {
+      queryClient.setQueryData(['images', folder, isOpenOnlyKept], (oldImages: any) => {
         return oldImages.filter((img: any) => img.name !== selectedImage.fileName);
       })
       
@@ -1027,7 +1037,7 @@ const ImageGrid: React.FC = () => {
   const handleDeleteMarkedImages = () => {
     const imagesToDelete = images.filter(image => image.isMarkedForDeletion && !image.isKept && !image.isDeleted);
     imagesToDelete.forEach((markedImage: any) => {
-      queryClient.setQueryData('images', (oldImages: any) => {
+      queryClient.setQueryData(['images', folder, isOpenOnlyKept], (oldImages: any) => {
         return oldImages.filter((img: any) => img.name !== markedImage.fileName);
       })
 
