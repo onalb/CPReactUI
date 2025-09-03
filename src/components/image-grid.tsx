@@ -1,14 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import '../styles/ImageZoom.css';
+import '../styles/scrollbar.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { createParticles } from './create-particles';
-import applyMouseAndTouchEvents from './mouse-and-touch-events';
+import applyMouseAndTouchEvents, { createView } from './mouse-and-touch-events';
 import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-event-handler';
 import  { startTimer, stopTimer} from './timer-functions';
 import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
+import CustomScrollbar from './scrollbar';
 import axios from 'axios';
 import { openDB } from 'idb';
 import ImageCard from './image-card';
@@ -26,7 +28,8 @@ const ImageGrid: React.FC = () => {
   const queryClient = useQueryClient();
 
   //User Editable Paramters
-  const numberOfColumns = 10;
+  const baseNumberOfColumns = 10;
+  const minColumnWidth = 300; // Minimum width per column including gap
 
   // States
   const [origin, setOrigin] = useState('0 0'); // Initial transform-origin
@@ -65,6 +68,24 @@ const ImageGrid: React.FC = () => {
   const [isKeepButtonDisabled, setIsKeepButtonDisabled] = useState<boolean>(false);
   const [isNotificationReceived, setIsNotificationReceived] = useState<boolean>(false);
   const [isHeaderOpened, setIsHeaderOpened] = useState<boolean>(false);
+  
+  // Scrollbar state
+  const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
+  const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
+  const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+  const padding = 10;
+  const columnGap = 1;
+  // Calculate number of columns once on initial load based on window size
+  const [numberOfColumns] = useState(() => {
+    // Add some buffer to account for gaps and padding, then round to get a more accurate column count
+    const availableWidth = window.innerWidth - (padding * 2); // Account for container padding
+    const columnsWithGaps = availableWidth / (minColumnWidth + columnGap); // Account for gaps between columns
+    return Math.max(1, Math.min(baseNumberOfColumns, Math.ceil(columnsWithGaps))); // Add 0.5 for better rounding
+  });
+  
+  const viewRef = useRef<any>(null);
+  
   const imageBeingDeleted = useRef<{deleteErrorType: string, images: any[]}>({deleteErrorType: '', images: []});
   const squareRef = useRef<HTMLDivElement | null>(null);
   const isOpenedOnBrowser = typeof navigator !== 'undefined' && navigator.userAgent !== undefined && !navigator.userAgent.includes('Electron');
@@ -73,8 +94,7 @@ const ImageGrid: React.FC = () => {
   let numberOfKeptImages = images.filter(image => !image.isDeleted && image.isKept).length;
 
   // Variables
-  const padding = 10;
-  const columnGap = 2;
+
   const defaultRowHeight = 300;
   const imageHeight = 300;
 
@@ -211,7 +231,7 @@ const ImageGrid: React.FC = () => {
           data = data.filter(image => image.isKept);
         } 
 
-        setFirstRowWidth(calculateFirstRowWidth(data));
+        setFirstRowWidth(calculateFirstRowWidth(data, numberOfColumns));
       }
       // DO NOT DELETE: Only if this is the first time loading the page or if a notification is received prep the images again. 
       if (images.length === 0 || isNotificationReceived) {
@@ -457,7 +477,7 @@ const ImageGrid: React.FC = () => {
   }
   
   // Functions
-  function calculateFirstRowWidth (images: any[]) {
+  function calculateFirstRowWidth (images: any[], numberOfColumns: number) {
     let result = padding; 
     const ratio = defaultRowHeight / images[0]!.height;
 
@@ -470,6 +490,94 @@ const ImageGrid: React.FC = () => {
     result -= columnGap;
     return result;
   }
+
+  // Scrollbar Functions
+  const calculateContentSize = () => {
+    if (images.length === 0) return { width: 0, height: 0 };
+    
+    // Calculate grid dimensions accounting for zoom scale
+    const imageHeightScaled = defaultRowHeight;
+    
+    // Button area height - space for buttons under each image
+    const buttonAreaHeight = 120; // Height for buttons under each image
+    
+    // Calculate number of rows based on non-deleted images
+    const visibleImages = images.filter(img => !img.isDeleted);
+    const numberOfRows = Math.ceil(visibleImages.length / numberOfColumns);
+    
+    // Calculate pure content width (from left edge of leftmost image to right edge of rightmost image)
+    // This excludes container padding but includes gaps between images
+    const ratio = defaultRowHeight / (images[0]?.height || 1);
+    let pureContentWidth = 0;
+    
+    for (let i = 0; i < numberOfColumns && i < images.length; i++) {
+      if (images[i]) {
+        pureContentWidth += images[i].width * ratio;
+        if (i < numberOfColumns - 1 && i < images.length - 1) {
+          pureContentWidth += columnGap;
+        }
+      }
+    }
+    
+    // Calculate content height: 
+    // (rows * (image height + button area)) + gaps between rows + container padding
+    const rowHeight = imageHeightScaled + buttonAreaHeight;
+    const gapsBetweenRows = Math.max(0, numberOfRows - 1) * columnGap;
+    const contentHeight = (numberOfRows * rowHeight) + gapsBetweenRows + (padding * 2);
+    
+    // Apply zoom scale to content dimensions
+    const zoomedWidth = pureContentWidth * zoomScale;
+    const zoomedHeight = contentHeight * zoomScale;
+    
+    return { width: zoomedWidth, height: zoomedHeight };
+  };
+
+  const handleScrollPositionChange = (x: number, y: number) => {
+    setScrollPosition({ x, y });
+  };
+
+  const handleHorizontalScroll = (position: number) => {
+    if (viewRef.current) {
+      viewRef.current.setPosition(-position, viewRef.current.getPosition().y);
+      const mainElement = document.getElementById('main-element');
+      if (mainElement) {
+        viewRef.current.applyTo(mainElement);
+      }
+    }
+  };
+
+  const handleVerticalScroll = (position: number) => {
+    if (viewRef.current) {
+      viewRef.current.setPosition(viewRef.current.getPosition().x, -position);
+      const mainElement = document.getElementById('main-element');
+      if (mainElement) {
+        viewRef.current.applyTo(mainElement);
+      }
+    }
+  };
+
+  // Initialize custom view
+  useEffect(() => {
+    if (!viewRef.current) {
+      viewRef.current = createView(handleScrollPositionChange);
+    }
+  }, []);
+
+  // Update content size when images change or zoom changes
+  useEffect(() => {
+    const newContentSize = calculateContentSize();
+    setContentSize(newContentSize);
+  }, [images, numberOfColumns, padding, columnGap, zoomScale, firstRowWidth, viewportSize]);
+
+  // Update viewport size on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   function varyImageQualityWithZoom () {
     setImages((prevImages) => {
@@ -582,6 +690,8 @@ const ImageGrid: React.FC = () => {
         getVisibleImages,
         squareSelection,
         openImageOnNewTab,
+        handleScrollPositionChange,
+        viewRef.current,
       );
 
       return () => {
@@ -608,6 +718,8 @@ const ImageGrid: React.FC = () => {
         getVisibleImages,
         squareSelection,
         openImageOnNewTab,
+        handleScrollPositionChange,
+        viewRef.current,
       );
         addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
         addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
@@ -1292,6 +1404,27 @@ const ImageGrid: React.FC = () => {
 
     {!isLoadingCompletedAtStart && (
       LoadingSpinner({text: 'Rendering images...'})
+    )}
+
+    {/* Custom Scrollbars */}
+    <CustomScrollbar
+      orientation="vertical"
+      contentSize={contentSize.height}
+      viewportSize={viewportSize.height}
+      scrollPosition={scrollPosition.y}
+      onScroll={handleVerticalScroll}
+    />
+    <CustomScrollbar
+      orientation="horizontal"
+      contentSize={contentSize.width}
+      viewportSize={viewportSize.width - 20} // Account for vertical scrollbar
+      scrollPosition={scrollPosition.x}
+      onScroll={handleHorizontalScroll}
+    />
+    
+    {/* Scrollbar corner */}
+    {contentSize.width > viewportSize.width && contentSize.height > viewportSize.height && (
+      <div className="scrollbar-corner" />
     )}
     </>
     ) : (<>{(isImageListFetched ?

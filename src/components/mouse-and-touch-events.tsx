@@ -12,8 +12,12 @@ const applyMouseAndTouchEvents = (
   getVisibleImages?: any,
   squareSelection?: any,
   openImageOnNewTab?: any,
-
+  onScrollPositionChange?: (x: number, y: number) => void,
+  customView?: any,
 ) => {
+  // Use custom view if provided, otherwise use global view
+  const currentView = customView || view;
+  
   let isDragging = false;
   let lastPosX = 0;
   let lastPosY = 0;
@@ -69,6 +73,16 @@ const applyMouseAndTouchEvents = (
   }
 
   const handleMouseDown = (event: any) => {
+    // Check if the event target is a scrollbar element
+    const target = event.target as HTMLElement;
+    if (target && (
+      target.classList.contains('custom-scrollbar-track') ||
+      target.classList.contains('custom-scrollbar-thumb') ||
+      target.closest('.custom-scrollbar-track')
+    )) {
+      return; // Don't handle mouse events on scrollbars
+    }
+
     isLongTouch = false;
     setIsLongTouch(false);
     event.preventDefault();
@@ -83,6 +97,16 @@ const applyMouseAndTouchEvents = (
   };
 
   const handleMouseMove = (event: any) => {
+    // Check if the event target is a scrollbar element
+    const target = event.target as HTMLElement;
+    if (target && (
+      target.classList.contains('custom-scrollbar-track') ||
+      target.classList.contains('custom-scrollbar-thumb') ||
+      target.closest('.custom-scrollbar-track')
+    )) {
+      return; // Don't handle mouse events on scrollbars
+    }
+
     if (longTapTimeout) {
       clearTimeout(longTapTimeout);
       longTapTimeout = null;
@@ -103,8 +127,8 @@ const applyMouseAndTouchEvents = (
       const dx = event.clientX - lastPosX;
       const dy = event.clientY - lastPosY;
       setIsDragging(dx || dy ? true : false);
-      view.pan({ x: dx, y: dy });
-      view.applyTo(document.getElementById(elementId));
+      currentView.pan({ x: dx, y: dy });
+      currentView.applyTo(document.getElementById(elementId));
       lastPosX = event.clientX;
       lastPosY = event.clientY;
       getVisibleImages();
@@ -166,8 +190,8 @@ const applyMouseAndTouchEvents = (
           const multiplier = Math.min(Math.max(.2, Math.abs(minDistance) / window.innerHeight), 2.5);
           const x = Math.abs(minDistance) / window.innerHeight;
 
-          view.pan({ x: 0, y: -dy * multiplier });
-          view.applyTo(mainElement);
+          currentView.pan({ x: 0, y: -dy * multiplier });
+          currentView.applyTo(mainElement);
         }
       }
     } else if (event.shiftKey) {
@@ -187,19 +211,19 @@ const applyMouseAndTouchEvents = (
           const multiplier = Math.min(Math.max(.2, Math.abs(minDistance) / window.innerWidth), 2.5);
           const x = Math.abs(minDistance) / window.innerWidth;
 
-          view.pan({ x: -dx * multiplier, y: 0 });
-          view.applyTo(mainElement);
+          currentView.pan({ x: -dx * multiplier, y: 0 });
+          currentView.applyTo(mainElement);
         }
       }
     } else {
       const at = { x: event.clientX, y: event.clientY };
       const amount = event.deltaY < 0 ? 1 + zoomSettings.speed : 1 - zoomSettings.speed;
-      const newScale = view.getScale() * amount * 2;
+      const newScale = currentView.getScale() * amount * 2;
       if (newScale < 0.2 || newScale > 10) {
         return;
       }
-      view.scaleAt(at, amount, setZoomScale);
-      view.applyTo(document.getElementById(elementId));
+      currentView.scaleAt(at, amount, setZoomScale);
+      currentView.applyTo(document.getElementById(elementId));
     }
 
     getVisibleImages();
@@ -278,14 +302,14 @@ const applyMouseAndTouchEvents = (
           y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
         };
         
-        view.scaleAt(at, amount, setZoomScale);
-        view.applyTo(document.getElementById(elementId));
+        currentView.scaleAt(at, amount, setZoomScale);
+        currentView.applyTo(document.getElementById(elementId));
         initialDistance = currentDistance;
 
         const dx = at.x - lastPosX;
         const dy = at.y - lastPosY;
-        view.pan({ x: dx, y: dy });
-        view.applyTo(document.getElementById(elementId));
+        currentView.pan({ x: dx, y: dy });
+        currentView.applyTo(document.getElementById(elementId));
         lastPosX = at.x;
         lastPosY = at.y;
       } else if (event.touches.length === 1 && isTouchDragging) {
@@ -295,8 +319,8 @@ const applyMouseAndTouchEvents = (
         touchDeltaY += dy;
         
         if (Math.abs(touchDeltaX) > 50 || Math.abs(touchDeltaY) > 50) {
-          view.pan({ x: dx, y: dy });
-          view.applyTo(document.getElementById(elementId));
+          currentView.pan({ x: dx, y: dy });
+          currentView.applyTo(document.getElementById(elementId));
           lastPosX = event.touches[0].clientX;
           lastPosY = event.touches[0].clientY;
         } else {
@@ -340,8 +364,8 @@ const applyMouseAndTouchEvents = (
     const mainElement = document.getElementById(elementId);
 
     if (mainElement) {
-        view.move({ x: 0, y: 0 });
-        view.applyTo(mainElement);
+        currentView.move({ x: 0, y: 0 });
+        currentView.applyTo(mainElement);
     }
   }
 
@@ -363,6 +387,76 @@ const applyMouseAndTouchEvents = (
     removeTrackedEventListeners(window, 'touchmove');
     removeTrackedEventListeners(window, 'touchend');
   };
+};
+
+export const createView = (onScrollPositionChange?: (x: number, y: number) => void) => {
+  const matrix = [1, 0, 0, 1, 0, 0];
+  var m = matrix;
+  var scale = 1;
+  const pos = { x: 0, y: 0 };
+  var dirty = true;
+  const API = {
+    applyTo(el: any) {
+      if (dirty) {
+        this.update();
+      }
+      el.style.transform = `matrix(${m[0]},${m[1]},${m[2]},${m[3]},${m[4]},${m[5]})`;
+      // Notify scroll position change
+      if (onScrollPositionChange) {
+        onScrollPositionChange(-pos.x, -pos.y);
+      }
+    },
+    update() {
+      dirty = false;
+      m[3] = m[0] = scale;
+      m[2] = m[1] = 0;
+      m[4] = pos.x;
+      m[5] = pos.y;
+    },
+    move(amount: any) {
+      if (dirty) {
+        this.update();
+      }
+      pos.x += amount.x;
+      pos.y += amount.y;
+      dirty = true;
+    },
+    pan(amount: any) {
+      if (dirty) {
+        this.update();
+      }
+      pos.x += amount.x;
+      pos.y += amount.y;
+      dirty = true;
+    },
+    scaleAt(at: any, amount: any, setZoomScale: any) {
+      if (dirty) {
+        this.update();
+      }
+      const newScale = scale * amount;
+      if (newScale < 0.2 || newScale > 5) {
+        return;
+      }
+      scale = newScale;
+      setZoomScale(scale);
+      pos.x = at.x - (at.x - pos.x) * amount;
+      pos.y = at.y - (at.y - pos.y) * amount;
+      dirty = true;
+    },
+    getScale() {
+      return scale;
+    },
+    getPosition() {
+      return { x: pos.x, y: pos.y };
+    },
+    setPosition(x: number, y: number) {
+      pos.x = x;
+      pos.y = y;
+      dirty = true;
+    },
+  };
+  
+  return API;
 };
 
 export const view = (() => {
@@ -417,6 +511,14 @@ export const view = (() => {
     },
     getScale() {
       return scale;
+    },
+    getPosition() {
+      return { x: pos.x, y: pos.y };
+    },
+    setPosition(x: number, y: number) {
+      pos.x = x;
+      pos.y = y;
+      dirty = true;
     },
   };
   
