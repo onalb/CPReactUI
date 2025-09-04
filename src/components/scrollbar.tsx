@@ -33,9 +33,13 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
   // Calculate scrollbar dimensions and position - use viewportSize for scroll logic, actualTrackSize for visual
   const scrollRatio = Math.min(viewportSize / contentSize, 1);
   const thumbSize = Math.max(scrollRatio * actualTrackSize, 20); // Visual thumb size based on actual track
-  const maxScrollPosition = contentSize - viewportSize; // Scroll logic based on full viewport
-  const maxThumbPosition = actualTrackSize - thumbSize; // Visual positioning based on actual track
-  const thumbPosition = maxScrollPosition > 0 ? (scrollPosition / maxScrollPosition) * maxThumbPosition : 0;
+  const maxScrollPosition = Math.max(contentSize - viewportSize, 0); // Ensure positive value
+  const maxThumbPosition = Math.max(actualTrackSize - thumbSize, 0); // Ensure positive value
+  
+  // Clamp scroll position to valid range before calculating thumb position
+  const clampedScrollPosition = Math.max(0, Math.min(scrollPosition, maxScrollPosition));
+  const rawThumbPosition = maxScrollPosition > 0 ? (clampedScrollPosition / maxScrollPosition) * maxThumbPosition : 0;
+  const thumbPosition = Math.max(0, Math.min(rawThumbPosition, maxThumbPosition)); // Additional safety clamping
 
   // Show scrollbar only if content is larger than viewport
   const shouldShow = contentSize > viewportSize;
@@ -156,18 +160,21 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
         position: 'fixed',
         backgroundColor: 'rgba(0, 0, 0, 0.2)',
         zIndex: 1000,
+        pointerEvents: 'auto', // Ensure scrollbar can be interacted with
         ...(isHorizontal ? {
           bottom: '0px',
           left: '0px',
           right: bothScrollbarsVisible ? '20px' : '0px', // Leave space for vertical scrollbar if both are present
           height: '20px',
-          width: `${actualTrackSize}px`, // Use the actual track size
+          maxWidth: `${actualTrackSize}px`, // Constrain to actual track size
+          minWidth: '0px', // Prevent overflow
         } : {
           top: '0px',
           right: '0px',
           bottom: bothScrollbarsVisible ? '20px' : '0px', // Leave space for horizontal scrollbar if both are present
           width: '20px',
-          height: `${actualTrackSize}px`, // Use the actual track size
+          maxHeight: `${actualTrackSize}px`, // Constrain to actual track size
+          minHeight: '0px', // Prevent overflow
         })
       }}
       onClick={handleTrackClick}
