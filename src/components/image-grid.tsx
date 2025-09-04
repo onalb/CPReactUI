@@ -72,7 +72,10 @@ const ImageGrid: React.FC = () => {
   // Scrollbar state
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
   const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
-  const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [viewportSize, setViewportSize] = useState({ 
+    width: window.innerWidth, 
+    height: window.innerHeight // Subtract header height
+  });
 
   const padding = 10;
   const columnGap = 1;
@@ -518,43 +521,20 @@ const ImageGrid: React.FC = () => {
   const calculateContentSize = () => {
     if (images.length === 0) return { width: 0, height: 0 };
     
-    // Calculate grid dimensions accounting for zoom scale
-    const imageHeightScaled = defaultRowHeight;
+    // Get actual DOM dimensions from main-element
+    const mainElement = document.getElementById('main-element');
     
-    // Button area height - space for buttons under each image
-    const buttonAreaHeight = 120; // Height for buttons under each image
-    
-    // Calculate number of rows based on non-deleted images
-    const visibleImages = images.filter(img => !img.isDeleted);
-    const numberOfRows = Math.ceil(visibleImages.length / numberOfColumns);
-    
-    // Calculate pure content width (from left edge of leftmost image to right edge of rightmost image)
-    // This excludes container padding but includes gaps between images
-    const ratio = defaultRowHeight / (images[0]?.height || 1);
-    let pureContentWidth = 0;
-    
-    for (let i = 0; i < numberOfColumns && i < images.length; i++) {
-      if (images[i]) {
-        pureContentWidth += images[i].width * ratio;
-        if (i < numberOfColumns - 1 && i < images.length - 1) {
-          pureContentWidth += columnGap;
-        }
-      }
+    if (mainElement) {
+      // Use the actual scrollHeight and scrollWidth of the main element
+      // Apply the current zoom scale to get the transformed dimensions
+      const actualContentHeight = mainElement.scrollHeight * zoomScale;
+      const actualContentWidth = mainElement.scrollWidth * zoomScale;
+      
+      return { width: actualContentWidth, height: actualContentHeight };
     }
     
-    // Calculate content height: 
-    // (rows * (image height + button area)) + gaps between rows
-    // Content height should be the actual content size for proper scroll boundaries
-    const rowHeight = imageHeightScaled + buttonAreaHeight;
-    const gapsBetweenRows = Math.max(0, numberOfRows - 1) * columnGap;
-    const actualContentHeight = (numberOfRows * rowHeight) + gapsBetweenRows;
-    const contentHeight = Math.max(0, actualContentHeight - viewportSize.height);
-
-    // Apply zoom scale to content dimensions
-    const zoomedWidth = pureContentWidth * zoomScale;
-    const zoomedHeight = contentHeight * zoomScale;
-    
-    return { width: zoomedWidth, height: zoomedHeight };
+    // Return zero dimensions if main element is not available
+    return { width: 0, height: 0 };
   };
 
   const handleScrollPositionChange = (x: number, y: number) => {
@@ -597,8 +577,14 @@ const ImageGrid: React.FC = () => {
   // Update viewport size on window resize
   useEffect(() => {
     const handleResize = () => {
-      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+      setViewportSize({ 
+        width: window.innerWidth, 
+        height: window.innerHeight  
+      });
     };
+    
+    // Set initial viewport size
+    handleResize();
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -1459,20 +1445,28 @@ const ImageGrid: React.FC = () => {
     )}
 
     {/* Custom Scrollbars */}
-    <CustomScrollbar
-      orientation="vertical"
-      contentSize={contentSize.height}
-      viewportSize={viewportSize.height}
-      scrollPosition={scrollPosition.y}
-      onScroll={handleVerticalScroll}
-    />
-    <CustomScrollbar
-      orientation="horizontal"
-      contentSize={contentSize.width}
-      viewportSize={viewportSize.width - 20} // Account for vertical scrollbar
-      scrollPosition={scrollPosition.x}
-      onScroll={handleHorizontalScroll}
-    />
+    {/* Show vertical scrollbar if content height exceeds viewport */}
+    {contentSize.height > viewportSize.height && (
+      <CustomScrollbar
+        orientation="vertical"
+        contentSize={contentSize.height}
+        viewportSize={viewportSize.height} // Use full viewport height, let CSS handle the visual positioning
+        scrollPosition={scrollPosition.y}
+        onScroll={handleVerticalScroll}
+        bothScrollbarsVisible={contentSize.width > viewportSize.width && contentSize.height > viewportSize.height}
+      />
+    )}
+    {/* Show horizontal scrollbar if content width exceeds viewport */}
+    {contentSize.width > viewportSize.width && (
+      <CustomScrollbar
+        orientation="horizontal"
+        contentSize={contentSize.width}
+        viewportSize={viewportSize.width} // Use full viewport width, let CSS handle the visual positioning
+        scrollPosition={scrollPosition.x}
+        onScroll={handleHorizontalScroll}
+        bothScrollbarsVisible={contentSize.width > viewportSize.width && contentSize.height > viewportSize.height}
+      />
+    )}
     
     {/* Scrollbar corner */}
     {contentSize.width > viewportSize.width && contentSize.height > viewportSize.height && (
