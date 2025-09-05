@@ -31,9 +31,18 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
   const actualTrackSize = bothScrollbarsVisible ? viewportSize - 20 : viewportSize;
   
   // Calculate scrollbar dimensions and position - use viewportSize for scroll logic, actualTrackSize for visual
-  const scrollRatio = Math.min(viewportSize / contentSize, 1);
-  const thumbSize = Math.max(scrollRatio * actualTrackSize, 20); // Visual thumb size based on actual track
-  const maxScrollPosition = Math.max(contentSize - viewportSize, 0); // Ensure positive value
+  // Calculate maximum scrollable distance in this direction
+  const contentOverflow = Math.max(contentSize - viewportSize, 0); // How much content exceeds viewport
+  
+  // Standard scrollbar calculation - thumb size represents viewport vs total content
+  const scrollRatio = contentSize > 0 ? Math.min(viewportSize / contentSize, 1) : 1;
+  const thumbSize = Math.max(scrollRatio * actualTrackSize, 20); // Minimum 20px thumb
+  
+  // Add tolerance for very small scroll positions (floating point precision issues)
+  const scrollTolerance = 5; // pixels - increased tolerance
+  const effectiveScrollPosition = Math.abs(scrollPosition) > scrollTolerance ? Math.abs(scrollPosition) : 0;
+  const maxScrollPosition = Math.max(contentOverflow, effectiveScrollPosition); // Total scrollable range
+  
   const maxThumbPosition = Math.max(actualTrackSize - thumbSize, 0); // Ensure positive value
   
   // Clamp scroll position to valid range before calculating thumb position
@@ -41,8 +50,8 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
   const rawThumbPosition = maxScrollPosition > 0 ? (clampedScrollPosition / maxScrollPosition) * maxThumbPosition : 0;
   const thumbPosition = Math.max(0, Math.min(rawThumbPosition, maxThumbPosition)); // Additional safety clamping
 
-  // Show scrollbar only if content is larger than viewport
-  const shouldShow = contentSize > viewportSize;
+  // Show scrollbar only if there's actually scrollable content (either overflow or displacement)
+  const shouldShow = maxScrollPosition > 0;
 
   const handleMouseDown = useCallback((event: React.MouseEvent) => {
     if (!thumbRef.current || !trackRef.current) return;

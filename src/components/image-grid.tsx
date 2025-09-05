@@ -52,6 +52,7 @@ const ImageGrid: React.FC = () => {
   const [firstRowWidth, setFirstRowWidth] = useState<number>(0); // Initial transform-origin
   const [isDragging, setIsDragging] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
   const [isLongTouch, setIsLongTouch] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
   const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
@@ -530,6 +531,17 @@ const ImageGrid: React.FC = () => {
       const actualContentHeight = mainElement.scrollHeight * zoomScale;
       const actualContentWidth = mainElement.scrollWidth * zoomScale;
       
+      // Debug content size calculation
+      console.log('Content size calculation:', {
+        domScrollWidth: mainElement.scrollWidth,
+        domScrollHeight: mainElement.scrollHeight,
+        zoomScale,
+        calculatedWidth: actualContentWidth,
+        calculatedHeight: actualContentHeight,
+        viewportWidth: viewportSize.width,
+        viewportHeight: viewportSize.height
+      });
+      
       return { width: actualContentWidth, height: actualContentHeight };
     }
     
@@ -543,20 +555,36 @@ const ImageGrid: React.FC = () => {
 
   const handleHorizontalScroll = (position: number) => {
     if (viewRef.current) {
+      setIsScrolling(true);
       viewRef.current.setPosition(-position, viewRef.current.getPosition().y);
       const mainElement = document.getElementById('main-element');
       if (mainElement) {
         viewRef.current.applyTo(mainElement);
+        // Trigger image quality update immediately for scrolling
+        getVisibleImages();
+        
+        // Debounce the end of scrolling
+        setTimeout(() => {
+          setIsScrolling(false);
+        }, 150);
       }
     }
   };
 
   const handleVerticalScroll = (position: number) => {
     if (viewRef.current) {
+      setIsScrolling(true);
       viewRef.current.setPosition(viewRef.current.getPosition().x, -position);
       const mainElement = document.getElementById('main-element');
       if (mainElement) {
         viewRef.current.applyTo(mainElement);
+        // Trigger image quality update immediately for scrolling
+        getVisibleImages();
+        
+        // Debounce the end of scrolling
+        setTimeout(() => {
+          setIsScrolling(false);
+        }, 150);
       }
     }
   };
@@ -622,7 +650,7 @@ const ImageGrid: React.FC = () => {
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
       }
 
-      if (isDragging) {
+      if (isDragging || isScrolling) {
         return updateImagesWithNewHeight(prevImages, zoomScale, visibleImages);
       }
       if (isDeleting) {
@@ -1445,33 +1473,104 @@ const ImageGrid: React.FC = () => {
     )}
 
     {/* Custom Scrollbars */}
-    {/* Show vertical scrollbar if content height exceeds viewport */}
-    {contentSize.height > viewportSize.height && (
-      <CustomScrollbar
-        orientation="vertical"
-        contentSize={contentSize.height}
-        viewportSize={viewportSize.height} // Use full viewport height, let CSS handle the visual positioning
-        scrollPosition={scrollPosition.y}
-        onScroll={handleVerticalScroll}
-        bothScrollbarsVisible={contentSize.width > viewportSize.width && contentSize.height > viewportSize.height}
-      />
-    )}
-    {/* Show horizontal scrollbar if content width exceeds viewport */}
-    {contentSize.width > viewportSize.width && (
-      <CustomScrollbar
-        orientation="horizontal"
-        contentSize={contentSize.width}
-        viewportSize={viewportSize.width} // Use full viewport width, let CSS handle the visual positioning
-        scrollPosition={scrollPosition.x}
-        onScroll={handleHorizontalScroll}
-        bothScrollbarsVisible={contentSize.width > viewportSize.width && contentSize.height > viewportSize.height}
-      />
-    )}
-    
-    {/* Scrollbar corner */}
-    {contentSize.width > viewportSize.width && contentSize.height > viewportSize.height && (
-      <div className="scrollbar-corner" />
-    )}
+    {(() => {
+      // DOM-based approach: check if actual image content overflows viewport
+      const checkContentOverflow = () => {
+        const mainElement = document.getElementById('main-element');
+        const rootElement = document.getElementById('root');
+        if (!mainElement || !rootElement) return { horizontal: false, vertical: false };
+        
+        const rootRect = rootElement.getBoundingClientRect();
+        
+        // Get all image elements within main-element
+        const images = mainElement.querySelectorAll('img, .image-card');
+        if (images.length === 0) return { horizontal: false, vertical: false };
+        
+        // Calculate the actual bounds of all visible content
+        let minLeft = Infinity, minTop = Infinity;
+        let maxRight = -Infinity, maxBottom = -Infinity;
+        
+        images.forEach(img => {
+          const imgRect = img.getBoundingClientRect();
+          minLeft = Math.min(minLeft, imgRect.left);
+          minTop = Math.min(minTop, imgRect.top);
+          maxRight = Math.max(maxRight, imgRect.right);
+          maxBottom = Math.max(maxBottom, imgRect.bottom);
+        });
+        
+        // Create content bounds from actual image positions
+        const actualContentRect = {
+          left: minLeft,
+          top: minTop,
+          right: maxRight,
+          bottom: maxBottom,
+          width: maxRight - minLeft,
+          height: maxBottom - minTop
+        };
+        
+        // Check if actual content extends outside root element
+        const horizontalOverflow = actualContentRect.left < rootRect.left || actualContentRect.right > rootRect.right;
+        const verticalOverflow = actualContentRect.top < rootRect.top || actualContentRect.bottom > rootRect.bottom;
+        
+        console.log('DOM-based overflow check (actual content bounds):', {
+          actualContentRect,
+          rootViewport: {
+            left: rootRect.left,
+            top: rootRect.top,
+            right: rootRect.right,
+            bottom: rootRect.bottom,
+            width: rootRect.width,
+            height: rootRect.height
+          },
+          horizontalOverflow,
+          verticalOverflow,
+          leftOverhang: Math.min(0, actualContentRect.left - rootRect.left),
+          rightOverhang: Math.max(0, actualContentRect.right - rootRect.right),
+          topOverhang: Math.min(0, actualContentRect.top - rootRect.top),
+          bottomOverhang: Math.max(0, actualContentRect.bottom - rootRect.bottom),
+          imageCount: images.length
+        });
+        
+        return {
+          horizontal: horizontalOverflow,
+          vertical: verticalOverflow
+        };
+      };
+      
+      const overflow = checkContentOverflow();
+      
+      return (
+        <>
+          {/* Show vertical scrollbar only if content actually overflows viewport */}
+          {overflow.vertical && (
+            <CustomScrollbar
+              orientation="vertical"
+              contentSize={contentSize.height}
+              viewportSize={viewportSize.height}
+              scrollPosition={scrollPosition.y}
+              onScroll={handleVerticalScroll}
+              bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
+            />
+          )}
+          {/* Show horizontal scrollbar only if content actually overflows viewport */}
+          {overflow.horizontal && (
+            <CustomScrollbar
+              orientation="horizontal"
+              contentSize={contentSize.width}
+              viewportSize={viewportSize.width}
+              scrollPosition={scrollPosition.x}
+              onScroll={handleHorizontalScroll}
+              bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
+            />
+          )}
+          
+          {/* Scrollbar corner */}
+          {overflow.vertical && overflow.horizontal && (
+            <div className="scrollbar-corner" />
+          )}
+        </>
+      );
+    })()}
     </>
     ) : (<>{(isImageListFetched ?
       (!isCachingCompleted && <div className='loading-spinner' 
