@@ -1541,8 +1541,8 @@ const ImageGrid: React.FC = () => {
       
       return (
         <>
-          {/* Show vertical scrollbar only if content actually overflows viewport */}
-          {overflow.vertical && (
+          {/* Show vertical scrollbar only if content actually overflows viewport AND gallery is closed */}
+          {overflow.vertical && isGalleriaClosed !== false && (
             <CustomScrollbar
               orientation="vertical"
               contentSize={contentSize.height}
@@ -1552,8 +1552,8 @@ const ImageGrid: React.FC = () => {
               bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
             />
           )}
-          {/* Show horizontal scrollbar only if content actually overflows viewport */}
-          {overflow.horizontal && (
+          {/* Show horizontal scrollbar only if content actually overflows viewport AND gallery is closed */}
+          {overflow.horizontal && isGalleriaClosed !== false && (
             <CustomScrollbar
               orientation="horizontal"
               contentSize={contentSize.width}
@@ -1564,8 +1564,8 @@ const ImageGrid: React.FC = () => {
             />
           )}
           
-          {/* Scrollbar corner */}
-          {overflow.vertical && overflow.horizontal && (
+          {/* Scrollbar corner - only show if both scrollbars are visible AND gallery is closed */}
+          {overflow.vertical && overflow.horizontal && isGalleriaClosed !== false && (
             <div className="scrollbar-corner" />
           )}
         </>
