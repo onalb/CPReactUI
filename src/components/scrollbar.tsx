@@ -23,6 +23,7 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [dragStart, setDragStart] = useState({ position: 0, scroll: 0 });
 
   const isHorizontal = orientation === 'horizontal';
@@ -104,6 +105,18 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
   const handleMouseUp = useCallback((event: MouseEvent) => {
     if (isDragging) {
       setIsDragging(false);
+      
+      // Check if mouse is still over the track element
+      if (trackRef.current) {
+        const rect = trackRef.current.getBoundingClientRect();
+        const isMouseOverTrack = (
+          event.clientX >= rect.left &&
+          event.clientX <= rect.right &&
+          event.clientY >= rect.top &&
+          event.clientY <= rect.bottom
+        );
+        setIsHovered(isMouseOverTrack);
+      }
     }
   }, [isDragging]);
 
@@ -111,11 +124,15 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
   const handleMouseLeave = useCallback(() => {
     if (isDragging) {
       setIsDragging(false);
+      setIsHovered(false); // Reset hover state when leaving the window
     }
   }, [isDragging]);
 
   // Handle mouse entering the window - check if mouse button is still pressed
   const handleMouseEnter = useCallback((event: MouseEvent) => {
+    // Reset hover state when mouse re-enters the window (ensures both scrollbars return to original size)
+    setIsHovered(false);
+    
     // Check if we're in a dragging state but no mouse buttons are pressed
     if (isDragging && event.buttons === 0) {
       // Mouse button was released outside the window, stop dragging
@@ -159,6 +176,45 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
     }
   }, [isDragging, handleMouseMove, handleMouseUp, handleMouseLeave, handleMouseEnter]);
 
+  // Always listen for mouse enter events to reset thickness
+  useEffect(() => {
+    window.addEventListener('mouseenter', handleMouseEnter);
+    
+    return () => {
+      window.removeEventListener('mouseenter', handleMouseEnter);
+    };
+  }, [handleMouseEnter]);
+
+  // Listen for mouse movement without button pressed to reset thickness
+  useEffect(() => {
+    const handleDocumentMouseMove = (event: MouseEvent) => {
+      // Only reset if no mouse buttons are pressed (just hovering/moving)
+      if (event.buttons === 0 && isHovered && !isDragging) {
+        // Check if mouse is not over this scrollbar track
+        if (trackRef.current) {
+          const rect = trackRef.current.getBoundingClientRect();
+          const isMouseOverTrack = (
+            event.clientX >= rect.left &&
+            event.clientX <= rect.right &&
+            event.clientY >= rect.top &&
+            event.clientY <= rect.bottom
+          );
+          
+          // If mouse is not over this track, reset thickness
+          if (!isMouseOverTrack) {
+            setIsHovered(false);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('mousemove', handleDocumentMouseMove);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleDocumentMouseMove);
+    };
+  }, [isHovered, isDragging]);
+
   if (!shouldShow) return null;
 
   return (
@@ -167,47 +223,50 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
       className={`custom-scrollbar-track ${isHorizontal ? 'horizontal' : 'vertical'}`}
       style={{
         position: 'fixed',
-        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        backgroundColor: isHovered ? 'rgba(128, 128, 128, 0.5)' : 'rgba(128, 128, 128, 0.3)',
         zIndex: 1000,
         pointerEvents: 'auto', // Ensure scrollbar can be interacted with
+        transition: 'all 0.2s ease', // Smooth transition for hover effects
         ...(isHorizontal ? {
           bottom: '0px',
           left: '0px',
-          right: bothScrollbarsVisible ? '20px' : '0px', // Leave space for vertical scrollbar if both are present
-          height: '20px',
+          right: bothScrollbarsVisible ? (isHovered ? '16px' : '20px') : '0px', // Leave space for vertical scrollbar if both are present
+          height: isHovered ? '60px' : '20px', // Original thickness, 3x thicker on hover
           maxWidth: `${actualTrackSize}px`, // Constrain to actual track size
           minWidth: '0px', // Prevent overflow
         } : {
           top: '0px',
           right: '0px',
-          bottom: bothScrollbarsVisible ? '20px' : '0px', // Leave space for horizontal scrollbar if both are present
-          width: '20px',
+          bottom: bothScrollbarsVisible ? (isHovered ? '16px' : '20px') : '0px', // Leave space for horizontal scrollbar if both are present
+          width: isHovered ? '60px' : '20px', // Original thickness, 3x thicker on hover
           maxHeight: `${actualTrackSize}px`, // Constrain to actual track size
           minHeight: '0px', // Prevent overflow
         })
       }}
       onClick={handleTrackClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => !isDragging && setIsHovered(false)}
     >
       <div
         ref={thumbRef}
         className={`custom-scrollbar-thumb ${isHorizontal ? 'horizontal' : 'vertical'}`}
         style={{
           position: 'absolute',
-          backgroundColor: isDragging ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.5)',
-          borderRadius: '10px',
+          backgroundColor: isDragging ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.7)',
+          borderRadius: isHovered ? '24px' : '10px', // Adjusted for hover state
           cursor: 'pointer',
-          transition: isDragging ? 'none' : 'background-color 0.2s ease',
+          transition: isDragging ? 'none' : 'all 0.2s ease', // Smooth transition for all properties
           touchAction: 'none', // Prevent default touch behaviors
           ...(isHorizontal ? {
             left: `${thumbPosition}px`,
-            top: '2px',
+            top: isHovered ? '6px' : '2px', // Adjust position based on track thickness
             width: `${thumbSize}px`,
-            height: '16px',
+            height: isHovered ? '48px' : '16px', // Adjust height based on track thickness
           } : {
             top: `${thumbPosition}px`,
-            left: '2px',
+            left: isHovered ? '6px' : '2px', // Adjust position based on track thickness
             height: `${thumbSize}px`,
-            width: '16px',
+            width: isHovered ? '48px' : '16px', // Adjust width based on track thickness
           })
         }}
         onMouseDown={handleMouseDown}
