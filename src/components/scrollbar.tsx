@@ -252,8 +252,8 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
         className={`custom-scrollbar-thumb ${isHorizontal ? 'horizontal' : 'vertical'}`}
         style={{
           position: 'absolute',
-          backgroundColor: isDragging ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.7)',
-          borderRadius: isHovered ? '24px' : '10px', // Adjusted for hover state
+          backgroundColor: isDragging ? 'rgba(255, 255, 255, 0.75)' : 'rgba(255, 255, 255, 0.35)',
+          borderRadius: '0px', // Sharp corners
           cursor: 'pointer',
           transition: isDragging ? 'none' : 'all 0.2s ease', // Smooth transition for all properties
           touchAction: 'none', // Prevent default touch behaviors
