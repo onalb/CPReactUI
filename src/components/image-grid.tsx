@@ -1478,13 +1478,23 @@ const ImageGrid: React.FC = () => {
       const checkContentOverflow = () => {
         const mainElement = document.getElementById('main-element');
         const rootElement = document.getElementById('root');
-        if (!mainElement || !rootElement) return { horizontal: false, vertical: false };
+        if (!mainElement || !rootElement) return { 
+          horizontal: false, 
+          vertical: false,
+          actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
+          viewportBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 }
+        };
         
         const rootRect = rootElement.getBoundingClientRect();
         
         // Get all image elements within main-element
         const images = mainElement.querySelectorAll('img, .image-card');
-        if (images.length === 0) return { horizontal: false, vertical: false };
+        if (images.length === 0) return { 
+          horizontal: false, 
+          vertical: false,
+          actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
+          viewportBounds: { width: rootRect.width, height: rootRect.height, left: rootRect.left, top: rootRect.top, right: rootRect.right, bottom: rootRect.bottom }
+        };
         
         // Calculate the actual bounds of all visible content
         let minLeft = Infinity, minTop = Infinity;
@@ -1499,7 +1509,7 @@ const ImageGrid: React.FC = () => {
         });
         
         // Create content bounds from actual image positions
-        const actualContentRect = {
+        const actualContentBounds = {
           left: minLeft,
           top: minTop,
           right: maxRight,
@@ -1507,37 +1517,47 @@ const ImageGrid: React.FC = () => {
           width: maxRight - minLeft,
           height: maxBottom - minTop
         };
+
+        const viewportBounds = {
+          left: rootRect.left,
+          top: rootRect.top,
+          right: rootRect.right,
+          bottom: rootRect.bottom,
+          width: rootRect.width,
+          height: rootRect.height
+        };
         
         // Check if actual content extends outside root element
-        const horizontalOverflow = actualContentRect.left < rootRect.left || actualContentRect.right > rootRect.right;
-        const verticalOverflow = actualContentRect.top < rootRect.top || actualContentRect.bottom > rootRect.bottom;
+        const horizontalOverflow = actualContentBounds.left < rootRect.left || actualContentBounds.right > rootRect.right;
+        const verticalOverflow = actualContentBounds.top < rootRect.top || actualContentBounds.bottom > rootRect.bottom;
         
         console.log('DOM-based overflow check (actual content bounds):', {
-          actualContentRect,
-          rootViewport: {
-            left: rootRect.left,
-            top: rootRect.top,
-            right: rootRect.right,
-            bottom: rootRect.bottom,
-            width: rootRect.width,
-            height: rootRect.height
-          },
+          actualContentBounds,
+          rootViewport: viewportBounds,
           horizontalOverflow,
           verticalOverflow,
-          leftOverhang: Math.min(0, actualContentRect.left - rootRect.left),
-          rightOverhang: Math.max(0, actualContentRect.right - rootRect.right),
-          topOverhang: Math.min(0, actualContentRect.top - rootRect.top),
-          bottomOverhang: Math.max(0, actualContentRect.bottom - rootRect.bottom),
+          leftOverhang: Math.min(0, actualContentBounds.left - rootRect.left),
+          rightOverhang: Math.max(0, actualContentBounds.right - rootRect.right),
+          topOverhang: Math.min(0, actualContentBounds.top - rootRect.top),
+          bottomOverhang: Math.max(0, actualContentBounds.bottom - rootRect.bottom),
           imageCount: images.length
         });
         
         return {
           horizontal: horizontalOverflow,
-          vertical: verticalOverflow
+          vertical: verticalOverflow,
+          actualContentBounds,
+          viewportBounds
         };
       };
       
       const overflow = checkContentOverflow();
+      
+      // Calculate dynamic content sizes based on actual content bounds for better scrollbar representation
+      const dynamicContentSize = {
+        width: overflow.actualContentBounds.width || contentSize.width,
+        height: overflow.actualContentBounds.height || contentSize.height
+      };
       
       return (
         <>
@@ -1545,7 +1565,7 @@ const ImageGrid: React.FC = () => {
           {overflow.vertical && isGalleriaClosed !== false && (
             <CustomScrollbar
               orientation="vertical"
-              contentSize={contentSize.height}
+              contentSize={dynamicContentSize.height}
               viewportSize={viewportSize.height}
               scrollPosition={scrollPosition.y}
               onScroll={handleVerticalScroll}
@@ -1556,7 +1576,7 @@ const ImageGrid: React.FC = () => {
           {overflow.horizontal && isGalleriaClosed !== false && (
             <CustomScrollbar
               orientation="horizontal"
-              contentSize={contentSize.width}
+              contentSize={dynamicContentSize.width}
               viewportSize={viewportSize.width}
               scrollPosition={scrollPosition.x}
               onScroll={handleHorizontalScroll}

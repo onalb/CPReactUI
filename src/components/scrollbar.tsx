@@ -51,8 +51,8 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
   const rawThumbPosition = maxScrollPosition > 0 ? (clampedScrollPosition / maxScrollPosition) * maxThumbPosition : 0;
   const thumbPosition = Math.max(0, Math.min(rawThumbPosition, maxThumbPosition)); // Additional safety clamping
 
-  // Show scrollbar only if there's actually scrollable content (either overflow or displacement)
-  const shouldShow = maxScrollPosition > 0;
+  // Show scrollbar if there's scrollable content OR if currently being dragged
+  const shouldShow = maxScrollPosition > 0 || isDragging;
 
   const handleMouseDown = useCallback((event: React.MouseEvent) => {
     if (!thumbRef.current || !trackRef.current) return;
@@ -75,6 +75,16 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
       position: clickPosition - thumbStart,
       scroll: scrollPosition
     });
+    
+    // Add global mouse up listener with capture phase to ensure it fires
+    const globalMouseUpHandler = () => {
+      setIsDragging(false);
+      document.removeEventListener('mouseup', globalMouseUpHandler, true);
+      window.removeEventListener('mouseup', globalMouseUpHandler, true);
+    };
+    
+    document.addEventListener('mouseup', globalMouseUpHandler, true);
+    window.addEventListener('mouseup', globalMouseUpHandler, true);
   }, [isHorizontal, scrollPosition]);
 
   const handleMouseMove = useCallback((event: MouseEvent) => {
