@@ -124,6 +124,13 @@ const applyMouseAndTouchEvents = (
     } 
 
     if (isDragging) {
+      // Check if mouse button is still pressed - if not, stop dragging
+      if (event.buttons === 0) {
+        isDragging = false;
+        setIsDragging(false);
+        return;
+      }
+      
       const dx = event.clientX - lastPosX;
       const dy = event.clientY - lastPosY;
       setIsDragging(dx || dy ? true : false);
@@ -146,6 +153,15 @@ const applyMouseAndTouchEvents = (
       clearTimeout(longTapTimeout);
       longTapTimeout = null;
       setIsLongTouch(false);
+    }
+  };
+
+  const handleMouseEnter = (event: any) => {
+    // Check if we're supposedly dragging but mouse button is not pressed
+    if (isDragging && event.buttons === 0) {
+      // Mouse button was released outside the window, stop dragging
+      isDragging = false;
+      setIsDragging(false);
     }
   };
 
@@ -373,6 +389,7 @@ const applyMouseAndTouchEvents = (
   addTrackedEventListener(window, 'mousedown', handleMouseDown);
   addTrackedEventListener(window, 'mousemove', handleMouseMove);
   addTrackedEventListener(window, 'mouseup', handleMouseUp);
+  addTrackedEventListener(window, 'mouseenter', handleMouseEnter);
   addTrackedEventListener(window, 'wheel', handleWheel);
   addTrackedEventListener(window, 'touchstart', handleTouchStart as EventListener, { passive: false });
   addTrackedEventListener(window, 'touchmove', handleTouchMove as EventListener, { passive: false });
@@ -382,6 +399,7 @@ const applyMouseAndTouchEvents = (
     removeTrackedEventListeners(window, 'mousedown');
     removeTrackedEventListeners(window, 'mousemove');
     removeTrackedEventListeners(window, 'mouseup');
+    removeTrackedEventListeners(window, 'mouseenter');
     removeTrackedEventListeners(window, 'wheel');
     removeTrackedEventListeners(window, 'touchstart');
     removeTrackedEventListeners(window, 'touchmove');
