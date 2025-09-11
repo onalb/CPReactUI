@@ -70,7 +70,6 @@ const ImageGrid: React.FC = () => {
   const [isNotificationReceived, setIsNotificationReceived] = useState<boolean>(false);
   const [isHeaderOpened, setIsHeaderOpened] = useState<boolean>(false);
   const [isScrollToZoom, setIsScrollToZoom] = useState<boolean>(true); // Default: scroll to zoom (ON)
-  
   // Scrollbar state
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
   const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
@@ -532,17 +531,6 @@ const ImageGrid: React.FC = () => {
       const actualContentHeight = mainElement.scrollHeight * zoomScale;
       const actualContentWidth = mainElement.scrollWidth * zoomScale;
       
-      // Debug content size calculation
-      console.log('Content size calculation:', {
-        domScrollWidth: mainElement.scrollWidth,
-        domScrollHeight: mainElement.scrollHeight,
-        zoomScale,
-        calculatedWidth: actualContentWidth,
-        calculatedHeight: actualContentHeight,
-        viewportWidth: viewportSize.width,
-        viewportHeight: viewportSize.height
-      });
-      
       return { width: actualContentWidth, height: actualContentHeight };
     }
     
@@ -810,6 +798,12 @@ const ImageGrid: React.FC = () => {
 
   // User-Event handlers
   const handleKeyDown = (event: any) => {
+    if (event.ctrlKey) {
+      setIsScrollToZoom((prev) => {
+        return !prev;
+      });
+    }
+
     if (event.ctrlKey && event.key === 'a') {
       event.preventDefault();
       selectAllImages();
@@ -820,7 +814,7 @@ const ImageGrid: React.FC = () => {
     }
     
     if (event.key === 'Escape') {
-      if(!isGalleriaClosed) {
+      if (!isGalleriaClosed) {
         const container = document.querySelector('.photo-galleria') as HTMLDivElement;
         if (container) {
           container.style.transition = 'opacity 0.2s ease-out';
@@ -844,6 +838,7 @@ const ImageGrid: React.FC = () => {
 
   const handleKeyUp = (event: KeyboardEvent) => {
     if (event.key === 'Control') {
+      setIsScrollToZoom((prev) => !prev);
       if (squareRef.current) {
         document.body.removeChild(squareRef.current);
         squareRef.current = null;
@@ -1581,18 +1576,6 @@ const ImageGrid: React.FC = () => {
         // Check if actual content extends outside root element
         const horizontalOverflow = actualContentBounds.left < rootRect.left || actualContentBounds.right > rootRect.right;
         const verticalOverflow = actualContentBounds.top < rootRect.top || actualContentBounds.bottom > rootRect.bottom;
-        
-        console.log('DOM-based overflow check (actual content bounds):', {
-          actualContentBounds,
-          rootViewport: viewportBounds,
-          horizontalOverflow,
-          verticalOverflow,
-          leftOverhang: Math.min(0, actualContentBounds.left - rootRect.left),
-          rightOverhang: Math.max(0, actualContentBounds.right - rootRect.right),
-          topOverhang: Math.min(0, actualContentBounds.top - rootRect.top),
-          bottomOverhang: Math.max(0, actualContentBounds.bottom - rootRect.bottom),
-          imageCount: images.length
-        });
         
         return {
           horizontal: horizontalOverflow,

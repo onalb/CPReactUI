@@ -228,7 +228,7 @@ const applyMouseAndTouchEvents = (
     } else {
       // Determine if we should zoom or scroll based on the toggle and modifier keys
       const shouldZoom = isScrollToZoom ? !event.ctrlKey : event.ctrlKey;
-      
+
       if (shouldZoom) {
         // Zoom behavior
         const at = { x: event.clientX, y: event.clientY };
