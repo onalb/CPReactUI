@@ -233,7 +233,7 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
       className={`custom-scrollbar-track ${isHorizontal ? 'horizontal' : 'vertical'}`}
       style={{
         position: 'fixed',
-        backgroundColor: isHovered ? 'rgba(128, 128, 128, 0.5)' : 'rgba(128, 128, 128, 0.3)',
+        backgroundColor: isHovered ? 'rgba(116, 116, 116, 0.3)' : 'rgba(128, 128, 128, 0.5)' ,
         zIndex: 1000,
         pointerEvents: 'auto', // Ensure scrollbar can be interacted with
         transition: 'all 0.2s ease', // Smooth transition for hover effects

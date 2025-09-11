@@ -3,10 +3,6 @@
   transition: opacity 0.3s ease;
 }
 
-.custom-scrollbar-track:hover {
-  background-color: rgba(0, 0, 0, 0.3) !important;
-}
-
 .custom-scrollbar-thumb {
   user-select: none;
   -webkit-user-select: none;
