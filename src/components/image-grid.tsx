@@ -70,6 +70,8 @@ const ImageGrid: React.FC = () => {
   const [isNotificationReceived, setIsNotificationReceived] = useState<boolean>(false);
   const [isHeaderOpened, setIsHeaderOpened] = useState<boolean>(false);
   const [isScrollToZoom, setIsScrollToZoom] = useState<boolean>(true); // Default: scroll to zoom (ON)
+  const [isFilteredView, setIsFilteredView] = useState<boolean>(false); // Track if we're showing filtered view
+  const [filteredImageIds, setFilteredImageIds] = useState<number[]>([]); // Store IDs of images to show in filtered view
   // Scrollbar state
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
   const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
@@ -1231,7 +1233,7 @@ const ImageGrid: React.FC = () => {
         }}
       ></div>
       <div className='row align-self-center w-100'>
-        <div 
+        {/* <div 
           key='select-folder'
           className='col-4 d-flex align-items-center' 
           style={{ justifyContent: 'flex-start' }}>
@@ -1256,7 +1258,7 @@ const ImageGrid: React.FC = () => {
             >
             SELECT FOLDER
           </div>
-        </div>
+        </div> */}
         <div 
           key='scroll-zoom-toggle'
           className='col-2 d-flex align-items-center justify-content-center'>
@@ -1307,6 +1309,88 @@ const ImageGrid: React.FC = () => {
             <span style={{ color: 'white', fontSize: '12px' }}>
               {isScrollToZoom ? 'Zoom' : 'Pan'}
             </span>
+          </div>
+        </div>
+        <div
+          key='selected-count'
+          className='col-1 d-flex justify-content-center align-items-center'>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <i
+              className={`col bi bi-images`}
+              style={{        
+                display: 'block', fontSize: '45px', 
+                color: `${(selectedImageIds.length > 0 || isFilteredView) ? (isFilteredView ? '#4CAF50' : 'white') : 'gray'}`,
+                transition: 'color 0.3s ease, background-color 0.3s ease',
+                textAlign: 'center',
+                cursor: (selectedImageIds.length > 0 || isFilteredView) ? 'pointer' : 'default',
+              }}
+              data-bs-toggle="tooltip"
+              data-bs-placement="top"
+              title={`${selectedImageIds.length > 0 ? selectedImageIds.length + ' Selected - ' : ''}${isFilteredView ? 'Click to show all' : 'Click to view selected only'}`}
+              onMouseEnter={(e) => {
+                if (selectedImageIds.length > 0 || isFilteredView) {
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = (selectedImageIds.length > 0 || isFilteredView) ? (isFilteredView ? '#4CAF50' : 'white') : 'gray';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+              onClick={() => {
+                if (selectedImageIds.length > 0) {
+                  if (!isFilteredView) {
+                    // Entering filtered view - store selected IDs, keep selections
+                    setFilteredImageIds(selectedImageIds);
+                    setIsFilteredView(true);
+                  } else {
+                    // Exiting filtered view - go back to showing all images
+                    setIsFilteredView(false);
+                    setFilteredImageIds([]);
+                  }
+                } else if (isFilteredView) {
+                  // If no selections but in filtered view, allow exiting
+                  setIsFilteredView(false);
+                  setFilteredImageIds([]);
+                }
+              }}
+              onTouchEnd={() => {
+                if (selectedImageIds.length > 0) {
+                  if (!isFilteredView) {
+                    // Entering filtered view - store selected IDs, keep selections
+                    setFilteredImageIds(selectedImageIds);
+                    setIsFilteredView(true);
+                  } else {
+                    // Exiting filtered view - go back to showing all images
+                    setIsFilteredView(false);
+                    setFilteredImageIds([]);
+                  }
+                } else if (isFilteredView) {
+                  // If no selections but in filtered view, allow exiting
+                  setIsFilteredView(false);
+                  setFilteredImageIds([]);
+                }
+              }}
+            ></i>
+            {selectedImageIds.length > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '10px',
+                left: '40px',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                borderRadius: '50%',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                width: '24px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px solid white'
+              }}>
+                {selectedImageIds.length}
+              </span>
+            )}
           </div>
         </div>
         <div
@@ -1480,7 +1564,10 @@ const ImageGrid: React.FC = () => {
       onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
       onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
     >
-      {images.filter((i: any) => !i.isDeleted).map((image, index) => (
+      {images
+        .filter((i: any) => !i.isDeleted)
+        .filter((i: any) => isFilteredView ? filteredImageIds.includes(i.id) : true)
+        .map((image, index) => (
           <ImageCard 
             image={image}
             index={index}
