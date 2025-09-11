@@ -14,6 +14,7 @@ const applyMouseAndTouchEvents = (
   openImageOnNewTab?: any,
   onScrollPositionChange?: (x: number, y: number) => void,
   customView?: any,
+  isScrollToZoom?: boolean,
 ) => {
   // Use custom view if provided, otherwise use global view
   const currentView = customView || view;
@@ -189,57 +190,90 @@ const applyMouseAndTouchEvents = (
 
   const handleWheel = debounce((event: any) => {
     event.preventDefault();
-    if (event.ctrlKey) {
-      const dy = event.deltaY;
-      const mainElement = document.getElementById(elementId);
-
-      if (mainElement) {
-        const rect = mainElement.getBoundingClientRect();
-        const isBottomInView = rect.bottom - dy <= window.innerHeight;
-        const isTopInView = rect.top + dy >= 0;
-
-        if (!(dy > 0 && isBottomInView) && !(dy < 0 && isTopInView)) {
-          const rect = mainElement.getBoundingClientRect();
-          const distanceToTop = rect.top;
-          const distanceToBottom = window.innerHeight - rect.bottom;
-          const minDistance = Math.min(distanceToTop, distanceToBottom);
-          const multiplier = Math.min(Math.max(.2, Math.abs(minDistance) / window.innerHeight), 2.5);
-          const x = Math.abs(minDistance) / window.innerHeight;
-
-          currentView.pan({ x: 0, y: -dy * multiplier });
-          currentView.applyTo(mainElement);
-        }
-      }
-    } else if (event.shiftKey) {
+    
+    if (event.shiftKey) {
+      // Horizontal scroll behavior with boundary constraints (always takes priority)
       const dx = event.deltaY;
       const mainElement = document.getElementById(elementId);
 
       if (mainElement) {
-        const rect = mainElement.getBoundingClientRect();
-        const isRightInView = rect.right - dx <= window.innerWidth;
-        const isLeftInView = rect.left + dx >= 0;
-
-        if (!(dx > 0 && isRightInView) && !(dx < 0 && isLeftInView)) {
-          const rect = mainElement.getBoundingClientRect();
-          const distanceToLeft = rect.left;
-          const distanceToRight = window.innerWidth - rect.right;
-          const minDistance = Math.min(distanceToLeft, distanceToRight);
-          const multiplier = Math.min(Math.max(.2, Math.abs(minDistance) / window.innerWidth), 2.5);
-          const x = Math.abs(minDistance) / window.innerWidth;
-
-          currentView.pan({ x: -dx * multiplier, y: 0 });
+        const scale = currentView.getScale();
+        const viewportWidth = window.innerWidth;
+        const contentWidth = mainElement.offsetWidth * scale;
+        
+        // Calculate content overflow - this is the exact scrollable distance (same as scrollbar)
+        const contentOverflow = Math.max(contentWidth - viewportWidth, 0);
+        
+        // Current position and boundaries
+        const currentX = currentView.getPosition().x;
+        const maxX = 0; // Left boundary (content left at viewport left)
+        const minX = -contentOverflow; // Right boundary (exactly like scrollbar)
+        
+        // Use consistent scroll speed
+        const scrollSpeed = 1.0;
+        
+        // Calculate proposed new position
+        const proposedX = currentX + (-dx * scrollSpeed);
+        
+        // Clamp to exact boundaries and apply movement
+        const clampedX = Math.max(minX, Math.min(maxX, proposedX));
+        
+        // Only apply movement if there's actual change needed
+        if (Math.abs(clampedX - currentX) > 0.1) {
+          const actualDx = clampedX - currentX;
+          currentView.pan({ x: actualDx, y: 0 });
           currentView.applyTo(mainElement);
         }
       }
     } else {
-      const at = { x: event.clientX, y: event.clientY };
-      const amount = event.deltaY < 0 ? 1 + zoomSettings.speed : 1 - zoomSettings.speed;
-      const newScale = currentView.getScale() * amount * 2;
-      if (newScale < 0.2 || newScale > 10) {
-        return;
+      // Determine if we should zoom or scroll based on the toggle and modifier keys
+      const shouldZoom = isScrollToZoom ? !event.ctrlKey : event.ctrlKey;
+      
+      if (shouldZoom) {
+        // Zoom behavior
+        const at = { x: event.clientX, y: event.clientY };
+        const amount = event.deltaY < 0 ? 1 + zoomSettings.speed : 1 - zoomSettings.speed;
+        const newScale = currentView.getScale() * amount * 2;
+        if (newScale < 0.2 || newScale > 10) {
+          return;
+        }
+        currentView.scaleAt(at, amount, setZoomScale);
+        currentView.applyTo(document.getElementById(elementId));
+      } else {
+        // Vertical scroll behavior with boundary constraints
+        const dy = event.deltaY;
+        const mainElement = document.getElementById(elementId);
+
+        if (mainElement) {
+          const scale = currentView.getScale();
+          const viewportHeight = window.innerHeight;
+          const contentHeight = mainElement.offsetHeight * scale;
+          
+          // Calculate content overflow - this is the exact scrollable distance (same as scrollbar)
+          const contentOverflow = Math.max(contentHeight - viewportHeight, 0);
+          
+          // Current position and boundaries
+          const currentY = currentView.getPosition().y;
+          const maxY = 0; // Top boundary (content top at viewport top)
+          const minY = -contentOverflow; // Bottom boundary (exactly like scrollbar)
+          
+          // Use consistent scroll speed
+          const scrollSpeed = 1.0;
+          
+          // Calculate proposed new position
+          const proposedY = currentY + (-dy * scrollSpeed);
+          
+          // Clamp to exact boundaries and apply movement
+          const clampedY = Math.max(minY, Math.min(maxY, proposedY));
+          
+          // Only apply movement if there's actual change needed
+          if (Math.abs(clampedY - currentY) > 0.1) {
+            const actualDy = clampedY - currentY;
+            currentView.pan({ x: 0, y: actualDy });
+            currentView.applyTo(mainElement);
+          }
+        }
       }
-      currentView.scaleAt(at, amount, setZoomScale);
-      currentView.applyTo(document.getElementById(elementId));
     }
 
     getVisibleImages();

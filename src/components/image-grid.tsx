@@ -69,6 +69,7 @@ const ImageGrid: React.FC = () => {
   const [isKeepButtonDisabled, setIsKeepButtonDisabled] = useState<boolean>(false);
   const [isNotificationReceived, setIsNotificationReceived] = useState<boolean>(false);
   const [isHeaderOpened, setIsHeaderOpened] = useState<boolean>(false);
+  const [isScrollToZoom, setIsScrollToZoom] = useState<boolean>(true); // Default: scroll to zoom (ON)
   
   // Scrollbar state
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
@@ -748,6 +749,7 @@ const ImageGrid: React.FC = () => {
         openImageOnNewTab,
         handleScrollPositionChange,
         viewRef.current,
+        isScrollToZoom,
       );
 
       return () => {
@@ -756,7 +758,7 @@ const ImageGrid: React.FC = () => {
         removeTrackedEventListeners(window, 'keydown');
       };
     }
-  }, [isLoadingCompletedAtStart]);
+  }, [isLoadingCompletedAtStart, isScrollToZoom]);
 
   useEffect(() => {
     if (isGalleriaClosed) {
@@ -776,6 +778,7 @@ const ImageGrid: React.FC = () => {
         openImageOnNewTab,
         handleScrollPositionChange,
         viewRef.current,
+        isScrollToZoom,
       );
         addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
         addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
@@ -786,7 +789,7 @@ const ImageGrid: React.FC = () => {
       removeTrackedEventListeners(window, 'keyup');
       removeTrackedEventListeners(window, 'keydown');
     };
-  }, [setIsGalleriaClosed, isGalleriaClosed]);
+  }, [setIsGalleriaClosed, isGalleriaClosed, isScrollToZoom]);
 
   useEffect(() => {
     addTrackedEventListener(window, 'click', handleClickOutside);
@@ -889,10 +892,6 @@ const ImageGrid: React.FC = () => {
   }
 
   const handleImageClick = (imageId: number, index: number, event: React.MouseEvent | React.TouchEvent) => {
-    // Copy event properties you need
-    const shiftKey = (event as any).shiftKey;
-    const ctrlKey = (event as any).ctrlKey;
-
     if (!isDragging && !isZooming) {
       if (clickTimeout && lastClickedImageId === imageId) {
         clearTimeout(clickTimeout);
@@ -1239,7 +1238,7 @@ const ImageGrid: React.FC = () => {
       <div className='row align-self-center w-100'>
         <div 
           key='select-folder'
-          className='col-6 d-flex align-items-center' 
+          className='col-4 d-flex align-items-center' 
           style={{ justifyContent: 'flex-start' }}>
           <div
             className='px-3'
@@ -1261,6 +1260,58 @@ const ImageGrid: React.FC = () => {
             }}
             >
             SELECT FOLDER
+          </div>
+        </div>
+        <div 
+          key='scroll-zoom-toggle'
+          className='col-2 d-flex align-items-center justify-content-center'>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ color: 'white', fontSize: '14px' }}>Scroll:</span>
+            <label style={{ 
+              position: 'relative', 
+              display: 'inline-block', 
+              width: '50px', 
+              height: '24px',
+              cursor: 'pointer'
+            }}>
+              <input
+                type="checkbox"
+                checked={isScrollToZoom}
+                onChange={(e) => setIsScrollToZoom(e.target.checked)}
+                style={{
+                  opacity: 0,
+                  width: 0,
+                  height: 0
+                }}
+              />
+              <span style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: isScrollToZoom ? '#4CAF50' : '#ccc',
+                borderRadius: '24px',
+                transition: '0.3s',
+                cursor: 'pointer'
+              }}>
+                <span style={{
+                  position: 'absolute',
+                  content: '""',
+                  height: '18px',
+                  width: '18px',
+                  left: isScrollToZoom ? '26px' : '3px',
+                  bottom: '3px',
+                  backgroundColor: 'white',
+                  borderRadius: '50%',
+                  transition: '0.3s',
+                  cursor: 'pointer'
+                }}></span>
+              </span>
+            </label>
+            <span style={{ color: 'white', fontSize: '12px' }}>
+              {isScrollToZoom ? 'Zoom' : 'Pan'}
+            </span>
           </div>
         </div>
         <div
