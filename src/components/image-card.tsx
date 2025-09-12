@@ -21,6 +21,7 @@ interface ImageCardProps {
   // setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   handleOnloadImg: () => void;
   setIsDeleting: React.Dispatch<React.SetStateAction<boolean>>;
+  isInFilteredView?: boolean;
 }
 
 const ImageCard = memo(({
@@ -35,7 +36,8 @@ const ImageCard = memo(({
   isDragging,
   // setIsLoading,
   handleOnloadImg,
-  setIsDeleting
+  setIsDeleting,
+  isInFilteredView = false
 }: ImageCardProps) => {
   
   const getBorderClass = () => {
@@ -43,12 +45,18 @@ const ImageCard = memo(({
       return 'border-current-selected';
     } else if (selectedImageIds.includes(image.id)) {
       return 'border-selected';
-    } else if (image.isKept) {
-      return 'border-kept';
-    } else if (image.isMarkedForDeletion) {
-      return 'border-marked';
+    } else if (isInFilteredView) {
+      // In filtered view, all borders should be black unless selected
+      return 'border-filtered';
     } else {
-      return 'border-default';
+      // Normal view - use colored borders
+      if (image.isKept) {
+        return 'border-kept';
+      } else if (image.isMarkedForDeletion) {
+        return 'border-marked';
+      } else {
+        return 'border-default';
+      }
     }
   };
 

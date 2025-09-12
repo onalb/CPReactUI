@@ -104,6 +104,20 @@ const ImageGrid: React.FC = () => {
   // Calculations
   let numberOfKeptImages = images.filter(image => !image.isDeleted && image.isKept).length;
   let numberOfMarkedImages = images.filter(image => !image.isDeleted && image.isMarkedForDeletion && !image.isKept).length;
+  
+  // Get currently filtered images based on filter state
+  const filteredImages = images
+    .filter((i: any) => !i.isDeleted)
+    .filter((i: any) => {
+      if (isFilteredView) {
+        return filteredImageIds.includes(i.id);
+      } else if (isKeptFilteredView) {
+        return keptFilteredImageIds.includes(i.id);
+      } else if (isMarkedFilteredView) {
+        return markedFilteredImageIds.includes(i.id);
+      }
+      return true;
+    });
 
   // Variables
 
@@ -913,17 +927,17 @@ const ImageGrid: React.FC = () => {
         lastClickedImageId = null;
         
         if (event.shiftKey && getCurrentSelectedImage().index !== null) {
-            const start = Math.min(
-              getCurrentSelectedImage().index,
-              images.findIndex((img) => img.id === imageId && !img.isDeleted)
-            );
-            const end = Math.max(
-              getCurrentSelectedImage().index, 
-              images.findIndex((img) => img.id === imageId && !img.isDeleted)
-            );
+            // Find indices in the filtered images array
+            const currentSelectedIndexInFiltered = filteredImages.findIndex((img) => img.id === getCurrentSelectedImage().id);
+            const clickedIndexInFiltered = filteredImages.findIndex((img) => img.id === imageId);
+            
+            if (currentSelectedIndexInFiltered !== -1 && clickedIndexInFiltered !== -1) {
+              const start = Math.min(currentSelectedIndexInFiltered, clickedIndexInFiltered);
+              const end = Math.max(currentSelectedIndexInFiltered, clickedIndexInFiltered);
 
-            const newSelectedImageIds = images.slice(start, end + 1).map((img) => img.id);
-            setSelectedImageIds((prevIds) => Array.from(new Set([...prevIds, ...newSelectedImageIds])));
+              const newSelectedImageIds = filteredImages.slice(start, end + 1).map((img) => img.id);
+              setSelectedImageIds((prevIds) => Array.from(new Set([...prevIds, ...newSelectedImageIds])));
+            }
             setCurrentSelectedImage(imageId);
           } else if (event.shiftKey && getCurrentSelectedImage().index === null) {
             setCurrentSelectedImage(imageId);
@@ -1554,18 +1568,7 @@ const ImageGrid: React.FC = () => {
       onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
       onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
     >
-      {images
-        .filter((i: any) => !i.isDeleted)
-        .filter((i: any) => {
-          if (isFilteredView) {
-            return filteredImageIds.includes(i.id);
-          } else if (isKeptFilteredView) {
-            return keptFilteredImageIds.includes(i.id);
-          } else if (isMarkedFilteredView) {
-            return markedFilteredImageIds.includes(i.id);
-          }
-          return true;
-        })
+      {filteredImages
         .map((image, index) => (
           <ImageCard 
             image={image}
@@ -1579,6 +1582,7 @@ const ImageGrid: React.FC = () => {
             selectedImageIds={selectedImageIds}
             handleOnloadImg={handleOnloadImg}
             setIsDeleting={setIsDeleting}
+            isInFilteredView={isFilteredView || isKeptFilteredView || isMarkedFilteredView}
           />
       ))}
     </div>

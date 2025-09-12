@@ -36,7 +36,11 @@
 }
 
 .border-default {
-  border-color: rgba(255, 255, 255, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.048) !important;
+}
+
+.border-filtered {
+  border-color: black !important;
 }
 
 .img {
