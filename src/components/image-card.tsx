@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import '../styles/ImageZoom.css';
 
 interface ImageCardProps {
   image: {
@@ -36,6 +37,21 @@ const ImageCard = memo(({
   handleOnloadImg,
   setIsDeleting
 }: ImageCardProps) => {
+  
+  const getBorderClass = () => {
+    if (getCurrentSelectedImage().id === image.id) {
+      return 'border-current-selected';
+    } else if (selectedImageIds.includes(image.id)) {
+      return 'border-selected';
+    } else if (image.isKept) {
+      return 'border-kept';
+    } else if (image.isMarkedForDeletion) {
+      return 'border-marked';
+    } else {
+      return 'border-default';
+    }
+  };
+
   return (
     <div key={index} className='image-card'>
       <div style={{ height: '300px', minWidth: '200px' }}>
@@ -44,7 +60,7 @@ const ImageCard = memo(({
           data-name={image.fileName}
           src={image.path}
           alt={`Image ${index}`}
-          className="img no-drag"
+          className={`img no-drag ${getBorderClass()}`}
           onLoad={handleOnloadImg}
           onError={() => console.error(`Image ${index} failed to load`)}
           onTouchEnd={(e: any) => {
@@ -54,7 +70,6 @@ const ImageCard = memo(({
             return !isDragging ? handleImageClick(image.id, index, e) : null;
           }}
           style={{
-            borderColor: getCurrentSelectedImage().id === image.id ? 'deeppink' : selectedImageIds.includes(image.id) ? 'blue' : image.isKept ? 'rgb(150, 255, 175)' : 'rgba(255, 255, 255, 0.5)',
             opacity: selectedImageIds.includes(image.id) ? 0.5 : 1,
             height: '300px'
           }} 

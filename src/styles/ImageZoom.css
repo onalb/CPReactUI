@@ -8,11 +8,35 @@
 }
 
 .clicked-green {
-  color: rgb(150, 255, 175);
+  color: rgb(25, 255, 79);
 }
 
 .clicked-orange {
   color: rgb(255, 193, 100);
+}
+
+.clicked-blue {
+  color: blue;
+}
+
+.border-current-selected {
+  border-color: deeppink !important;
+}
+
+.border-selected {
+  border-color: blue !important;
+}
+
+.border-kept {
+  border-color: rgb(25, 255, 79) !important;
+}
+
+.border-marked {
+  border-color: rgb(255, 193, 100) !important;
+}
+
+.border-default {
+  border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
 .img {

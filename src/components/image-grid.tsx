@@ -11,6 +11,7 @@ import  { startTimer, stopTimer} from './timer-functions';
 import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
 import CustomScrollbar from './scrollbar';
+import IconWithBadge from './icon-with-badge';
 import axios from 'axios';
 import { openDB } from 'idb';
 import ImageCard from './image-card';
@@ -72,6 +73,10 @@ const ImageGrid: React.FC = () => {
   const [isScrollToZoom, setIsScrollToZoom] = useState<boolean>(true); // Default: scroll to zoom (ON)
   const [isFilteredView, setIsFilteredView] = useState<boolean>(false); // Track if we're showing filtered view
   const [filteredImageIds, setFilteredImageIds] = useState<number[]>([]); // Store IDs of images to show in filtered view
+  const [isKeptFilteredView, setIsKeptFilteredView] = useState<boolean>(false); // Track if we're showing kept filtered view
+  const [keptFilteredImageIds, setKeptFilteredImageIds] = useState<number[]>([]); // Store IDs of kept images to show in filtered view
+  const [isMarkedFilteredView, setIsMarkedFilteredView] = useState<boolean>(false); // Track if we're showing marked filtered view
+  const [markedFilteredImageIds, setMarkedFilteredImageIds] = useState<number[]>([]); // Store IDs of marked images to show in filtered view
   // Scrollbar state
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
   const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
@@ -98,6 +103,7 @@ const ImageGrid: React.FC = () => {
 
   // Calculations
   let numberOfKeptImages = images.filter(image => !image.isDeleted && image.isKept).length;
+  let numberOfMarkedImages = images.filter(image => !image.isDeleted && image.isMarkedForDeletion && !image.isKept).length;
 
   // Variables
 
@@ -1314,84 +1320,68 @@ const ImageGrid: React.FC = () => {
         <div
           key='selected-count'
           className='col-1 d-flex justify-content-center align-items-center'>
-          <div style={{ position: 'relative', display: 'inline-block' }}>
-            <i
-              className={`col bi bi-images`}
-              style={{        
-                display: 'block', fontSize: '45px', 
-                color: `${(selectedImageIds.length > 0 || isFilteredView) ? (isFilteredView ? '#4CAF50' : 'white') : 'gray'}`,
-                transition: 'color 0.3s ease, background-color 0.3s ease',
-                textAlign: 'center',
-                cursor: (selectedImageIds.length > 0 || isFilteredView) ? 'pointer' : 'default',
-              }}
-              data-bs-toggle="tooltip"
-              data-bs-placement="top"
-              title={`${selectedImageIds.length > 0 ? selectedImageIds.length + ' Selected - ' : ''}${isFilteredView ? 'Click to show all' : 'Click to view selected only'}`}
-              onMouseEnter={(e) => {
-                if (selectedImageIds.length > 0 || isFilteredView) {
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = (selectedImageIds.length > 0 || isFilteredView) ? (isFilteredView ? '#4CAF50' : 'white') : 'gray';
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-              onClick={() => {
-                if (selectedImageIds.length > 0) {
-                  if (!isFilteredView) {
-                    // Entering filtered view - store selected IDs, keep selections
-                    setFilteredImageIds(selectedImageIds);
-                    setIsFilteredView(true);
-                  } else {
-                    // Exiting filtered view - go back to showing all images
-                    setIsFilteredView(false);
-                    setFilteredImageIds([]);
-                  }
-                } else if (isFilteredView) {
-                  // If no selections but in filtered view, allow exiting
-                  setIsFilteredView(false);
-                  setFilteredImageIds([]);
-                }
-              }}
-              onTouchEnd={() => {
-                if (selectedImageIds.length > 0) {
-                  if (!isFilteredView) {
-                    // Entering filtered view - store selected IDs, keep selections
-                    setFilteredImageIds(selectedImageIds);
-                    setIsFilteredView(true);
-                  } else {
-                    // Exiting filtered view - go back to showing all images
-                    setIsFilteredView(false);
-                    setFilteredImageIds([]);
-                  }
-                } else if (isFilteredView) {
-                  // If no selections but in filtered view, allow exiting
-                  setIsFilteredView(false);
-                  setFilteredImageIds([]);
-                }
-              }}
-            ></i>
-            {selectedImageIds.length > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '10px',
-                left: '40px',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                borderRadius: '50%',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                width: '24px',
-                height: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px solid white'
-              }}>
-                {selectedImageIds.length}
-              </span>
-            )}
-          </div>
+          <IconWithBadge
+            iconClass="bi bi-images"
+            count={selectedImageIds.length}
+            isActive={selectedImageIds.length > 0}
+            isFilteredView={isFilteredView}
+            title={`${selectedImageIds.length > 0 ? selectedImageIds.length + ' Selected - ' : ''}${isFilteredView ? 'Click to show all' : 'Click to view selected only'}`}
+            filteredIds={filteredImageIds}
+            setFilteredIds={setFilteredImageIds}
+            setIsFilteredView={setIsFilteredView}
+            otherFilterStates={{
+              setIsOtherFilteredView: setIsKeptFilteredView,
+              setOtherFilteredIds: setKeptFilteredImageIds,
+              setIsOtherFilteredView2: setIsMarkedFilteredView,
+              setOtherFilteredIds2: setMarkedFilteredImageIds
+            }}
+            getIdsToFilter={() => selectedImageIds}
+            filteredColorClass="clicked-blue"
+          />
+        </div>
+        <div
+          key='kept-images'
+          className='col-1 d-flex justify-content-center align-items-center'>
+          <IconWithBadge
+            iconClass="bi bi-bag-check"
+            count={numberOfKeptImages}
+            isActive={numberOfKeptImages > 0}
+            isFilteredView={isKeptFilteredView}
+            title={`${numberOfKeptImages > 0 ? numberOfKeptImages + ' Kept - ' : ''}${isKeptFilteredView ? 'Click to show all' : 'Click to view kept only'}`}
+            filteredIds={keptFilteredImageIds}
+            setFilteredIds={setKeptFilteredImageIds}
+            setIsFilteredView={setIsKeptFilteredView}
+            otherFilterStates={{
+              setIsOtherFilteredView: setIsFilteredView,
+              setOtherFilteredIds: setFilteredImageIds,
+              setIsOtherFilteredView2: setIsMarkedFilteredView,
+              setOtherFilteredIds2: setMarkedFilteredImageIds
+            }}
+            getIdsToFilter={() => images.filter(img => !img.isDeleted && img.isKept).map(img => img.id)}
+            filteredColorClass="clicked-green"
+          />
+        </div>
+        <div
+          key='marked-for-deletion'
+          className='col-1 d-flex justify-content-center align-items-center'>
+          <IconWithBadge
+            iconClass="bi bi-trash3-fill"
+            count={numberOfMarkedImages}
+            isActive={numberOfMarkedImages > 0}
+            isFilteredView={isMarkedFilteredView}
+            title={`${numberOfMarkedImages > 0 ? numberOfMarkedImages + ' Marked - ' : ''}${isMarkedFilteredView ? 'Click to show all' : 'Click to view marked only'}`}
+            filteredIds={markedFilteredImageIds}
+            setFilteredIds={setMarkedFilteredImageIds}
+            setIsFilteredView={setIsMarkedFilteredView}
+            otherFilterStates={{
+              setIsOtherFilteredView: setIsFilteredView,
+              setOtherFilteredIds: setFilteredImageIds,
+              setIsOtherFilteredView2: setIsKeptFilteredView,
+              setOtherFilteredIds2: setKeptFilteredImageIds
+            }}
+            getIdsToFilter={() => images.filter(img => !img.isDeleted && img.isMarkedForDeletion && !img.isKept).map(img => img.id)}
+            filteredColorClass="clicked-orange"
+          />
         </div>
         <div
           key='select-all'
@@ -1566,7 +1556,16 @@ const ImageGrid: React.FC = () => {
     >
       {images
         .filter((i: any) => !i.isDeleted)
-        .filter((i: any) => isFilteredView ? filteredImageIds.includes(i.id) : true)
+        .filter((i: any) => {
+          if (isFilteredView) {
+            return filteredImageIds.includes(i.id);
+          } else if (isKeptFilteredView) {
+            return keptFilteredImageIds.includes(i.id);
+          } else if (isMarkedFilteredView) {
+            return markedFilteredImageIds.includes(i.id);
+          }
+          return true;
+        })
         .map((image, index) => (
           <ImageCard 
             image={image}
