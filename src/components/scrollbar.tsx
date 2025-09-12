@@ -9,6 +9,7 @@ interface CustomScrollbarProps {
   onScroll: (position: number) => void;
   containerRef?: React.RefObject<HTMLElement>;
   bothScrollbarsVisible?: boolean; // New prop to indicate if both scrollbars are present
+  topOffset?: number; // Offset from top when header is pinned
 }
 
 const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
@@ -18,7 +19,8 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
   scrollPosition,
   onScroll,
   containerRef,
-  bothScrollbarsVisible = false
+  bothScrollbarsVisible = false,
+  topOffset = 0
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
@@ -245,7 +247,7 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
           maxWidth: `${actualTrackSize}px`, // Constrain to actual track size
           minWidth: '0px', // Prevent overflow
         } : {
-          top: '0px',
+          top: `${topOffset}px`,
           right: '0px',
           bottom: bothScrollbarsVisible ? (isHovered ? '16px' : '20px') : '0px', // Leave space for horizontal scrollbar if both are present
           width: isHovered ? '60px' : '20px', // Original thickness, 3x thicker on hover

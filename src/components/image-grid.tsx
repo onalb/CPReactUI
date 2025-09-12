@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import '../styles/ImageZoom.css';
 import '../styles/scrollbar.css';
@@ -70,6 +70,7 @@ const ImageGrid: React.FC = () => {
   const [isKeepButtonDisabled, setIsKeepButtonDisabled] = useState<boolean>(false);
   const [isNotificationReceived, setIsNotificationReceived] = useState<boolean>(false);
   const [isHeaderOpened, setIsHeaderOpened] = useState<boolean>(false);
+  const [isHeaderPinned, setIsHeaderPinned] = useState<boolean>(false);
   const [isScrollToZoom, setIsScrollToZoom] = useState<boolean>(true); // Default: scroll to zoom (ON)
   const [isFilteredView, setIsFilteredView] = useState<boolean>(false); // Track if we're showing filtered view
   const [filteredImageIds, setFilteredImageIds] = useState<number[]>([]); // Store IDs of images to show in filtered view
@@ -84,6 +85,7 @@ const ImageGrid: React.FC = () => {
     width: window.innerWidth, 
     height: window.innerHeight // Subtract header height
   });
+  const [scrollbarUpdateTrigger, setScrollbarUpdateTrigger] = useState(0); // Force scrollbar recalculation
 
   const padding = 10;
   const columnGap = 1;
@@ -646,6 +648,28 @@ const ImageGrid: React.FC = () => {
     setCurrentSelectedImage(null);
   }, [isOpenOnlyKept, folderPath]);
 
+  // Trigger scrollbar recalculation when filter states change
+  useEffect(() => {
+    // Reset scroll position when entering filter views
+    setScrollPosition({ x: 0, y: 0 });
+    
+    // Reset the viewport position
+    if (viewRef.current) {
+      viewRef.current.setPosition(0, 0);
+      const mainElement = document.getElementById('main-element');
+      if (mainElement) {
+        viewRef.current.applyTo(mainElement);
+      }
+    }
+    
+    // Use setTimeout to ensure DOM has updated after filter changes
+    const timer = setTimeout(() => {
+      setScrollbarUpdateTrigger(prev => prev + 1);
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, [isFilteredView, isKeptFilteredView, isMarkedFilteredView, filteredImageIds, keptFilteredImageIds, markedFilteredImageIds]);
+
   function varyImageQualityWithZoom () {
     setImages((prevImages) => {
       // This means zooming out
@@ -1149,18 +1173,28 @@ const ImageGrid: React.FC = () => {
 
   const handleMouseEnterHeader = (e: any) => {
     e.currentTarget.style.transform = 'translateY(0%)';
-    e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .8)';
-    const headerHandle: HTMLElement = document.querySelector('.header-handle') as HTMLElement;
-    if (headerHandle) (headerHandle).style.backgroundColor = 'rgba(32, 32, 32, .8)';
+    e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .95)';
     setIsHeaderOpened(true);
   };
 
   const handleMouseLeaveHeader = (e: any) => {
-    e.currentTarget.style.transform = 'translateY(-90%)';
-    e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .9)';
-    const headerHandle: HTMLElement = document.querySelector('.header-handle') as HTMLElement;
-    if (headerHandle) (headerHandle).style.backgroundColor = 'rgba(32, 32, 32, .9)';
-    setIsHeaderOpened(false);
+    if (!isHeaderPinned) {
+      e.currentTarget.style.transform = 'translateY(-100%)';
+      e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .98)';
+      setIsHeaderOpened(false);
+    }
+  };
+
+  const handleHeaderHandleClick = (e: any) => {
+    e.stopPropagation(); // Prevent triggering parent mouse events
+    
+    if (!isHeaderOpened) {
+      // If header is closed, open it first
+      setIsHeaderOpened(true);
+    } else {
+      // If header is open, toggle pin state
+      setIsHeaderPinned(!isHeaderPinned);
+    }
   };
 
   const handleOnloadImg = () => {
@@ -1217,19 +1251,128 @@ const ImageGrid: React.FC = () => {
     };
   }, [handleMouseUp]);
 
+  // Memoized scrollbar calculation that depends on filter states
+  const scrollbarElements = useMemo(() => {
+    // DOM-based approach: check if actual image content overflows viewport
+    const checkContentOverflow = () => {
+      const mainElement = document.getElementById('main-element');
+      const rootElement = document.getElementById('root');
+      if (!mainElement || !rootElement) return { 
+        horizontal: false, 
+        vertical: false,
+        actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
+        viewportBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 }
+      };
+      
+      const rootRect = rootElement.getBoundingClientRect();
+      
+      // Get all image elements within main-element
+      const images = mainElement.querySelectorAll('img, .image-card');
+      if (images.length === 0) return { 
+        horizontal: false, 
+        vertical: false,
+        actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
+        viewportBounds: { width: rootRect.width, height: rootRect.height, left: rootRect.left, top: rootRect.top, right: rootRect.right, bottom: rootRect.bottom }
+      };
+      
+      // Calculate the actual bounds of all visible content
+      let minLeft = Infinity, minTop = Infinity;
+      let maxRight = -Infinity, maxBottom = -Infinity;
+      
+      images.forEach(img => {
+        const imgRect = img.getBoundingClientRect();
+        minLeft = Math.min(minLeft, imgRect.left);
+        minTop = Math.min(minTop, imgRect.top);
+        maxRight = Math.max(maxRight, imgRect.right);
+        maxBottom = Math.max(maxBottom, imgRect.bottom);
+      });
+      
+      // Create content bounds from actual image positions
+      const actualContentBounds = {
+        left: minLeft,
+        top: minTop,
+        right: maxRight,
+        bottom: maxBottom,
+        width: maxRight - minLeft,
+        height: maxBottom - minTop
+      };
+
+      const viewportBounds = {
+        left: rootRect.left,
+        top: rootRect.top,
+        right: rootRect.right,
+        bottom: rootRect.bottom,
+        width: rootRect.width,
+        height: rootRect.height
+      };
+      
+      // Check if actual content extends outside root element
+      const horizontalOverflow = actualContentBounds.left < rootRect.left || actualContentBounds.right > rootRect.right;
+      const verticalOverflow = actualContentBounds.top < rootRect.top || actualContentBounds.bottom > rootRect.bottom;
+      
+      return {
+        horizontal: horizontalOverflow,
+        vertical: verticalOverflow,
+        actualContentBounds,
+        viewportBounds
+      };
+    };
+    
+    const overflow = checkContentOverflow();
+    
+    // Calculate dynamic content sizes based on actual content bounds for better scrollbar representation
+    const dynamicContentSize = {
+      width: overflow.actualContentBounds.width || contentSize.width,
+      height: overflow.actualContentBounds.height || contentSize.height
+    };
+    
+    return (
+      <>
+        {/* Show vertical scrollbar only if content actually overflows viewport AND gallery is closed */}
+        {overflow.vertical && isGalleriaClosed !== false && (
+          <CustomScrollbar
+            orientation="vertical"
+            contentSize={dynamicContentSize.height}
+            viewportSize={isHeaderPinned ? viewportSize.height - 100 : viewportSize.height}
+            scrollPosition={scrollPosition.y}
+            onScroll={handleVerticalScroll}
+            bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
+            topOffset={isHeaderPinned ? 100 : 0}
+          />
+        )}
+        {/* Show horizontal scrollbar only if content actually overflows viewport AND gallery is closed */}
+        {overflow.horizontal && isGalleriaClosed !== false && (
+          <CustomScrollbar
+            orientation="horizontal"
+            contentSize={dynamicContentSize.width}
+            viewportSize={viewportSize.width}
+            scrollPosition={scrollPosition.x}
+            onScroll={handleHorizontalScroll}
+            bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
+          />
+        )}
+        
+        {/* Scrollbar corner - only show if both scrollbars are visible AND gallery is closed */}
+        {overflow.vertical && overflow.horizontal && isGalleriaClosed !== false && (
+          <div className="scrollbar-corner" />
+        )}
+      </>
+    );
+  }, [scrollbarUpdateTrigger, isGalleriaClosed, contentSize, viewportSize, scrollPosition, isHeaderPinned, handleVerticalScroll, handleHorizontalScroll]);
+
   return (
     images && images.length > 0 ? (
     <>
     <div
-      className='header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0 no-selection-removal-on-click'
+      className={`header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0 no-selection-removal-on-click ${isHeaderOpened ? 'header-opened' : ''}`}
       style={{
-        backgroundColor: 'rgba(32, 32, 32, .9)',
+        backgroundColor: 'rgba(32, 32, 32, .98)',
         width: '100%',
         height: '100px',
         position: 'absolute',
         zIndex: 2,
         transition: 'transform 0.3s ease-in-out, background-color 0.3s ease', 
-        transform: 'translateY(-90%)',
+        transform: isHeaderPinned ? 'translateY(0%)' : 'translateY(-100%)',
       }}
       onMouseEnter={handleMouseEnterHeader}
       onMouseLeave={handleMouseLeaveHeader}
@@ -1237,48 +1380,14 @@ const ImageGrid: React.FC = () => {
     >
       <div
         className='header-handle no-selection-removal-on-click'
-        style={{
-          width: '150px',
-          height: '25px',
-          borderBottomLeftRadius: '400px',
-          borderBottomRightRadius: '400px',
-          borderBottomWidth: '2px', 
-          borderBottomColor: 'rgba(250, 250, 250, 1)',
-          backgroundColor: 'rgba(32, 32, 32, .9)',
-          position: 'absolute',
-          left: '85%',
-          bottom: '-25px',
-          cursor: 'pointer',
-          transition: 'background-color 0.3s ease',
-        }}
-      ></div>
+        onClick={handleHeaderHandleClick}
+        onTouchEnd={handleHeaderHandleClick}
+      >
+        <i 
+          className={`bi header-handle-icon ${!isHeaderOpened ? 'bi-chevron-compact-down' : (isHeaderPinned ? 'bi-pin-angle-fill' : 'bi-pin-angle')}`}
+        ></i>
+      </div>
       <div className='row align-self-center w-100'>
-        {/* <div 
-          key='select-folder'
-          className='col-4 d-flex align-items-center' 
-          style={{ justifyContent: 'flex-start' }}>
-          <div
-            className='px-3'
-            style={{
-              display: 'flex', fontSize: '25px', color: 'white', 
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center', // Center horizontally
-              height: '100%', // Make height as much as the parent
-              alignItems: 'center', // Center vertically
-              justifyContent: 'center' // Center horizontally
-            }}
-            data-bs-placement="top"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            >
-            SELECT FOLDER
-          </div>
-        </div> */}
         <div 
           key='scroll-zoom-toggle'
           className='col-2 d-flex align-items-center justify-content-center'>
@@ -1401,7 +1510,7 @@ const ImageGrid: React.FC = () => {
           key='select-all'
           className='col-1 d-flex justify-content-center align-items-center'>
           <i
-            className={`col bi bi-check2-all`}
+            className={`col bi bi-share`}
             style={{        
               display: 'block', fontSize: '45px', color: 'white',
               transition: 'color 0.3s ease, background-color 0.3s ease',
@@ -1561,8 +1670,10 @@ const ImageGrid: React.FC = () => {
         gap: columnGap + 'px',
         padding: padding + 'px',
         width: firstRowWidth + 'px',
+        marginTop: isHeaderPinned ? '100px' : '0px',
         transformOrigin: origin, // Dynamic transform-origin based on mouse position
         transform: 'matrix(1, 0, 0, 1, 0, 0)',
+        transition: 'margin-top 0.3s ease-in-out',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
@@ -1609,112 +1720,7 @@ const ImageGrid: React.FC = () => {
     )}
 
     {/* Custom Scrollbars */}
-    {(() => {
-      // DOM-based approach: check if actual image content overflows viewport
-      const checkContentOverflow = () => {
-        const mainElement = document.getElementById('main-element');
-        const rootElement = document.getElementById('root');
-        if (!mainElement || !rootElement) return { 
-          horizontal: false, 
-          vertical: false,
-          actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
-          viewportBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 }
-        };
-        
-        const rootRect = rootElement.getBoundingClientRect();
-        
-        // Get all image elements within main-element
-        const images = mainElement.querySelectorAll('img, .image-card');
-        if (images.length === 0) return { 
-          horizontal: false, 
-          vertical: false,
-          actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
-          viewportBounds: { width: rootRect.width, height: rootRect.height, left: rootRect.left, top: rootRect.top, right: rootRect.right, bottom: rootRect.bottom }
-        };
-        
-        // Calculate the actual bounds of all visible content
-        let minLeft = Infinity, minTop = Infinity;
-        let maxRight = -Infinity, maxBottom = -Infinity;
-        
-        images.forEach(img => {
-          const imgRect = img.getBoundingClientRect();
-          minLeft = Math.min(minLeft, imgRect.left);
-          minTop = Math.min(minTop, imgRect.top);
-          maxRight = Math.max(maxRight, imgRect.right);
-          maxBottom = Math.max(maxBottom, imgRect.bottom);
-        });
-        
-        // Create content bounds from actual image positions
-        const actualContentBounds = {
-          left: minLeft,
-          top: minTop,
-          right: maxRight,
-          bottom: maxBottom,
-          width: maxRight - minLeft,
-          height: maxBottom - minTop
-        };
-
-        const viewportBounds = {
-          left: rootRect.left,
-          top: rootRect.top,
-          right: rootRect.right,
-          bottom: rootRect.bottom,
-          width: rootRect.width,
-          height: rootRect.height
-        };
-        
-        // Check if actual content extends outside root element
-        const horizontalOverflow = actualContentBounds.left < rootRect.left || actualContentBounds.right > rootRect.right;
-        const verticalOverflow = actualContentBounds.top < rootRect.top || actualContentBounds.bottom > rootRect.bottom;
-        
-        return {
-          horizontal: horizontalOverflow,
-          vertical: verticalOverflow,
-          actualContentBounds,
-          viewportBounds
-        };
-      };
-      
-      const overflow = checkContentOverflow();
-      
-      // Calculate dynamic content sizes based on actual content bounds for better scrollbar representation
-      const dynamicContentSize = {
-        width: overflow.actualContentBounds.width || contentSize.width,
-        height: overflow.actualContentBounds.height || contentSize.height
-      };
-      
-      return (
-        <>
-          {/* Show vertical scrollbar only if content actually overflows viewport AND gallery is closed */}
-          {overflow.vertical && isGalleriaClosed !== false && (
-            <CustomScrollbar
-              orientation="vertical"
-              contentSize={dynamicContentSize.height}
-              viewportSize={viewportSize.height}
-              scrollPosition={scrollPosition.y}
-              onScroll={handleVerticalScroll}
-              bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
-            />
-          )}
-          {/* Show horizontal scrollbar only if content actually overflows viewport AND gallery is closed */}
-          {overflow.horizontal && isGalleriaClosed !== false && (
-            <CustomScrollbar
-              orientation="horizontal"
-              contentSize={dynamicContentSize.width}
-              viewportSize={viewportSize.width}
-              scrollPosition={scrollPosition.x}
-              onScroll={handleHorizontalScroll}
-              bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
-            />
-          )}
-          
-          {/* Scrollbar corner - only show if both scrollbars are visible AND gallery is closed */}
-          {overflow.vertical && overflow.horizontal && isGalleriaClosed !== false && (
-            <div className="scrollbar-corner" />
-          )}
-        </>
-      );
-    })()}
+    {scrollbarElements}
     </>
     ) : (<>{(isImageListFetched ?
       (!isCachingCompleted && <div className='loading-spinner' 
