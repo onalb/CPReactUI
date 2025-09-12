@@ -19,6 +19,10 @@
   color: blue;
 }
 
+.clicked-white {
+  color: white;
+}
+
 .border-current-selected {
   border-color: deeppink !important;
 }

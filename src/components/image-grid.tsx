@@ -1390,7 +1390,7 @@ const ImageGrid: React.FC = () => {
       <div className='row align-self-center w-100'>
         <div 
           key='scroll-zoom-toggle'
-          className='col-2 d-flex align-items-center justify-content-center'>
+          className='col-1 d-flex align-items-center justify-content-center'>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ color: 'white', fontSize: '14px' }}>Scroll:</span>
             <label style={{ 
@@ -1441,14 +1441,86 @@ const ImageGrid: React.FC = () => {
           </div>
         </div>
         <div
+          key='all-images'
+          className='col-1 d-flex justify-content-center align-items-center'>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <i
+              className={`col bi bi-images ${!isFilteredView && !isKeptFilteredView && !isMarkedFilteredView ? 'clicked-white' : ''}`}
+              style={{        
+                display: 'block', 
+                fontSize: '45px', 
+                color: !isFilteredView && !isKeptFilteredView && !isMarkedFilteredView ? 'white' : 'gray',
+                transition: 'color 0.3s ease, background-color 0.3s ease',
+                textAlign: 'center',
+                cursor: 'pointer',
+              }}
+              data-bs-toggle="tooltip"
+              data-bs-placement="top"
+              title={`${images.filter(img => !img.isDeleted).length} Total Images - Show all images`}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+              onClick={() => {
+                // Reset all filter states to show all images
+                setIsFilteredView(false);
+                setFilteredImageIds([]);
+                setIsKeptFilteredView(false);
+                setKeptFilteredImageIds([]);
+                setIsMarkedFilteredView(false);
+                setMarkedFilteredImageIds([]);
+                // Reset scroll position
+                const imagesContainer = document.querySelector('.images-container');
+                if (imagesContainer) {
+                  imagesContainer.scrollTop = 0;
+                }
+              }}
+              onTouchEnd={() => {
+                // Reset all filter states to show all images
+                setIsFilteredView(false);
+                setFilteredImageIds([]);
+                setIsKeptFilteredView(false);
+                setKeptFilteredImageIds([]);
+                setIsMarkedFilteredView(false);
+                setMarkedFilteredImageIds([]);
+                // Reset scroll position
+                const imagesContainer = document.querySelector('.images-container');
+                if (imagesContainer) {
+                  imagesContainer.scrollTop = 0;
+                }
+              }}
+            ></i>
+            <span style={{
+              position: 'absolute',
+              top: '15px',
+              right: '0px',
+              backgroundColor: '#FF6B6B',
+              color: 'white',
+              borderRadius: '50%',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              width: '24px',
+              height: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid white'
+            }}>
+              {images.filter(img => !img.isDeleted).length}
+            </span>
+          </div>
+        </div>
+        <div
           key='selected-count'
           className='col-1 d-flex justify-content-center align-items-center'>
           <IconWithBadge
-            iconClass="bi bi-images"
+            iconClass="bi bi-hand-index"
             count={selectedImageIds.length}
             isActive={selectedImageIds.length > 0}
             isFilteredView={isFilteredView}
-            title={`${selectedImageIds.length > 0 ? selectedImageIds.length + ' Selected - ' : ''}${isFilteredView ? 'Click to show all' : 'Click to view selected only'}`}
+            title={`${selectedImageIds.length > 0 ? selectedImageIds.length + ' Selected - ' : ''}${isFilteredView ? 'Show all' : 'View selected only'}`}
             filteredIds={filteredImageIds}
             setFilteredIds={setFilteredImageIds}
             setIsFilteredView={setIsFilteredView}
@@ -1470,7 +1542,7 @@ const ImageGrid: React.FC = () => {
             count={numberOfKeptImages}
             isActive={numberOfKeptImages > 0}
             isFilteredView={isKeptFilteredView}
-            title={`${numberOfKeptImages > 0 ? numberOfKeptImages + ' Kept - ' : ''}${isKeptFilteredView ? 'Click to show all' : 'Click to view kept only'}`}
+            title={`${numberOfKeptImages > 0 ? numberOfKeptImages + ' Kept - ' : ''}${isKeptFilteredView ? 'Show all' : 'View kept only'}`}
             filteredIds={keptFilteredImageIds}
             setFilteredIds={setKeptFilteredImageIds}
             setIsFilteredView={setIsKeptFilteredView}
@@ -1492,7 +1564,7 @@ const ImageGrid: React.FC = () => {
             count={numberOfMarkedImages}
             isActive={numberOfMarkedImages > 0}
             isFilteredView={isMarkedFilteredView}
-            title={`${numberOfMarkedImages > 0 ? numberOfMarkedImages + ' Marked - ' : ''}${isMarkedFilteredView ? 'Click to show all' : 'Click to view marked only'}`}
+            title={`${numberOfMarkedImages > 0 ? numberOfMarkedImages + ' Marked - ' : ''}${isMarkedFilteredView ? 'Show all' : 'View marked only'}`}
             filteredIds={markedFilteredImageIds}
             setFilteredIds={setMarkedFilteredImageIds}
             setIsFilteredView={setIsMarkedFilteredView}
