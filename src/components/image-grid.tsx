@@ -71,6 +71,7 @@ const ImageGrid: React.FC = () => {
   const [isNotificationReceived, setIsNotificationReceived] = useState<boolean>(false);
   const [isHeaderOpened, setIsHeaderOpened] = useState<boolean>(false);
   const [isHeaderPinned, setIsHeaderPinned] = useState<boolean>(false);
+  const [headerCloseTimeout, setHeaderCloseTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isScrollToZoom, setIsScrollToZoom] = useState<boolean>(true); // Default: scroll to zoom (ON)
   const [isFilteredView, setIsFilteredView] = useState<boolean>(false); // Track if we're showing filtered view
   const [filteredImageIds, setFilteredImageIds] = useState<number[]>([]); // Store IDs of images to show in filtered view
@@ -1172,6 +1173,11 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleMouseEnterHeader = (e: any) => {
+    // Clear any existing timeout when entering
+    if (headerCloseTimeout) {
+      clearTimeout(headerCloseTimeout);
+      setHeaderCloseTimeout(null);
+    }
     e.currentTarget.style.transform = 'translateY(0%)';
     e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .95)';
     setIsHeaderOpened(true);
@@ -1179,9 +1185,16 @@ const ImageGrid: React.FC = () => {
 
   const handleMouseLeaveHeader = (e: any) => {
     if (!isHeaderPinned) {
-      e.currentTarget.style.transform = 'translateY(-100%)';
-      e.currentTarget.style.backgroundColor = 'rgba(32, 32, 32, .98)';
-      setIsHeaderOpened(false);
+      // Store reference to the current target before the timeout
+      const headerElement = e.currentTarget;
+      // Set a 2-second delay before closing the header
+      const timeout = setTimeout(() => {
+        headerElement.style.transform = 'translateY(-100%)';
+        headerElement.style.backgroundColor = 'rgba(32, 32, 32, .98)';
+        setIsHeaderOpened(false);
+        setHeaderCloseTimeout(null);
+      }, 700);
+      setHeaderCloseTimeout(timeout);
     }
   };
 
@@ -1250,6 +1263,15 @@ const ImageGrid: React.FC = () => {
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [handleMouseUp]);
+
+  // Cleanup header timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (headerCloseTimeout) {
+        clearTimeout(headerCloseTimeout);
+      }
+    };
+  }, [headerCloseTimeout]);
 
   // Memoized scrollbar calculation that depends on filter states
   const scrollbarElements = useMemo(() => {
@@ -1554,6 +1576,10 @@ const ImageGrid: React.FC = () => {
             }}
             getIdsToFilter={() => images.filter(img => !img.isDeleted && img.isKept).map(img => img.id)}
             filteredColorClass="clicked-green"
+            onEnterFilter={() => {
+              setSelectedImageIds([]);
+              setCurrentSelectedImage(null);
+            }}
           />
         </div>
         <div
@@ -1576,6 +1602,10 @@ const ImageGrid: React.FC = () => {
             }}
             getIdsToFilter={() => images.filter(img => !img.isDeleted && img.isMarkedForDeletion && !img.isKept).map(img => img.id)}
             filteredColorClass="clicked-orange"
+            onEnterFilter={() => {
+              setSelectedImageIds([]);
+              setCurrentSelectedImage(null);
+            }}
           />
         </div>
         <div

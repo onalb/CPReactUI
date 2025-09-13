@@ -24,6 +24,8 @@ interface IconWithBadgeProps {
   };
   // Function to get IDs to filter (for entering filtered view)
   getIdsToFilter?: () => number[];
+  // Selection reset props
+  onEnterFilter?: () => void; // Called when entering filter view to reset selections
 }
 
 const IconWithBadge: React.FC<IconWithBadgeProps> = ({
@@ -41,13 +43,30 @@ const IconWithBadge: React.FC<IconWithBadgeProps> = ({
   setFilteredIds,
   setIsFilteredView,
   otherFilterStates,
-  getIdsToFilter
+  getIdsToFilter,
+  onEnterFilter
 }) => {
   const getIconColor = () => {
     if (count > 0 || isFilteredView) {
       return isFilteredView ? (filteredColorClass ? undefined : filteredColor) : activeColor;
     }
     return inactiveColor;
+  };
+
+  const getChevronColor = () => {
+    if (isFilteredView) {
+      // If using CSS class for color, use the same filteredColor as fallback
+      // but ideally should match the actual icon color
+      if (filteredColorClass) {
+        // For filtered views, try to match the CSS class colors
+        if (filteredColorClass.includes('blue')) return 'blue';
+        if (filteredColorClass.includes('green')) return '#4CAF50';
+        if (filteredColorClass.includes('orange')) return 'orange';
+        return filteredColor; // fallback
+      }
+      return filteredColor;
+    }
+    return activeColor;
   };
 
   const getIconClass = () => {
@@ -68,6 +87,10 @@ const IconWithBadge: React.FC<IconWithBadgeProps> = ({
         const idsToFilter = getIdsToFilter ? getIdsToFilter() : [];
         setFilteredIds(idsToFilter);
         setIsFilteredView(true);
+        // Reset selections when entering filter view
+        if (onEnterFilter) {
+          onEnterFilter();
+        }
         // Disable other filter if active
         if (otherFilterStates?.setIsOtherFilteredView) {
           otherFilterStates.setIsOtherFilteredView(false);
@@ -101,9 +124,10 @@ const IconWithBadge: React.FC<IconWithBadgeProps> = ({
           display: 'block', 
           fontSize: '45px', 
           color: getIconColor(),
-          transition: 'color 0.3s ease, background-color 0.3s ease',
+          transition: 'color 0.3s ease, background-color 0.3s ease, transform 0.3s ease',
           textAlign: 'center',
           cursor: getCursor(),
+          transform: isFilteredView ? 'translateY(-10px)' : 'translateY(0px)',
         }}
         data-bs-toggle="tooltip"
         data-bs-placement="top"
@@ -126,7 +150,7 @@ const IconWithBadge: React.FC<IconWithBadgeProps> = ({
       {count > 0 && (
         <span style={{
           position: 'absolute',
-          top: '15px',
+          top: isFilteredView ? '5px' : '15px',
           right: '0px',
           backgroundColor: badgeColor,
           color: 'white',
@@ -138,10 +162,28 @@ const IconWithBadge: React.FC<IconWithBadgeProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          border: '2px solid white'
+          border: '2px solid white',
+          transition: 'top 0.3s ease'
         }}>
           {count}
         </span>
+      )}
+      {isFilteredView && (
+        <i
+          className="bi bi-chevron-down"
+          style={{
+            position: 'absolute',
+            bottom: '-5px',
+            left: '50%',
+            transform: 'translateX(-50%) scaleX(1.8) scaleY(1.2)',
+            fontSize: '18px',
+            color: getChevronColor(),
+            fontWeight: 'bold',
+            transition: 'opacity 0.3s ease',
+            zIndex: 10,
+            textShadow: '0 0 1px currentColor',
+          }}
+        ></i>
       )}
     </div>
   );
