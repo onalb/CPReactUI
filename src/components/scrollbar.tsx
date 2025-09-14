@@ -10,6 +10,7 @@ interface CustomScrollbarProps {
   containerRef?: React.RefObject<HTMLElement>;
   bothScrollbarsVisible?: boolean; // New prop to indicate if both scrollbars are present
   topOffset?: number; // Offset from top when header is pinned
+  isVisible?: boolean; // Control visibility with smooth animations
 }
 
 const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
@@ -20,7 +21,8 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
   onScroll,
   containerRef,
   bothScrollbarsVisible = false,
-  topOffset = 0
+  topOffset = 0,
+  isVisible = true
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
@@ -52,9 +54,6 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
   const clampedScrollPosition = Math.max(0, Math.min(scrollPosition, maxScrollPosition));
   const rawThumbPosition = maxScrollPosition > 0 ? (clampedScrollPosition / maxScrollPosition) * maxThumbPosition : 0;
   const thumbPosition = Math.max(0, Math.min(rawThumbPosition, maxThumbPosition)); // Additional safety clamping
-
-  // Show scrollbar if there's scrollable content OR if currently being dragged
-  const shouldShow = maxScrollPosition > 0 || isDragging;
 
   const handleMouseDown = useCallback((event: React.MouseEvent) => {
     if (!thumbRef.current || !trackRef.current) return;
@@ -227,18 +226,24 @@ const CustomScrollbar: React.FC<CustomScrollbarProps> = ({
     };
   }, [isHovered, isDragging]);
 
-  if (!shouldShow) return null;
+  // Show scrollbar if there's scrollable content OR if currently being dragged
+  const shouldShow = maxScrollPosition > 0 || isDragging;
+
+  // Always render but control opacity and pointer events based on visibility
+  const effectiveOpacity = (shouldShow && isVisible) ? 1 : 0;
+  const effectivePointerEvents = (shouldShow && isVisible) ? 'auto' : 'none';
 
   return (
     <div
       ref={trackRef}
-      className={`custom-scrollbar-track ${isHorizontal ? 'horizontal' : 'vertical'}`}
+      className={`custom-scrollbar-track ${isHorizontal ? 'horizontal' : 'vertical'} ${!isVisible ? 'scrollbar-fade-out' : ''}`}
       style={{
         position: 'fixed',
         backgroundColor: isHovered ? 'rgba(116, 116, 116, 0.3)' : 'rgba(128, 128, 128, 0.5)' ,
         zIndex: 1000,
-        pointerEvents: 'auto', // Ensure scrollbar can be interacted with
-        transition: 'all 0.2s ease', // Smooth transition for hover effects
+        opacity: effectiveOpacity,
+        pointerEvents: effectivePointerEvents,
+        transition: 'all 0.3s ease', // Smooth transition for all properties including opacity
         ...(isHorizontal ? {
           bottom: '0px',
           left: '0px',

@@ -901,14 +901,59 @@ const ImageGrid: React.FC = () => {
     
     if (!event.ctrlKey && !isDragging && !isLongTouch && ((event.pointerType && event.pointerType === 'mouse') || (event.type === 'touchend'))) {
       const target = event.target as HTMLElement;
+      
+      // Check if the target or any parent element is disabled
+      let element = target;
+      let isDisabledElement = false;
+      let isExcludedElement = false;
+      
+      // Traverse up the DOM tree to check for disabled state or exclusion classes
+      while (element && element !== document.body) {       
+        if (element.hasAttribute('disabled') || 
+            element.classList.contains('disabled')) {
+          isDisabledElement = true;
+          break;
+        }
+        
+        // Also check if this element contains any disabled buttons as direct children
+        if (element.tagName === 'DIV') {
+          const disabledButtons = element.querySelectorAll('button.disabled, button[disabled]');
+          if (disabledButtons.length > 0) {
+            // Check if the click happened within any of these disabled buttons
+            const rect = element.getBoundingClientRect();
+            const clickX = event.clientX;
+            const clickY = event.clientY;
+            
+            for (const disabledButton of disabledButtons) {
+              const buttonRect = disabledButton.getBoundingClientRect();
+              if (clickX >= buttonRect.left && clickX <= buttonRect.right &&
+                  clickY >= buttonRect.top && clickY <= buttonRect.bottom) {
+                isDisabledElement = true;
+                break;
+              }
+            }
+          }
+          
+          if (isDisabledElement) break;
+        }
+        
+        if (element.classList.contains('no-selection-removal-on-click') ||
+            element.classList.contains('p-icon') ||
+            element.classList.contains('p-button-label') ||
+            element.classList.contains('p-button-icon')) {
+          isExcludedElement = true;
+          break;
+        }
+        
+        element = element.parentElement as HTMLElement;
+      }
+      
       if (target.tagName !== 'IMG' 
         && target.tagName !== 'BUTTON' 
         && target.tagName !== 'I' 
         && target.tagName !== 'path' 
-        && !(target.classList.contains('no-selection-removal-on-click') 
-        || target.classList.contains('p-icon') 
-        || target.classList.contains('p-button-label') 
-        || target.classList.contains('p-button-icon'))) {
+        && !isDisabledElement
+        && !isExcludedElement) {
         setSelectedImageIds([]);
         setCurrentSelectedImage(null);
       }
@@ -1355,34 +1400,36 @@ const ImageGrid: React.FC = () => {
     
     return (
       <>
-        {/* Show vertical scrollbar only if content actually overflows viewport AND gallery is closed */}
-        {overflow.vertical && isGalleriaClosed !== false && (
-          <CustomScrollbar
-            orientation="vertical"
-            contentSize={dynamicContentSize.height}
-            viewportSize={isHeaderPinned ? viewportSize.height - 100 : viewportSize.height}
-            scrollPosition={scrollPosition.y}
-            onScroll={handleVerticalScroll}
-            bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
-            topOffset={isHeaderPinned ? 100 : 0}
-          />
-        )}
-        {/* Show horizontal scrollbar only if content actually overflows viewport AND gallery is closed */}
-        {overflow.horizontal && isGalleriaClosed !== false && (
-          <CustomScrollbar
-            orientation="horizontal"
-            contentSize={dynamicContentSize.width}
-            viewportSize={viewportSize.width}
-            scrollPosition={scrollPosition.x}
-            onScroll={handleHorizontalScroll}
-            bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
-          />
-        )}
+        {/* Always render scrollbars but control visibility with animations */}
+        <CustomScrollbar
+          orientation="vertical"
+          contentSize={dynamicContentSize.height}
+          viewportSize={isHeaderPinned ? viewportSize.height - 100 : viewportSize.height}
+          scrollPosition={scrollPosition.y}
+          onScroll={handleVerticalScroll}
+          bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
+          topOffset={isHeaderPinned ? 100 : 0}
+          isVisible={overflow.vertical && isGalleriaClosed !== false}
+        />
+        <CustomScrollbar
+          orientation="horizontal"
+          contentSize={dynamicContentSize.width}
+          viewportSize={viewportSize.width}
+          scrollPosition={scrollPosition.x}
+          onScroll={handleHorizontalScroll}
+          bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
+          isVisible={overflow.horizontal && isGalleriaClosed !== false}
+        />
         
         {/* Scrollbar corner - only show if both scrollbars are visible AND gallery is closed */}
-        {overflow.vertical && overflow.horizontal && isGalleriaClosed !== false && (
-          <div className="scrollbar-corner" />
-        )}
+        <div 
+          className="scrollbar-corner"
+          style={{
+            opacity: (overflow.vertical && overflow.horizontal && isGalleriaClosed !== null) ? 1 : 0,
+            transition: 'opacity 0.3s ease',
+            pointerEvents: (overflow.vertical && overflow.horizontal && isGalleriaClosed !== null) ? 'auto' : 'none'
+          }}
+        />
       </>
     );
   }, [scrollbarUpdateTrigger, isGalleriaClosed, contentSize, viewportSize, scrollPosition, isHeaderPinned, handleVerticalScroll, handleHorizontalScroll]);
@@ -1411,22 +1458,22 @@ const ImageGrid: React.FC = () => {
         onTouchEnd={handleHeaderHandleClick}
       >
         <i 
-          className={`bi header-handle-icon ${!isHeaderOpened ? 'bi-chevron-compact-down' : (isHeaderPinned ? 'bi-pin-angle-fill' : 'bi-pin-angle')}`}
+          className={`bi header-handle-icon no-selection-removal-on-click ${!isHeaderOpened ? 'bi-chevron-compact-down' : (isHeaderPinned ? 'bi-pin-angle-fill' : 'bi-pin-angle')}`}
         ></i>
       </div>
       <div className='row align-self-center w-100'>
         <div 
           key='scroll-zoom-toggle'
-          className='col-1 d-flex align-items-center justify-content-center'>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ color: 'white', fontSize: '14px' }}>Scroll:</span>
+          className='col-1 d-flex align-items-center justify-content-center no-selection-removal-on-click'>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className='no-selection-removal-on-click'>
+            <span style={{ color: 'white', fontSize: '14px' }} className='no-selection-removal-on-click'>Scroll:</span>
             <label style={{ 
               position: 'relative', 
               display: 'inline-block', 
               width: '50px', 
               height: '24px',
               cursor: 'pointer'
-            }}>
+            }} className='no-selection-removal-on-click'>
               <input
                 type="checkbox"
                 checked={isScrollToZoom}
@@ -1436,6 +1483,7 @@ const ImageGrid: React.FC = () => {
                   width: 0,
                   height: 0
                 }}
+                className='no-selection-removal-on-click'
               />
               <span style={{
                 position: 'absolute',
@@ -1447,7 +1495,7 @@ const ImageGrid: React.FC = () => {
                 borderRadius: '24px',
                 transition: '0.3s',
                 cursor: 'pointer'
-              }}>
+              }} className='no-selection-removal-on-click'>
                 <span style={{
                   position: 'absolute',
                   content: '""',
@@ -1459,20 +1507,20 @@ const ImageGrid: React.FC = () => {
                   borderRadius: '50%',
                   transition: '0.3s',
                   cursor: 'pointer'
-                }}></span>
+                }} className='no-selection-removal-on-click'></span>
               </span>
             </label>
-            <span style={{ color: 'white', fontSize: '12px' }}>
+            <span style={{ color: 'white', fontSize: '12px' }} className='no-selection-removal-on-click'>
               {isScrollToZoom ? 'Zoom' : 'Pan'}
             </span>
           </div>
         </div>
         <div
           key='all-images'
-          className='col-1 d-flex justify-content-center align-items-center'>
-          <div style={{ position: 'relative', display: 'inline-block' }}>
+          className='col-1 d-flex justify-content-center align-items-center no-selection-removal-on-click'>
+          <div style={{ position: 'relative', display: 'inline-block' }} className='no-selection-removal-on-click'>
             <i
-              className={`col bi bi-images ${!isFilteredView && !isKeptFilteredView && !isMarkedFilteredView ? 'clicked-white' : ''}`}
+              className={`col bi bi-images no-selection-removal-on-click ${!isFilteredView && !isKeptFilteredView && !isMarkedFilteredView ? 'clicked-white' : ''}`}
               style={{        
                 display: 'block', 
                 fontSize: '45px', 
@@ -1541,7 +1589,7 @@ const ImageGrid: React.FC = () => {
         </div>
         <div
           key='selected-count'
-          className='col-1 d-flex justify-content-center align-items-center'>
+          className='col-1 d-flex justify-content-center align-items-center no-selection-removal-on-click'>
           <IconWithBadge
             iconClass="bi bi-hand-index"
             count={selectedImageIds.length}
@@ -1581,7 +1629,7 @@ const ImageGrid: React.FC = () => {
         </div>
         <div
           key='kept-images'
-          className='col-1 d-flex justify-content-center align-items-center'>
+          className='col-1 d-flex justify-content-center align-items-center no-selection-removal-on-click'>
           <IconWithBadge
             iconClass="bi bi-bag-check"
             count={numberOfKeptImages}
@@ -1607,7 +1655,7 @@ const ImageGrid: React.FC = () => {
         </div>
         <div
           key='marked-for-deletion'
-          className='col-1 d-flex justify-content-center align-items-center'>
+          className='col-1 d-flex justify-content-center align-items-center no-selection-removal-on-click'>
           <IconWithBadge
             iconClass="bi bi-trash3-fill"
             count={numberOfMarkedImages}
