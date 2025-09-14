@@ -50,15 +50,13 @@ const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
           top: '15px',
           left: '50%',
           transform: `translateX(-50%) translateY(${isVisible ? '0px' : '-10px'})`,
-          backgroundColor: 'rgba(40, 40, 40, 0.95)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '8px',
-          padding: '4px',
           zIndex: 20,
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
           opacity: isVisible ? 1 : 0,
           transition: 'transform 0.3s ease, opacity 0.3s ease',
           pointerEvents: isVisible ? 'auto' : 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
         }}
       >
         {actions.map((action, index) => (
@@ -68,16 +66,26 @@ const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '8px',
-              borderRadius: '4px',
+              width: '50px',
+              height: '50px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(40, 40, 40, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
               cursor: 'pointer',
-              transition: 'background-color 0.2s ease',
+              transition: 'all 0.2s ease',
+              transform: `scale(${isVisible ? 1 : 0.8})`,
+              transitionDelay: `${index * 0.05}s`,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.4)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.backgroundColor = 'rgba(40, 40, 40, 0.95)';
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -87,7 +95,7 @@ const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
             <i 
               className={action.iconClass} 
               style={{ 
-                fontSize: '45px', 
+                fontSize: '22px', 
                 color: action.color || '#4CAF50',
                 display: 'block',
                 textAlign: 'center'

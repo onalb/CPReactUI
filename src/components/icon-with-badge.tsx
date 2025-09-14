@@ -210,7 +210,6 @@ const IconWithBadge: React.FC<IconWithBadgeProps> = ({
                     color: '#4CAF50',
                     onClick: () => {
                       onKeepAll();
-                      setIsDropdownVisible(false);
                     }
                   }] : []),
                   ...(onUnkeepAll ? [{
@@ -219,7 +218,6 @@ const IconWithBadge: React.FC<IconWithBadgeProps> = ({
                     color: 'white',
                     onClick: () => {
                       onUnkeepAll();
-                      setIsDropdownVisible(false);
                     }
                   }] : [])
                 ]
