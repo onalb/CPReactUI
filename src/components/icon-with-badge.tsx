@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import HeaderDropdown from './header-dropdown';
 
 interface IconWithBadgeProps {
   iconClass: string;
@@ -26,6 +27,9 @@ interface IconWithBadgeProps {
   getIdsToFilter?: () => number[];
   // Selection reset props
   onEnterFilter?: () => void; // Called when entering filter view to reset selections
+  // Dropdown actions
+  onKeepAll?: () => void; // Called when "Keep All" is clicked for selected filter
+  onUnkeepAll?: () => void; // Called when "Unkeep All" is clicked for selected filter
 }
 
 const IconWithBadge: React.FC<IconWithBadgeProps> = ({
@@ -44,8 +48,31 @@ const IconWithBadge: React.FC<IconWithBadgeProps> = ({
   setIsFilteredView,
   otherFilterStates,
   getIdsToFilter,
-  onEnterFilter
+  onEnterFilter,
+  onKeepAll,
+  onUnkeepAll
 }) => {
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  const [closeTimeout, setCloseTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnterDropdown = () => {
+    // Clear any existing timeout when entering dropdown area
+    if (closeTimeout) {
+      clearTimeout(closeTimeout);
+      setCloseTimeout(null);
+    }
+    setIsDropdownVisible(true);
+  };
+
+  const handleMouseLeaveDropdown = () => {
+    // Set a 1-second delay before closing the dropdown
+    const timeout = setTimeout(() => {
+      setIsDropdownVisible(false);
+      setCloseTimeout(null);
+    }, 500); // 1000ms = 1 second delay
+    setCloseTimeout(timeout);
+  };
+
   const getIconColor = () => {
     if (count > 0 || isFilteredView) {
       return isFilteredView ? (filteredColorClass ? undefined : filteredColor) : activeColor;
@@ -169,21 +196,36 @@ const IconWithBadge: React.FC<IconWithBadgeProps> = ({
         </span>
       )}
       {isFilteredView && (
-        <i
-          className="bi bi-chevron-down"
-          style={{
-            position: 'absolute',
-            bottom: '-5px',
-            left: '50%',
-            transform: 'translateX(-50%) scaleX(1.8) scaleY(1.2)',
-            fontSize: '18px',
-            color: getChevronColor(),
-            fontWeight: 'bold',
-            transition: 'opacity 0.3s ease',
-            zIndex: 10,
-            textShadow: '0 0 1px currentColor',
-          }}
-        ></i>
+        <HeaderDropdown
+          isVisible={isDropdownVisible}
+          onMouseEnter={handleMouseEnterDropdown}
+          onMouseLeave={handleMouseLeaveDropdown}
+          chevronColor={getChevronColor()}
+          actions={
+            iconClass.includes('hand-index') && (onKeepAll || onUnkeepAll)
+              ? [
+                  ...(onKeepAll ? [{
+                    iconClass: 'bi bi-bag-plus-fill',
+                    title: 'Keep All Selected',
+                    color: '#4CAF50',
+                    onClick: () => {
+                      onKeepAll();
+                      setIsDropdownVisible(false);
+                    }
+                  }] : []),
+                  ...(onUnkeepAll ? [{
+                    iconClass: 'bi bi-bag-dash-fill',
+                    title: 'Unkeep All Selected',
+                    color: 'white',
+                    onClick: () => {
+                      onUnkeepAll();
+                      setIsDropdownVisible(false);
+                    }
+                  }] : [])
+                ]
+              : []
+          }
+        />
       )}
     </div>
   );

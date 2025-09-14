@@ -824,7 +824,7 @@ const ImageGrid: React.FC = () => {
       removeTrackedEventListeners(window, 'keyup');
       removeTrackedEventListeners(window, 'keydown');
     };
-  }, [setIsGalleriaClosed, isGalleriaClosed, isScrollToZoom]);
+  }, [setIsGalleriaClosed, isGalleriaClosed, isScrollToZoom, isFilteredView]);
 
   useEffect(() => {
     addTrackedEventListener(window, 'click', handleClickOutside);
@@ -833,7 +833,7 @@ const ImageGrid: React.FC = () => {
     return () => {
       removeTrackedEventListeners(window, 'click');
     };
-  }, [isDragging, isLongTouch]);
+  }, [isDragging, isLongTouch, isFilteredView]);
 
   useEffect(() => {
     window.addEventListener('wheel', handleWheel, { passive: false });
@@ -894,6 +894,11 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleClickOutside = (event: any) => {
+    // Don't clear selection if we're in the filtered selected images view
+    if (isFilteredView) {
+      return;
+    }
+    
     if (!event.ctrlKey && !isDragging && !isLongTouch && ((event.pointerType && event.pointerType === 'mouse') || (event.type === 'touchend'))) {
       const target = event.target as HTMLElement;
       if (target.tagName !== 'IMG' 
@@ -1554,6 +1559,24 @@ const ImageGrid: React.FC = () => {
             }}
             getIdsToFilter={() => selectedImageIds}
             filteredColorClass="clicked-blue"
+            onKeepAll={() => {
+              // Keep all selected images
+              const selectedImages = images.filter(img => selectedImageIds.includes(img.id));
+              selectedImages.forEach(image => {
+                if (!image.isKept) {
+                  toggleKeepPhotoMutation.mutate(image);
+                }
+              });
+            }}
+            onUnkeepAll={() => {
+              // Unkeep all selected images
+              const selectedImages = images.filter(img => selectedImageIds.includes(img.id));
+              selectedImages.forEach(image => {
+                if (image.isKept) {
+                  toggleKeepPhotoMutation.mutate(image);
+                }
+              });
+            }}
           />
         </div>
         <div
