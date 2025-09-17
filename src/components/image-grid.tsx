@@ -12,6 +12,7 @@ import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
 import CustomScrollbar from './scrollbar';
 import IconWithBadge from './icon-with-badge';
+import TopLeftCircle from './top-left-circle';
 import axios from 'axios';
 import { openDB } from 'idb';
 import ImageCard from './image-card';
@@ -1437,6 +1438,7 @@ const ImageGrid: React.FC = () => {
   return (
     images && images.length > 0 ? (
     <>
+    <TopLeftCircle />
     <div
       className={`header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0 no-selection-removal-on-click ${isHeaderOpened ? 'header-opened' : ''}`}
       style={{
