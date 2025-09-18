@@ -2,19 +2,24 @@ import React, { useState, useEffect } from 'react';
 
 const CircleIcon: React.FC = () => {
   const [isToolbarOpen, setIsToolbarOpen] = useState(false);
+  const [hoveredCircle, setHoveredCircle] = useState<number | null>(null);
+
+  const [isPinned, setIsPinned] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientX <= 50) {
+      if (e.clientX <= 40) {
         setIsToolbarOpen(true);
-      } else if (e.clientX > 200) {
+      } else if (e.clientX > 130 && !isPinned) {
         setIsToolbarOpen(false);
       }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [isPinned]);
 
   return (
     <div 
@@ -24,11 +29,29 @@ const CircleIcon: React.FC = () => {
         left: '20px',
         zIndex: 1000
       }}
-      onMouseEnter={() => setIsToolbarOpen(true)}
-      onMouseLeave={() => setIsToolbarOpen(false)}
     >
-      <div style={styles.circle}>
-        <span style={styles.icon}>⚙</span>
+      <div 
+        style={{
+          ...styles.circle,
+          backgroundColor: isToolbarOpen ? '#ff6b6b' : '#6e6e6eff',
+          borderColor: isToolbarOpen ? '#ff6b6b' : '#ff6b6be6',
+          opacity: isToolbarOpen ? 1 : 0.9,
+          transition: 'background-color 0.3s ease-in-out, border-color 0.3s ease-in-out'
+        }}
+
+        onClick={() => {
+          setIsPinned(!isPinned);
+          setIsToolbarOpen(isPinned ? false : true);
+        }}
+        onMouseEnter={() => { setIsToolbarOpen(true) }}
+      >
+        <span 
+          style={styles.icon}
+          onClick={() => {
+            setIsPinned(!isPinned);
+            setIsToolbarOpen(isPinned ? false : true);
+          }}
+        >⚙</span>
       </div>
       
       <div style={{
@@ -37,7 +60,15 @@ const CircleIcon: React.FC = () => {
         opacity: isToolbarOpen ? 1 : .2
       }}>
         {['🏠', '📁', '🔍', '⭐', '🗑️', '📷'].map((icon, index) => (
-          <div key={index} style={styles.toolbarCircle}>
+          <div 
+            key={index} 
+            style={{
+              ...styles.toolbarCircle,
+              backgroundColor: hoveredCircle === index ? '#ff6b6bce' : '#6e6e6ec7'
+            }}
+            onMouseEnter={() => setHoveredCircle(index)}
+            onMouseLeave={() => setHoveredCircle(null)}
+          >
             <span style={styles.toolbarIcon}>{icon}</span>
           </div>
         ))}
@@ -51,15 +82,21 @@ const styles = {
     width: '50px',
     height: '50px',
     borderRadius: '50%',
-    backgroundColor: '#007bff',
+    borderStyle: 'solid',
+    borderColor: '#ff6b6b',
+    backgroundColor: '#6e6e6eff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
+    zIndex: 1001,
+    position: 'relative' as const,
   },
   icon: {
     fontSize: '24px',
     color: 'white',
+    cursor: 'pointer',
+    zIndex: 1001
   },
   toolbar: {
     position: 'fixed' as const,
@@ -71,6 +108,7 @@ const styles = {
     gap: '10px',
     paddingTop: '110px',
     transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+    zIndex: 900
   },
   toolbarCircle: {
     width: '50px',
