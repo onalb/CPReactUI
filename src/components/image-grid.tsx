@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import PaginationControls from './PaginationControls';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import '../styles/ImageZoom.css';
 import '../styles/scrollbar.css';
@@ -88,6 +89,9 @@ const ImageGrid: React.FC = () => {
     height: window.innerHeight // Subtract header height
   });
   const [scrollbarUpdateTrigger, setScrollbarUpdateTrigger] = useState(0); // Force scrollbar recalculation
+  const [isHorizontalScrollbarVisible, setIsHorizontalScrollbarVisible] = useState<boolean>(false);
+  const [isVerticalScrollbarVisible, setIsVerticalScrollbarVisible] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const padding = 10;
   const columnGap = 1;
@@ -100,7 +104,6 @@ const ImageGrid: React.FC = () => {
   });
   
   const viewRef = useRef<any>(null);
-  
   const imageBeingDeleted = useRef<{deleteErrorType: string, images: any[]}>({deleteErrorType: '', images: []});
   const squareRef = useRef<HTMLDivElement | null>(null);
   const isOpenedOnBrowser = typeof navigator !== 'undefined' && navigator.userAgent !== undefined && !navigator.userAgent.includes('Electron');
@@ -563,6 +566,8 @@ const ImageGrid: React.FC = () => {
     // Return zero dimensions if main element is not available
     return { width: 0, height: 0 };
   };
+
+  const handlePageChange = (page: number) => setCurrentPage(page);
 
   const handleScrollPositionChange = (x: number, y: number) => {
     setScrollPosition({ x, y });
@@ -1324,81 +1329,98 @@ const ImageGrid: React.FC = () => {
     };
   }, [headerCloseTimeout]);
 
-  // Memoized scrollbar calculation that depends on filter states
-  const scrollbarElements = useMemo(() => {
-    // DOM-based approach: check if actual image content overflows viewport
-    const checkContentOverflow = () => {
-      const mainElement = document.getElementById('main-element');
-      const rootElement = document.getElementById('root');
-      if (!mainElement || !rootElement) return { 
-        horizontal: false, 
-        vertical: false,
-        actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
-        viewportBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 }
-      };
-      
-      const rootRect = rootElement.getBoundingClientRect();
-      
-      // Get all image elements within main-element
-      const images = mainElement.querySelectorAll('img, .image-card');
-      if (images.length === 0) return { 
-        horizontal: false, 
-        vertical: false,
-        actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
-        viewportBounds: { width: rootRect.width, height: rootRect.height, left: rootRect.left, top: rootRect.top, right: rootRect.right, bottom: rootRect.bottom }
-      };
-      
-      // Calculate the actual bounds of all visible content
-      let minLeft = Infinity, minTop = Infinity;
-      let maxRight = -Infinity, maxBottom = -Infinity;
-      
-      images.forEach(img => {
-        const imgRect = img.getBoundingClientRect();
-        minLeft = Math.min(minLeft, imgRect.left);
-        minTop = Math.min(minTop, imgRect.top);
-        maxRight = Math.max(maxRight, imgRect.right);
-        maxBottom = Math.max(maxBottom, imgRect.bottom);
-      });
-      
-      // Create content bounds from actual image positions
-      const actualContentBounds = {
-        left: minLeft,
-        top: minTop,
-        right: maxRight,
-        bottom: maxBottom,
-        width: maxRight - minLeft,
-        height: maxBottom - minTop
-      };
+  // Make overflow info available everywhere
+  const [overflow, setOverflow] = useState({
+    horizontal: false,
+    vertical: false,
+    actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
+    viewportBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 }
+  });
 
-      const viewportBounds = {
-        left: rootRect.left,
-        top: rootRect.top,
-        right: rootRect.right,
-        bottom: rootRect.bottom,
-        width: rootRect.width,
-        height: rootRect.height
-      };
-      
-      // Check if actual content extends outside root element
-      const horizontalOverflow = actualContentBounds.left < rootRect.left || actualContentBounds.right > rootRect.right;
-      const verticalOverflow = actualContentBounds.top < rootRect.top || actualContentBounds.bottom > rootRect.bottom;
-      
-      return {
-        horizontal: horizontalOverflow,
-        vertical: verticalOverflow,
-        actualContentBounds,
-        viewportBounds
-      };
+  // Function to check content overflow (can be used anywhere)
+  const checkContentOverflow = useCallback(() => {
+    const mainElement = document.getElementById('main-element');
+    const rootElement = document.getElementById('root');
+    if (!mainElement || !rootElement) return {
+      horizontal: false,
+      vertical: false,
+      actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
+      viewportBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 }
     };
-    
-    const overflow = checkContentOverflow();
-    
-    // Calculate dynamic content sizes based on actual content bounds for better scrollbar representation
+
+    const rootRect = rootElement.getBoundingClientRect();
+    const images = mainElement.querySelectorAll('img, .image-card');
+    if (images.length === 0) return {
+      horizontal: false,
+      vertical: false,
+      actualContentBounds: { width: 0, height: 0, left: 0, top: 0, right: 0, bottom: 0 },
+      viewportBounds: { width: rootRect.width, height: rootRect.height, left: rootRect.left, top: rootRect.top, right: rootRect.right, bottom: rootRect.bottom }
+    };
+
+    let minLeft = Infinity, minTop = Infinity;
+    let maxRight = -Infinity, maxBottom = -Infinity;
+    images.forEach(img => {
+      const imgRect = img.getBoundingClientRect();
+      minLeft = Math.min(minLeft, imgRect.left);
+      minTop = Math.min(minTop, imgRect.top);
+      maxRight = Math.max(maxRight, imgRect.right);
+      maxBottom = Math.max(maxBottom, imgRect.bottom);
+    });
+
+    const actualContentBounds = {
+      left: minLeft,
+      top: minTop,
+      right: maxRight,
+      bottom: maxBottom,
+      width: maxRight - minLeft,
+      height: maxBottom - minTop
+    };
+
+    const viewportBounds = {
+      left: rootRect.left,
+      top: rootRect.top,
+      right: rootRect.right,
+      bottom: rootRect.bottom,
+      width: rootRect.width,
+      height: rootRect.height
+    };
+
+    const horizontalOverflow = actualContentBounds.left < rootRect.left || actualContentBounds.right > rootRect.right;
+    const verticalOverflow = actualContentBounds.top < rootRect.top || actualContentBounds.bottom > rootRect.bottom;
+
+    return {
+      horizontal: horizontalOverflow,
+      vertical: verticalOverflow,
+      actualContentBounds,
+      viewportBounds
+    };
+  }, []);
+
+  // Debounced overflow update for performance
+  useEffect(() => {
+    let frame: number | null = null;
+    let timeout: NodeJS.Timeout | null = null;
+    const update = () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        setOverflow(checkContentOverflow());
+      });
+    };
+    // Debounce with a short timeout (e.g. 100ms)
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(update, 100);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [scrollbarUpdateTrigger, images, zoomScale, viewportSize.width, viewportSize.height]);
+
+  // Memoized scrollbar calculation that depends on overflow
+  const scrollbarElements = useMemo(() => {
     const dynamicContentSize = {
       width: overflow.actualContentBounds.width || contentSize.width,
       height: overflow.actualContentBounds.height || contentSize.height
     };
-    
     return (
       <>
         {/* Always render scrollbars but control visibility with animations */}
@@ -1421,7 +1443,6 @@ const ImageGrid: React.FC = () => {
           bothScrollbarsVisible={overflow.vertical && overflow.horizontal}
           isVisible={overflow.horizontal && isGalleriaClosed !== false}
         />
-        
         {/* Scrollbar corner - only show if both scrollbars are visible AND gallery is closed */}
         <div 
           className="scrollbar-corner"
@@ -1433,7 +1454,7 @@ const ImageGrid: React.FC = () => {
         />
       </>
     );
-  }, [scrollbarUpdateTrigger, isGalleriaClosed, contentSize, viewportSize, scrollPosition, isHeaderPinned, handleVerticalScroll, handleHorizontalScroll]);
+  }, [overflow, contentSize, viewportSize, scrollPosition, isHeaderPinned, handleVerticalScroll, handleHorizontalScroll, isGalleriaClosed]);
 
   return (
     images && images.length > 0 ? (
@@ -1874,15 +1895,17 @@ const ImageGrid: React.FC = () => {
     </div>
 
     {isGalleriaClosed === false && 
-      <PhotoGalleria 
-        images={images} 
-        setIsGalleriaClosed={setIsGalleriaClosed} 
-        setCurrentSelectedImage={setCurrentSelectedImage} 
-        getCurrentSelectedImage={getCurrentSelectedImage}
-        handleDeleteOnClick={handleDeleteOnClick}
-        handleKeepOnClick={handleKeepOnClick}
-        isKeepButtonDisabled={isKeepButtonDisabled}
-      />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 1001 }}>
+        <PhotoGalleria 
+          images={images} 
+          setIsGalleriaClosed={setIsGalleriaClosed} 
+          setCurrentSelectedImage={setCurrentSelectedImage} 
+          getCurrentSelectedImage={getCurrentSelectedImage}
+          handleDeleteOnClick={handleDeleteOnClick}
+          handleKeepOnClick={handleKeepOnClick}
+          isKeepButtonDisabled={isKeepButtonDisabled}
+        />
+      </div>
     }
     <ModalPopup 
       popupOptions ={popupOptions}
@@ -1894,10 +1917,33 @@ const ImageGrid: React.FC = () => {
       LoadingSpinner({text: 'Rendering images...'})
     )}
 
-    {/* Custom Scrollbars */}
+  {/* Custom Scrollbars */}
+  {/* Pagination controls sticky footer (z-index: 100, below galleria) */}
+  <div style={{ position: 'sticky', bottom: 0, zIndex: 100, width: '100%' }}>
     {scrollbarElements}
-    </>
-    ) : (<>{(isImageListFetched ?
+  </div>
+
+  {/* Sticky Pagination Footer: hide when galleria is open */}
+  {/* Always render sticky pagination footer, even when galleria is open */}
+  <div style={{
+    position: 'fixed',
+    left: 0,
+    width: '100%',
+    zIndex: 100,
+    pointerEvents: 'none',
+    bottom: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transition: 'margin-bottom 0.2s ease',
+    marginBottom: overflow.horizontal ? 20 : 0
+  }}>
+    <div style={{ pointerEvents: 'auto', width: 'fit-content' }}>
+      <PaginationControls currentPage={currentPage} onPageChange={handlePageChange} />
+    </div>
+  </div>
+  </>
+  ) : (<>{(isImageListFetched ?
       (!isCachingCompleted && <div className='loading-spinner' 
         style={{
           position: 'fixed',
