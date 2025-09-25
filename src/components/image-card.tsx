@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import '../styles/ImageZoom.css';
+import '../styles/image-grid.css';
 
 interface ImageCardProps {
   image: {

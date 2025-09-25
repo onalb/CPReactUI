@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
-import '../styles/ImageZoom.css';
+import '../styles/image-grid.css';
 
 interface ModelPopupProps {
     popupOptions: { isVisible: boolean; isYesNo: boolean; title: string, message: string };

@@ -114,7 +114,7 @@ const styles = {
     width: '50px',
     height: '50px',
     borderRadius: '50%',
-    borderColor: '#fffafaff',
+    borderColor: '#ff6b6b',
     borderWidth: '2px',
     borderStyle: 'solid',
     backgroundColor: '#6e6e6eff',

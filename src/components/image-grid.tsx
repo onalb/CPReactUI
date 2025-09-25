@@ -1,7 +1,7 @@
 import PaginationControls from './PaginationControls';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import '../styles/ImageZoom.css';
+import '../styles/image-grid.css';
 import '../styles/scrollbar.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -13,7 +13,7 @@ import PhotoGalleria from './photo-galleria';
 import ModalPopup from './model-popup';
 import CustomScrollbar from './scrollbar';
 import IconWithBadge from './icon-with-badge';
-import TopLeftCircle from './top-left-circle';
+import ToolbarToggle from './toolbar-toggle';
 import axios from 'axios';
 import { openDB } from 'idb';
 import ImageCard from './image-card';
@@ -1459,8 +1459,9 @@ const ImageGrid: React.FC = () => {
   return (
     images && images.length > 0 ? (
     <>
-    <TopLeftCircle />
+  <ToolbarToggle />
     <div
+      id='header'
       className={`header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0 no-selection-removal-on-click ${isHeaderOpened ? 'header-opened' : ''}`}
       style={{
         backgroundColor: 'rgba(32, 32, 32, .98)',
