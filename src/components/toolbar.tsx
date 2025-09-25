@@ -64,7 +64,7 @@ const Toolbar: React.FC = () => {
             key={index} 
             style={{
               ...styles.toolbarCircle,
-              backgroundColor: hoveredCircle === index ? '#ff6b6bce' : '#6e6e6ec7'
+              backgroundColor: hoveredCircle === index ? 'rgba(0, 0, 0, 0.95)' : 'rgba(32, 32, 32, 0.85)'
             }}
             onMouseEnter={() => setHoveredCircle(index)}
             onMouseLeave={() => setHoveredCircle(null)}
@@ -114,10 +114,10 @@ const styles = {
     width: '50px',
     height: '50px',
     borderRadius: '50%',
-    borderColor: '#ff6b6b',
+    borderColor: '#c49797',
     borderWidth: '2px',
     borderStyle: 'solid',
-    backgroundColor: '#6e6e6eff',
+    backgroundColor: '#ff6b6b',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

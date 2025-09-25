@@ -104,11 +104,11 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({ currentPage, on
                 margin: 0,
                 padding: 0,
                 borderRadius: '50%',
-                border: isActive ? '2.5px solid #1976d2' : '2.5px solid #ff6b6b',
+                border: isActive ? '2.5px solid #c49797' : '2.5px solid #c49797',
                 background: isActive
-                  ? 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
-                  : 'rgba(255,255,255,0.7)',
-                color: isActive ? '#fff' : '#1976d2',
+                  ? 'linear-gradient(135deg, #ff6b6b 0%, #ff6b6b 100%)'
+                  : 'rgba(32, 32, 32, 0.85)',
+                color: isActive ? '#fff' : 'white',
                 fontWeight: 700,
                 fontSize: '1.15rem',
                 letterSpacing: '0.03em',
@@ -127,10 +127,10 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({ currentPage, on
                 userSelect: 'none',
               }}
               onMouseOver={e => {
-                if (!isActive) e.currentTarget.style.background = 'rgba(227,242,253,0.9)';
+                if (!isActive) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.98)';
               }}
               onMouseOut={e => {
-                if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.7)';
+                if (!isActive) e.currentTarget.style.background = 'rgba(32, 32, 32, 0.85)';
               }}
               onFocus={e => {
                 if (!isActive) e.currentTarget.style.border = '2.5px solid #90caf9';

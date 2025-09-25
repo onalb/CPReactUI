@@ -14,6 +14,7 @@ import ModalPopup from './model-popup';
 import CustomScrollbar from './scrollbar';
 import IconWithBadge from './icon-with-badge';
 import ToolbarToggle from './toolbar-toggle';
+import Header from './Header';
 import axios from 'axios';
 import { openDB } from 'idb';
 import ImageCard from './image-card';
@@ -1460,463 +1461,99 @@ const ImageGrid: React.FC = () => {
     images && images.length > 0 ? (
     <>
   <ToolbarToggle />
-    <div
-      id='header'
-      className={`header position-absolute vh-10 vw-100 top-0 start-0 d-flex flex-column justify-content-center align-items-center p-0 no-selection-removal-on-click ${isHeaderOpened ? 'header-opened' : ''}`}
-      style={{
-        backgroundColor: 'rgba(32, 32, 32, .98)',
-        width: '100%',
-        height: '100px',
-        position: 'absolute',
-        zIndex: 2,
-        transition: 'transform 0.3s ease-in-out, background-color 0.3s ease', 
-        transform: isHeaderPinned ? 'translateY(0%)' : 'translateY(-100%)',
-      }}
-      onMouseEnter={handleMouseEnterHeader}
-      onMouseLeave={handleMouseLeaveHeader}
-      onTouchStart={isHeaderOpened ? handleMouseLeaveHeader : handleMouseEnterHeader}
-    >
-      <div
-        className='header-handle no-selection-removal-on-click'
-        onClick={handleHeaderHandleClick}
-        onTouchEnd={handleHeaderHandleClick}
-      >
-        <i 
-          className={`bi header-handle-icon no-selection-removal-on-click ${!isHeaderOpened ? 'bi-chevron-compact-down' : (isHeaderPinned ? 'bi-pin-angle-fill' : 'bi-pin-angle')}`}
-        ></i>
-      </div>
-      <div className='row align-self-center w-100'>
-        <div 
-          key='scroll-zoom-toggle'
-          className='col-1 d-flex align-items-center justify-content-center no-selection-removal-on-click'>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className='no-selection-removal-on-click'>
-            <span style={{ color: 'white', fontSize: '14px' }} className='no-selection-removal-on-click'>Scroll:</span>
-            <label style={{ 
-              position: 'relative', 
-              display: 'inline-block', 
-              width: '50px', 
-              height: '24px',
-              cursor: 'pointer'
-            }} className='no-selection-removal-on-click'>
-              <input
-                type="checkbox"
-                checked={isScrollToZoom}
-                onChange={(e) => setIsScrollToZoom(e.target.checked)}
-                style={{
-                  opacity: 0,
-                  width: 0,
-                  height: 0
-                }}
-                className='no-selection-removal-on-click'
-              />
-              <span style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: isScrollToZoom ? '#4CAF50' : '#ccc',
-                borderRadius: '24px',
-                transition: '0.3s',
-                cursor: 'pointer'
-              }} className='no-selection-removal-on-click'>
-                <span style={{
-                  position: 'absolute',
-                  content: '""',
-                  height: '18px',
-                  width: '18px',
-                  left: isScrollToZoom ? '26px' : '3px',
-                  bottom: '3px',
-                  backgroundColor: 'white',
-                  borderRadius: '50%',
-                  transition: '0.3s',
-                  cursor: 'pointer'
-                }} className='no-selection-removal-on-click'></span>
-              </span>
-            </label>
-            <span style={{ color: 'white', fontSize: '12px' }} className='no-selection-removal-on-click'>
-              {isScrollToZoom ? 'Zoom' : 'Pan'}
-            </span>
-          </div>
-        </div>
-        <div
-          key='all-images'
-          className='col-1 d-flex justify-content-center align-items-center no-selection-removal-on-click'>
-          <div style={{ position: 'relative', display: 'inline-block' }} className='no-selection-removal-on-click'>
-            <i
-              className={`col bi bi-images no-selection-removal-on-click ${!isFilteredView && !isKeptFilteredView && !isMarkedFilteredView ? 'clicked-white' : ''}`}
-              style={{        
-                display: 'block', 
-                fontSize: '45px', 
-                color: !isFilteredView && !isKeptFilteredView && !isMarkedFilteredView ? 'white' : 'gray',
-                transition: 'color 0.3s ease, background-color 0.3s ease',
-                textAlign: 'center',
-                cursor: 'pointer',
-              }}
-              data-bs-toggle="tooltip"
-              data-bs-placement="top"
-              title={`${images.filter(img => !img.isDeleted).length} Total Images - Show all images`}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-              onClick={() => {
-                // Reset all filter states to show all images
-                setIsFilteredView(false);
-                setFilteredImageIds([]);
-                setIsKeptFilteredView(false);
-                setKeptFilteredImageIds([]);
-                setIsMarkedFilteredView(false);
-                setMarkedFilteredImageIds([]);
-                // Reset scroll position
-                const imagesContainer = document.querySelector('.images-container');
-                if (imagesContainer) {
-                  imagesContainer.scrollTop = 0;
-                }
-              }}
-              onTouchEnd={() => {
-                // Reset all filter states to show all images
-                setIsFilteredView(false);
-                setFilteredImageIds([]);
-                setIsKeptFilteredView(false);
-                setKeptFilteredImageIds([]);
-                setIsMarkedFilteredView(false);
-                setMarkedFilteredImageIds([]);
-                // Reset scroll position
-                const imagesContainer = document.querySelector('.images-container');
-                if (imagesContainer) {
-                  imagesContainer.scrollTop = 0;
-                }
-              }}
-            ></i>
-            <span style={{
-              position: 'absolute',
-              top: '15px',
-              right: '0px',
-              backgroundColor: '#FF6B6B',
-              color: 'white',
-              borderRadius: '50%',
-              fontSize: '11px',
-              fontWeight: 'bold',
-              width: '24px',
-              height: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '2px solid white'
-            }}>
-              {images.filter(img => !img.isDeleted).length}
-            </span>
-          </div>
-        </div>
-        <div
-          key='selected-count'
-          className='col-1 d-flex justify-content-center align-items-center no-selection-removal-on-click'>
-          <IconWithBadge
-            iconClass="bi bi-hand-index"
-            count={selectedImageIds.length}
-            isActive={selectedImageIds.length > 0}
-            isFilteredView={isFilteredView}
-            title={`${selectedImageIds.length > 0 ? selectedImageIds.length + ' Selected - ' : ''}${isFilteredView ? 'Show all' : 'View selected only'}`}
-            filteredIds={filteredImageIds}
-            setFilteredIds={setFilteredImageIds}
-            setIsFilteredView={setIsFilteredView}
-            otherFilterStates={{
-              setIsOtherFilteredView: setIsKeptFilteredView,
-              setOtherFilteredIds: setKeptFilteredImageIds,
-              setIsOtherFilteredView2: setIsMarkedFilteredView,
-              setOtherFilteredIds2: setMarkedFilteredImageIds
-            }}
-            getIdsToFilter={() => selectedImageIds}
-            filteredColorClass="clicked-blue"
-            onKeepAll={() => {
-              // Keep all selected images
-              const selectedImages = images.filter(img => selectedImageIds.includes(img.id));
-              selectedImages.forEach(image => {
-                if (!image.isKept) {
-                  toggleKeepPhotoMutation.mutate(image);
-                }
-              });
-            }}
-            onUnkeepAll={() => {
-              // Unkeep all selected images
-              const selectedImages = images.filter(img => selectedImageIds.includes(img.id));
-              selectedImages.forEach(image => {
-                if (image.isKept) {
-                  toggleKeepPhotoMutation.mutate(image);
-                }
-              });
-            }}
-          />
-        </div>
-        <div
-          key='kept-images'
-          className='col-1 d-flex justify-content-center align-items-center no-selection-removal-on-click'>
-          <IconWithBadge
-            iconClass="bi bi-bag-check"
-            count={numberOfKeptImages}
-            isActive={numberOfKeptImages > 0}
-            isFilteredView={isKeptFilteredView}
-            title={`${numberOfKeptImages > 0 ? numberOfKeptImages + ' Kept - ' : ''}${isKeptFilteredView ? 'Show all' : 'View kept only'}`}
-            filteredIds={keptFilteredImageIds}
-            setFilteredIds={setKeptFilteredImageIds}
-            setIsFilteredView={setIsKeptFilteredView}
-            otherFilterStates={{
-              setIsOtherFilteredView: setIsFilteredView,
-              setOtherFilteredIds: setFilteredImageIds,
-              setIsOtherFilteredView2: setIsMarkedFilteredView,
-              setOtherFilteredIds2: setMarkedFilteredImageIds
-            }}
-            getIdsToFilter={() => images.filter(img => !img.isDeleted && img.isKept).map(img => img.id)}
-            filteredColorClass="clicked-green"
-            onEnterFilter={() => {
-              setSelectedImageIds([]);
-              setCurrentSelectedImage(null);
-            }}
-          />
-        </div>
-        <div
-          key='marked-for-deletion'
-          className='col-1 d-flex justify-content-center align-items-center no-selection-removal-on-click'>
-          <IconWithBadge
-            iconClass="bi bi-trash3-fill"
-            count={numberOfMarkedImages}
-            isActive={numberOfMarkedImages > 0}
-            isFilteredView={isMarkedFilteredView}
-            title={`${numberOfMarkedImages > 0 ? numberOfMarkedImages + ' Marked - ' : ''}${isMarkedFilteredView ? 'Show all' : 'View marked only'}`}
-            filteredIds={markedFilteredImageIds}
-            setFilteredIds={setMarkedFilteredImageIds}
-            setIsFilteredView={setIsMarkedFilteredView}
-            otherFilterStates={{
-              setIsOtherFilteredView: setIsFilteredView,
-              setOtherFilteredIds: setFilteredImageIds,
-              setIsOtherFilteredView2: setIsKeptFilteredView,
-              setOtherFilteredIds2: setKeptFilteredImageIds
-            }}
-            getIdsToFilter={() => images.filter(img => !img.isDeleted && img.isMarkedForDeletion && !img.isKept).map(img => img.id)}
-            filteredColorClass="clicked-orange"
-            onEnterFilter={() => {
-              setSelectedImageIds([]);
-              setCurrentSelectedImage(null);
-            }}
-          />
-        </div>
-        <div
-          key='select-all'
-          className='col-1 d-flex justify-content-center align-items-center'>
-          <i
-            className={`col bi bi-share`}
-            style={{        
-              display: 'block', fontSize: '45px', color: 'white',
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
-            }}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title='OPEN WITH'
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            onClick={() => openWithDialog('C:\\Users\\burak\\Pictures\\DSC04127.JPG')}
-            onTouchEnd={() => openWithDialog('C:\\Users\\burak\\Pictures\\DSC04127.JPG')}
-          ></i>
-        </div>
-        <div
-          key='select-all'
-          className='col-1 d-flex justify-content-center align-items-center'>
-          <i
-            className={`col bi bi-check2-all`}
-            style={{        
-              display: 'block', fontSize: '45px', color: 'white',
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
-            }}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title='SELECT ALL'
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            onClick={() => selectAllImages()}
-            onTouchEnd={() => selectAllImages()}
-          ></i>
-        </div>
-        <div
-          key='delete-marked'
-          className='col-1 d-flex justify-content-center align-items-center'
-          style={{ pointerEvents: `${images.some((i: any) => i.isMarkedForDeletion === true) ? 'auto' : 'none'}` }}
-          data-toggle="modal" data-target="#exampleModalCenter">
-          <i
-            className={`col bi bi-cart-x`}
-            style={{        
-              display: 'block', fontSize: '45px', color: `${images.some((i: any) => i.isMarkedForDeletion === true) ? 'white' : 'gray'}`,
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
-            }}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title='DELETE MARKED'
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            onClick={() => {
-              setHandleDeleteImages(() => handleDeleteMarkedImages);
-              setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'  });
-            }}
-            onTouchEnd={() => {
-              setHandleDeleteImages(() => handleDeleteMarkedImages);
-              setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'  });
-            }}
-          ></i>
-        </div>
-        <div
-          key='delete-selected'
-          className='col-1 d-flex justify-content-center align-items-center'
-          style={{ pointerEvents: `${selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
-          data-toggle="modal" data-target="#exampleModalCenter">
-          <i
-            className={`col bi bi-trash3-fill`}
-            style={{        
-              display: 'block', fontSize: '45px', color: `${selectedImageIds.length > 0 ? 'white' : 'gray'}`,
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
-            }}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title='DELETE SELECTED'
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            onClick={handleDeleteSelectedImagesOnClick}
-            onTouchEnd={handleDeleteSelectedImagesOnClick}
-          ></i>
-        </div>
-        <div
-          key='open-galleria'
-          className='col-1 d-flex justify-content-center align-items-center'>
-          <i
-            className={`col bi bi-tv`}
-            style={{        
-              display: 'block', fontSize: '45px', color: 'white', padding: '0px',
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
-            }}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title='OPEN GALLERIA'
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            onClick={openGalleria}
-            onTouchEnd={openGalleria}
-          ></i>
-        </div>
-        <div 
-          key='open-kept'
-          className='col-1 d-flex justify-content-center align-items-center'
-          style={{ pointerEvents: `${numberOfKeptImages > 0 ? 'auto' : 'none'}` }}>
-          <i
-            className={`col bi bi-bag-check`}
-            style={{        
-              fontSize: '45px', 
-              color: `${numberOfKeptImages > 0 ? 'white' : 'gray'}`,
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
-            }}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title='OPEN KEPT'
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            onClick={openKeptOnNewTab}
-            onTouchEnd={openKeptOnNewTab}
-          ></i>
-        </div>
-      </div>
-    </div>
-    <div
-      id='main-element'
-      style={{
-        gap: columnGap + 'px',
-        padding: padding + 'px',
-        width: firstRowWidth + 'px',
-        marginTop: isHeaderPinned ? '100px' : '0px',
-        transformOrigin: origin, // Dynamic transform-origin based on mouse position
-        transform: 'matrix(1, 0, 0, 1, 0, 0)',
-        transition: 'margin-top 0.3s ease-in-out',
-      }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
-      onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
-    >
-      {filteredImages
-        .map((image, index) => (
-          <ImageCard 
-            image={image}
-            index={index}
-            handleImageClick={handleImageClick}
-            handleKeepOnClick={handleKeepOnClick}
-            handleMarkForDeletionOnClick={handleMarkForDeletionOnClick}
-            handleDeleteOnClick={handleDeleteOnClick}
-            getCurrentSelectedImage={getCurrentSelectedImage}
-            isDragging={isDragging}
-            selectedImageIds={selectedImageIds}
-            handleOnloadImg={handleOnloadImg}
-            setIsDeleting={setIsDeleting}
-            isInFilteredView={isFilteredView || isKeptFilteredView || isMarkedFilteredView}
-          />
-      ))}
-    </div>
-
-    {isGalleriaClosed === false && 
-      <div style={{ position: 'fixed', inset: 0, zIndex: 1001 }}>
-        <PhotoGalleria 
-          images={images} 
-          setIsGalleriaClosed={setIsGalleriaClosed} 
-          setCurrentSelectedImage={setCurrentSelectedImage} 
-          getCurrentSelectedImage={getCurrentSelectedImage}
-          handleDeleteOnClick={handleDeleteOnClick}
+  <Header
+    isHeaderOpened={isHeaderOpened}
+    isHeaderPinned={isHeaderPinned}
+    handleMouseEnterHeader={handleMouseEnterHeader}
+    handleMouseLeaveHeader={handleMouseLeaveHeader}
+    handleHeaderHandleClick={handleHeaderHandleClick}
+    isScrollToZoom={isScrollToZoom}
+    setIsScrollToZoom={setIsScrollToZoom}
+    isFilteredView={isFilteredView}
+    setIsFilteredView={setIsFilteredView}
+    filteredImageIds={filteredImageIds}
+    setFilteredImageIds={setFilteredImageIds}
+    isKeptFilteredView={isKeptFilteredView}
+    setIsKeptFilteredView={setIsKeptFilteredView}
+    keptFilteredImageIds={keptFilteredImageIds}
+    setKeptFilteredImageIds={setKeptFilteredImageIds}
+    isMarkedFilteredView={isMarkedFilteredView}
+    setIsMarkedFilteredView={setIsMarkedFilteredView}
+    markedFilteredImageIds={markedFilteredImageIds}
+    setMarkedFilteredImageIds={setMarkedFilteredImageIds}
+    images={images}
+    selectedImageIds={selectedImageIds}
+    setSelectedImageIds={setSelectedImageIds}
+    setCurrentSelectedImage={setCurrentSelectedImage}
+    IconWithBadge={IconWithBadge}
+    numberOfKeptImages={numberOfKeptImages}
+    numberOfMarkedImages={numberOfMarkedImages}
+    openWithDialog={openWithDialog}
+    selectAllImages={selectAllImages}
+    handleDeleteSelectedImagesOnClick={handleDeleteSelectedImagesOnClick}
+    handleDeleteMarkedImages={handleDeleteMarkedImages}
+    setHandleDeleteImages={setHandleDeleteImages}
+    setPopupOptions={setPopupOptions}
+    openGalleria={openGalleria}
+    openKeptOnNewTab={openKeptOnNewTab}
+    toggleKeepPhotoMutation={toggleKeepPhotoMutation}
+  />
+  <div
+    id='main-element'
+    style={{
+      gap: columnGap + 'px',
+      padding: padding + 'px',
+      width: firstRowWidth + 'px',
+      marginTop: isHeaderPinned ? '100px' : '0px',
+      transformOrigin: origin, // Dynamic transform-origin based on mouse position
+      transform: 'matrix(1, 0, 0, 1, 0, 0)',
+      transition: 'margin-top 0.3s ease-in-out',
+    }}
+    onMouseDown={handleMouseDown}
+    onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
+    onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
+  >
+    {filteredImages
+      .map((image, index) => (
+        <ImageCard 
+          image={image}
+          index={index}
+          handleImageClick={handleImageClick}
           handleKeepOnClick={handleKeepOnClick}
-          isKeepButtonDisabled={isKeepButtonDisabled}
+          handleMarkForDeletionOnClick={handleMarkForDeletionOnClick}
+          handleDeleteOnClick={handleDeleteOnClick}
+          getCurrentSelectedImage={getCurrentSelectedImage}
+          isDragging={isDragging}
+          selectedImageIds={selectedImageIds}
+          handleOnloadImg={handleOnloadImg}
+          setIsDeleting={setIsDeleting}
+          isInFilteredView={isFilteredView || isKeptFilteredView || isMarkedFilteredView}
         />
-      </div>
-    }
-    <ModalPopup 
-      popupOptions ={popupOptions}
-      setPopupOptions={setPopupOptions}
-      handleDeleteImages={handleDeleteImages}
-    ></ModalPopup>
+    ))}
+  </div>
 
-    {!isLoadingCompletedAtStart && (
-      LoadingSpinner({text: 'Rendering images...'})
-    )}
+  {isGalleriaClosed === false && 
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1001 }}>
+      <PhotoGalleria 
+        images={images} 
+        setIsGalleriaClosed={setIsGalleriaClosed} 
+        setCurrentSelectedImage={setCurrentSelectedImage} 
+        getCurrentSelectedImage={getCurrentSelectedImage}
+        handleDeleteOnClick={handleDeleteOnClick}
+        handleKeepOnClick={handleKeepOnClick}
+        isKeepButtonDisabled={isKeepButtonDisabled}
+      />
+    </div>
+  }
+  <ModalPopup 
+    popupOptions ={popupOptions}
+    setPopupOptions={setPopupOptions}
+    handleDeleteImages={handleDeleteImages}
+  ></ModalPopup>
+
+  {!isLoadingCompletedAtStart && (
+    LoadingSpinner({text: 'Rendering images...'})
+  )}
 
   {/* Custom Scrollbars */}
   {/* Pagination controls sticky footer (z-index: 100, below galleria) */}
