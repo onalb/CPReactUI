@@ -1,10 +1,27 @@
 import React, { useState, useEffect } from 'react';
 
-const Toolbar: React.FC = () => {
+interface ToolbarProps {
+  selectAllImages: () => void;
+  setHandleDeleteImages: (fn: any) => void;
+  handleDeleteMarkedImages: () => void;
+  setPopupOptions: (opts: any) => void;
+  images: any[];
+}
+
+
+const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, setPopupOptions, images }) => {
   const [isToolbarOpen, setIsToolbarOpen] = useState(false);
   const [hoveredCircle, setHoveredCircle] = useState<number | null>(null);
+  const [clickedCircle, setClickedCircle] = useState<number | null>(null);
+  const [isDeleteMarkedForDeletionDisabled, setIsDeleteMarkedForDeletionDisabled] = useState(true);
 
   const [isPinned, setIsPinned] = useState(false);
+
+  useEffect(() => {
+    const anyMarked = Array.isArray(images) && images.some((i: any) => i.isMarkedForDeletion === true);
+    const markedImages = Array.isArray(images) ? images.filter((i: any) => i.isMarkedForDeletion === true) : [];
+    setIsDeleteMarkedForDeletionDisabled(!anyMarked);
+  }, [images]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -23,12 +40,14 @@ const Toolbar: React.FC = () => {
 
   return (
     <div 
+      id="toolbar-container"
       style={{
         position: 'fixed',
         top: '25px',
         left: '20px',
         zIndex: 1000
       }}
+      className='no-selection-removal-on-click'
     >
       <div 
         style={{
@@ -58,20 +77,90 @@ const Toolbar: React.FC = () => {
         ...styles.toolbar,
         transform: isToolbarOpen ? 'translateX(0)' : 'translateX(-90%)',
         opacity: isToolbarOpen ? 1 : .2
-      }}>
-        {['🏠', '📁', '🔍', '⭐', '🗑️', '📷'].map((icon, index) => (
-          <div 
-            key={index} 
+      }}
+      className='no-selection-removal-on-click'>
+        {[
+          <i className={`bi bi-check2-all`} key="check2-all"
             style={{
-              ...styles.toolbarCircle,
-              backgroundColor: hoveredCircle === index ? 'rgba(0, 0, 0, 0.95)' : 'rgba(32, 32, 32, 0.85)'
+              display: 'block', fontSize: '22px', color: 'white',
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center',
             }}
-            onMouseEnter={() => setHoveredCircle(index)}
-            onMouseLeave={() => setHoveredCircle(null)}
-          >
-            <span style={styles.toolbarIcon}>{icon}</span>
-          </div>
-        ))}
+          />,
+          <i className={`bi bi-cart-x`} key="delete-marked"
+            style={{
+              display: 'block', fontSize: '22px', color: 'white',
+              transition: 'color 0.3s ease, background-color 0.3s ease',
+              textAlign: 'center',
+            }}
+            title='DELETE MARKED'
+          />,
+          '📁', '🔍', '⭐', '🗑️', '📷'
+        ].map((icon, index) => {
+          // pointerEvents for DELETE MARKED
+          let pointerEvents = 'auto';
+          let color = 'white';
+          if (index === 1) {
+            pointerEvents = isDeleteMarkedForDeletionDisabled ? 'none' : 'auto';
+            color = isDeleteMarkedForDeletionDisabled ? 'gray' : 'white';
+          }
+          return (
+            <div
+              id={index === 1 ? 'delete-marked' : undefined}
+              key={index}
+              style={{
+                ...styles.toolbarCircle,
+                backgroundColor:
+                  index === 1 && clickedCircle === index
+                      ? '#ff6b6b'
+                      : hoveredCircle === index
+                        ? 'rgba(0, 0, 0, 0.95)'
+                        : 'rgba(32, 32, 32, 0.85)',
+                pointerEvents: pointerEvents as any
+              }}
+              onMouseEnter={() => setHoveredCircle(index)}
+              onMouseLeave={() => setHoveredCircle(null)}
+              onMouseDown={() => setClickedCircle(index)}
+              onMouseUp={() => setClickedCircle(null)}
+              onClick={
+                index === 0
+                  ? selectAllImages
+                  : index === 1 && !isDeleteMarkedForDeletionDisabled
+                    ? () => {
+                        setHandleDeleteImages(() => handleDeleteMarkedImages);
+                        setPopupOptions({
+                          isVisible: true,
+                          isYesNo: true,
+                          title: 'DELETE',
+                          message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'
+                        });
+                      }
+                    : undefined
+              }
+              onTouchEnd={
+                index === 0
+                  ? selectAllImages
+                  : index === 1 && !isDeleteMarkedForDeletionDisabled
+                    ? () => {
+                        setHandleDeleteImages(() => handleDeleteMarkedImages);
+                        setPopupOptions({
+                          isVisible: true,
+                          isYesNo: true,
+                          title: 'DELETE',
+                          message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'
+                        });
+                      }
+                    : undefined
+              }
+            >
+              {index === 1 && React.isValidElement(icon)
+                ? React.cloneElement(icon, { style: { ...icon.props.style, color } })
+                : index <= 1
+                  ? icon
+                  : <span style={styles.toolbarIcon}>{icon}</span>}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -254,11 +254,11 @@ const Header: React.FC<HeaderProps> = (props) => (
         key='marked-for-deletion'
         className='col-1 d-flex justify-content-center align-items-center no-selection-removal-on-click'>
         <props.IconWithBadge
-          iconClass="bi bi-trash3-fill"
+          iconClass="bi bi-cart-x"
           count={props.numberOfMarkedImages}
           isActive={props.numberOfMarkedImages > 0}
           isFilteredView={props.isMarkedFilteredView}
-          title={`${props.numberOfMarkedImages > 0 ? props.numberOfMarkedImages + ' Marked - ' : ''}${props.isMarkedFilteredView ? 'Show all' : 'View marked only'}`}
+          title={`${props.numberOfMarkedImages > 0 ? props.numberOfMarkedImages + ' Marked - ' : ''}${props.isMarkedFilteredView ? 'Show all' : 'View marked for deletion only'}`}
           filteredIds={props.markedFilteredImageIds}
           setFilteredIds={props.setMarkedFilteredImageIds}
           setIsFilteredView={props.setIsMarkedFilteredView}
@@ -268,7 +268,7 @@ const Header: React.FC<HeaderProps> = (props) => (
             setIsOtherFilteredView2: props.setIsKeptFilteredView,
             setOtherFilteredIds2: props.setKeptFilteredImageIds
           }}
-          getIdsToFilter={() => props.images.filter(img => !img.isDeleted && img.isMarkedForDeletion && !img.isKept).map(img => img.id)}
+          getIdsToFilter={() => props.images.filter(img => !img.isDeleted && img.isMarkedForDeletion).map(img => img.id)}
           filteredColorClass="clicked-orange"
           onEnterFilter={() => {
             props.setSelectedImageIds([]);
@@ -298,62 +298,6 @@ const Header: React.FC<HeaderProps> = (props) => (
           }}
           onClick={() => props.openWithDialog('C:\\Users\\burak\\Pictures\\DSC04127.JPG')}
           onTouchEnd={() => props.openWithDialog('C:\\Users\\burak\\Pictures\\DSC04127.JPG')}
-        ></i>
-      </div>
-      <div
-        key='select-all'
-        className='col-1 d-flex justify-content-center align-items-center'>
-        <i
-          className={`col bi bi-check2-all`}
-          style={{        
-            display: 'block', fontSize: '45px', color: 'white',
-            transition: 'color 0.3s ease, background-color 0.3s ease',
-            textAlign: 'center',
-          }}
-          data-bs-toggle="tooltip"
-          data-bs-placement="top"
-          title='SELECT ALL'
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'white';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-          onClick={props.selectAllImages}
-          onTouchEnd={props.selectAllImages}
-        ></i>
-      </div>
-      <div
-        key='delete-marked'
-        className='col-1 d-flex justify-content-center align-items-center'
-        style={{ pointerEvents: `${props.images.some((i: any) => i.isMarkedForDeletion === true) ? 'auto' : 'none'}` }}
-        data-toggle="modal" data-target="#exampleModalCenter">
-        <i
-          className={`col bi bi-cart-x`}
-          style={{        
-            display: 'block', fontSize: '45px', color: `${props.images.some((i: any) => i.isMarkedForDeletion === true) ? 'white' : 'gray'}`,
-            transition: 'color 0.3s ease, background-color 0.3s ease',
-            textAlign: 'center',
-          }}
-          data-bs-toggle="tooltip"
-          data-bs-placement="top"
-          title='DELETE MARKED'
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'white';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-          onClick={() => {
-            props.setHandleDeleteImages(() => props.handleDeleteMarkedImages);
-            props.setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'  });
-          }}
-          onTouchEnd={() => {
-            props.setHandleDeleteImages(() => props.handleDeleteMarkedImages);
-            props.setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'  });
-          }}
         ></i>
       </div>
       <div

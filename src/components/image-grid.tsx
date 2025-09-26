@@ -111,7 +111,7 @@ const ImageGrid: React.FC = () => {
 
   // Calculations
   let numberOfKeptImages = images.filter(image => !image.isDeleted && image.isKept).length;
-  let numberOfMarkedImages = images.filter(image => !image.isDeleted && image.isMarkedForDeletion && !image.isKept).length;
+  let numberOfMarkedImages = images.filter(image => !image.isDeleted && image.isMarkedForDeletion).length;
   
   // Get currently filtered images based on filter state
   const filteredImages = images
@@ -1062,12 +1062,6 @@ const ImageGrid: React.FC = () => {
 
   const handleMarkForDeletionOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
     if (isZooming || isDragging) return false;
-
-    // setIsMarkedForDeletionButtonDisabled(true);
-    // setTimeout(() => {
-    //   setIsKeepButtonDisabled(false);
-    // }, 400);
-
       
     if (!image.isKept) {
       createParticles(e.clientX, e.clientY, zoomScale, 'keep');
@@ -1460,7 +1454,13 @@ const ImageGrid: React.FC = () => {
   return (
     images && images.length > 0 ? (
     <>
-  <ToolbarToggle />
+  <ToolbarToggle 
+    selectAllImages={selectAllImages}
+    setHandleDeleteImages={setHandleDeleteImages}
+    handleDeleteMarkedImages={handleDeleteMarkedImages}
+    setPopupOptions={setPopupOptions}
+    images={images}
+  />
   <Header
     isHeaderOpened={isHeaderOpened}
     isHeaderPinned={isHeaderPinned}
