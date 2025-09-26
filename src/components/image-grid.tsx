@@ -127,6 +127,11 @@ const ImageGrid: React.FC = () => {
       return true;
     });
 
+  // Select all images currently displayed (filtered)
+  const selectAllImages = () => {
+    setSelectedImageIds(filteredImages.map(img => img.id));
+  };
+
   // Variables
 
   const defaultRowHeight = 300;
@@ -1304,9 +1309,6 @@ const ImageGrid: React.FC = () => {
     }
   }
 
-  const selectAllImages = () => {
-    setSelectedImageIds(images.map(img => img.id))
-  }
 
   useEffect(() => {
     window.addEventListener('mouseup', handleMouseUp);
