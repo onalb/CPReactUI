@@ -65,59 +65,8 @@ const Header: React.FC<HeaderProps> = (props) => (
       ></i>
     </div>
     <div className='row align-self-center w-100'>
-      <div 
-        key='scroll-zoom-toggle'
-        className='col-1 d-flex align-items-center justify-content-center no-selection-removal-on-click'>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className='no-selection-removal-on-click'>
-          <span style={{ color: 'white', fontSize: '14px' }} className='no-selection-removal-on-click'>Scroll:</span>
-          <label style={{ 
-            position: 'relative', 
-            display: 'inline-block', 
-            width: '50px', 
-            height: '24px',
-            cursor: 'pointer'
-          }} className='no-selection-removal-on-click'>
-            <input
-              type="checkbox"
-              checked={props.isScrollToZoom}
-              onChange={(e) => props.setIsScrollToZoom(e.target.checked)}
-              style={{
-                opacity: 0,
-                width: 0,
-                height: 0
-              }}
-              className='no-selection-removal-on-click'
-            />
-            <span style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: props.isScrollToZoom ? '#4CAF50' : '#ccc',
-              borderRadius: '24px',
-              transition: '0.3s',
-              cursor: 'pointer'
-            }} className='no-selection-removal-on-click'>
-              <span style={{
-                position: 'absolute',
-                content: '""',
-                height: '18px',
-                width: '18px',
-                left: props.isScrollToZoom ? '26px' : '3px',
-                bottom: '3px',
-                backgroundColor: 'white',
-                borderRadius: '50%',
-                transition: '0.3s',
-                cursor: 'pointer'
-              }} className='no-selection-removal-on-click'></span>
-            </span>
-          </label>
-          <span style={{ color: 'white', fontSize: '12px' }} className='no-selection-removal-on-click'>
-            {props.isScrollToZoom ? 'Zoom' : 'Pan'}
-          </span>
-        </div>
-      </div>
+      <div key='blank-col' className='col-1'></div>
+
       <div
         key='all-images'
         className='col-1 d-flex justify-content-center align-items-center no-selection-removal-on-click'>
@@ -129,7 +78,7 @@ const Header: React.FC<HeaderProps> = (props) => (
               fontSize: '45px', 
               color: !props.isFilteredView && !props.isKeptFilteredView && !props.isMarkedFilteredView ? 'white' : 'gray',
               transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
+              textAlign: 'left',
               cursor: 'pointer',
             }}
             data-bs-toggle="tooltip"
@@ -284,7 +233,7 @@ const Header: React.FC<HeaderProps> = (props) => (
           style={{        
             display: 'block', fontSize: '45px', color: 'white',
             transition: 'color 0.3s ease, background-color 0.3s ease',
-            textAlign: 'center',
+            textAlign: 'left',
           }}
           data-bs-toggle="tooltip"
           data-bs-placement="top"
@@ -302,13 +251,13 @@ const Header: React.FC<HeaderProps> = (props) => (
       </div>
       <div
         key='open-galleria'
-        className='col-1 d-flex justify-content-center align-items-center'>
+        className='col-3 d-flex justify-content-center align-items-center'>
         <i
           className={`col bi bi-tv`}
           style={{        
             display: 'block', fontSize: '45px', color: 'white', padding: '0px',
             transition: 'color 0.3s ease, background-color 0.3s ease',
-            textAlign: 'center',
+            textAlign: 'left',
           }}
           data-bs-toggle="tooltip"
           data-bs-placement="top"
@@ -322,6 +271,68 @@ const Header: React.FC<HeaderProps> = (props) => (
           }}
           onClick={props.openGalleria}
           onTouchEnd={props.openGalleria}
+        ></i>
+      </div>
+      <div 
+        key='scroll-zoom-toggle'
+        className='col-1 d-flex align-items-center no-selection-removal-on-click'>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className='no-selection-removal-on-click '>
+          <span style={{ color: 'white', fontSize: '14px' }} className='no-selection-removal-on-click'>Scroll:</span>
+          <label style={{ 
+            position: 'relative', 
+            display: 'inline-block', 
+            width: '50px', 
+            height: '24px',
+            cursor: 'pointer'
+          }} className='no-selection-removal-on-click'>
+            <input
+              type="checkbox"
+              checked={props.isScrollToZoom}
+              onChange={(e) => props.setIsScrollToZoom(e.target.checked)}
+              style={{
+                opacity: 0,
+                width: 0,
+                height: 0
+              }}
+              className='no-selection-removal-on-click'
+            />
+            <span style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: props.isScrollToZoom ? '#4CAF50' : '#ccc',
+              borderRadius: '24px',
+              transition: '0.3s',
+              cursor: 'pointer'
+            }} className='no-selection-removal-on-click'>
+              <span style={{
+                position: 'absolute',
+                content: '""',
+                height: '18px',
+                width: '18px',
+                left: props.isScrollToZoom ? '26px' : '3px',
+                bottom: '3px',
+                backgroundColor: 'white',
+                borderRadius: '50%',
+                transition: '0.3s',
+                cursor: 'pointer'
+              }} className='no-selection-removal-on-click'></span>
+            </span>
+          </label>
+          <span style={{ color: 'white', fontSize: '12px' }} className='no-selection-removal-on-click'>
+            {props.isScrollToZoom ? 'Zoom' : 'Pan'}
+          </span>
+        </div>
+      </div>
+      <div key='pin-header' className='col-2 d-flex align-items-center no-selection-removal-on-click'>
+        <i
+          className={`bi ${props.isHeaderPinned ? 'bi-pin-angle-fill' : 'bi-pin-angle'} header-pin-icon ml-1`}
+          style={{ fontSize: '32px', color: props.isHeaderPinned ? '#4CAF50' : 'white', cursor: 'pointer', transition: 'color 0.3s' }}
+          title={props.isHeaderPinned ? 'Unpin Header' : 'Pin Header'}
+          onClick={props.handleHeaderHandleClick}
+          onTouchEnd={props.handleHeaderHandleClick}
         ></i>
       </div>
     </div>
