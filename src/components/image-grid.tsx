@@ -1463,6 +1463,7 @@ const ImageGrid: React.FC = () => {
     setPopupOptions={setPopupOptions}
     images={images}
     selectedImageIds={selectedImageIds}
+    setImages={setImages}
   />
   <Header
     isHeaderOpened={isHeaderOpened}

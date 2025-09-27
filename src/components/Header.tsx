@@ -301,32 +301,6 @@ const Header: React.FC<HeaderProps> = (props) => (
         ></i>
       </div>
       <div
-        key='delete-selected'
-        className='col-1 d-flex justify-content-center align-items-center'
-        style={{ pointerEvents: `${props.selectedImageIds.length > 0 ? 'auto' : 'none'}` }}
-        data-toggle="modal" data-target="#exampleModalCenter">
-        <i
-          className={`col bi bi-trash3-fill`}
-          style={{        
-            display: 'block', fontSize: '45px', color: `${props.selectedImageIds.length > 0 ? 'white' : 'gray'}`,
-            transition: 'color 0.3s ease, background-color 0.3s ease',
-            textAlign: 'center',
-          }}
-          data-bs-toggle="tooltip"
-          data-bs-placement="top"
-          title='DELETE SELECTED'
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'white';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-          onClick={props.handleDeleteSelectedImagesOnClick}
-          onTouchEnd={props.handleDeleteSelectedImagesOnClick}
-        ></i>
-      </div>
-      <div
         key='open-galleria'
         className='col-1 d-flex justify-content-center align-items-center'>
         <i
@@ -348,32 +322,6 @@ const Header: React.FC<HeaderProps> = (props) => (
           }}
           onClick={props.openGalleria}
           onTouchEnd={props.openGalleria}
-        ></i>
-      </div>
-      <div 
-        key='open-kept'
-        className='col-1 d-flex justify-content-center align-items-center'
-        style={{ pointerEvents: `${props.numberOfKeptImages > 0 ? 'auto' : 'none'}` }}>
-        <i
-          className={`col bi bi-bag-check`}
-          style={{        
-            fontSize: '45px', 
-            color: `${props.numberOfKeptImages > 0 ? 'white' : 'gray'}`,
-            transition: 'color 0.3s ease, background-color 0.3s ease',
-            textAlign: 'center',
-          }}
-          data-bs-toggle="tooltip"
-          data-bs-placement="top"
-          title='OPEN KEPT'
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'white';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-          onClick={props.openKeptOnNewTab}
-          onTouchEnd={props.openKeptOnNewTab}
         ></i>
       </div>
     </div>

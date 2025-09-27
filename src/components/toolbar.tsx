@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../styles/toolbar.css';
 
 interface ToolbarProps {
   selectAllImages: () => void;
@@ -8,10 +9,12 @@ interface ToolbarProps {
   setPopupOptions: (opts: any) => void;
   images: any[];
   selectedImageIds: number[];
+  setImages: (fn: (prevImages: any[]) => any[]) => void;
 }
 
 
-const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, selectedImageIds }) => {
+const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, selectedImageIds, setImages }) => {
+  // setImages is now available directly from props
   // ...existing code...
 
   // State for disabling delete marked icon
@@ -27,23 +30,19 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
       name: 'selectAll',
       index: 0,
       id: 'select-all',
-      element: <i className="bi bi-check2-all" />,
-      style: {
-        fontSize: '22px', transition: 'color 0.3s ease, backgroundColor 0.3s ease', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      },
+      element: <i className="bi bi-check2-all select-all-icon" />,
+      // style moved to CSS
       title: 'SELECT ALL',
       pointerEvents: 'auto',
-      color: 'white',
+      color: '#5899ceff',
       onClick: selectAllImages,
     },
     {
       name: 'deleteSelected',
       index: 1,
       id: 'delete-selected',
-      element: <i className="bi bi-trash-fill" />,
-      style: {
-        fontSize: '22px', transition: 'color 0.3s ease, backgroundColor 0.3s ease', color: isDeleteSelectedImagesDisabled ? 'white' : 'gray', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      },
+      element: <i className="bi bi-trash-fill delete-selected-icon" />,
+      // style moved to CSS
       title: 'DELETE SELECTED',
       pointerEvents: isDeleteSelectedImagesDisabled ? 'none' : 'auto',
       color: isDeleteSelectedImagesDisabled ? 'gray' : 'white',
@@ -61,13 +60,11 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
       name: 'deleteMarked',
       index: 2,
       id: 'delete-marked',
-      element: <i className="bi bi-cart-x" />,
-      style: {
-        fontSize: '22px', transition: 'color 0.3s ease, backgroundColor 0.3s ease', color: isDeleteMarkedForDeletionDisabled ? 'gray' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      },
+      element: <i className="bi bi-cart-x delete-marked-icon" />,
+      // style moved to CSS
       title: 'DELETE MARKED',
       pointerEvents: isDeleteMarkedForDeletionDisabled ? 'none' : 'auto',
-      color: isDeleteMarkedForDeletionDisabled ? 'gray' : 'white',
+      color: isDeleteMarkedForDeletionDisabled ? 'gray' : 'rgb(255, 100, 100)',
       onClick: !isDeleteMarkedForDeletionDisabled ? () => {
         setHandleDeleteImages(() => handleDeleteMarkedImages);
         setPopupOptions({
@@ -79,44 +76,43 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
       } : undefined,
     },
     {
-      name: 'search',
+      name: 'markSelectedForDeletion',
       index: 3,
-      id: 'search',
-      element: <span>🔍</span>,
-      style: { fontSize: '18px' },
-      title: 'SEARCH',
-      pointerEvents: 'auto',
-      color: 'white',
+      id: 'mark-selected-for-deletion',
+      element: <i className="bi bi-cart-plus mark-selected-icon" />,
+      // style moved to CSS
+      title: 'MARK SELECTED FOR DELETION',
+      pointerEvents: selectedImageIds.length > 0 ? 'auto' : 'none',
+      color: selectedImageIds.length > 0 ? 'rgb(255, 193, 100)' : 'gray',
+      onClick: selectedImageIds.length > 0 ? () => {
+        // Mark all selected images for deletion using setImages for React state update
+        setImages((prevImages: any[]) =>
+          prevImages.map((img) =>
+            selectedImageIds.includes(img.id)
+              ? { ...img, isMarkedForDeletion: true }
+              : img
+          )
+        );
+      } : undefined,
     },
     {
-      name: 'star',
-      index: 4,
-      id: 'star',
-      element: <span>⭐</span>,
-      style: { fontSize: '18px' },
-      title: 'STAR',
-      pointerEvents: 'auto',
-      color: 'white',
-    },
-    {
-      name: 'trash',
+      name: 'keepSelected',
       index: 5,
-      id: 'trash',
-      element: <span>🗑️</span>,
-      style: { fontSize: '18px' },
-      title: 'TRASH',
-      pointerEvents: 'auto',
-      color: 'white',
-    },
-    {
-      name: 'camera',
-      index: 6,
-      id: 'camera',
-      element: <span>📷</span>,
-      style: { fontSize: '18px' },
-      title: 'CAMERA',
-      pointerEvents: 'auto',
-      color: 'white',
+      id: 'keep-selected',
+      element: <i className="bi bi-bag-check keep-selected-icon" />,
+      // style moved to CSS
+      title: 'KEEP SELECTED',
+      pointerEvents: selectedImageIds.length > 0 ? 'auto' : 'none',
+      color: selectedImageIds.length > 0 ? 'rgb(25, 255, 79)' : 'gray',
+      onClick: selectedImageIds.length > 0 ? () => {
+        setImages((prevImages: any[]) =>
+          prevImages.map((img) =>
+            selectedImageIds.includes(img.id)
+              ? { ...img, isKept: true }
+              : img
+          )
+        );
+      } : undefined,
     },
   ];
 
@@ -149,23 +145,11 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
   return (
     <div 
       id="toolbar-container"
-      style={{
-        position: 'fixed',
-        top: '25px',
-        left: '20px',
-        zIndex: 1000
-      }}
-      className='no-selection-removal-on-click'
+      className='no-selection-removal-on-click toolbar-container'
     >
       <div 
-        style={{
-          ...styles.circle,
-          backgroundColor: isToolbarOpen ? '#ff6b6b' : '#6e6e6eff',
-          borderColor: isToolbarOpen ? '#ff6b6b' : '#ff6b6be6',
-          opacity: isToolbarOpen ? 1 : 0.9,
-          transition: 'background-color 0.3s ease-in-out, border-color 0.3s ease-in-out'
-        }}
-
+        className={`circle${isToolbarOpen ? ' circle-open' : ''}`}
+        style={{ opacity: isToolbarOpen ? 1 : 0.9 }}
         onClick={() => {
           setIsPinned(!isPinned);
           setIsToolbarOpen(isPinned ? false : true);
@@ -173,33 +157,22 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
         onMouseEnter={() => { setIsToolbarOpen(true) }}
       >
         <span 
-          style={styles.icon}
+          className='gear-icon'
           onClick={() => {
             setIsPinned(!isPinned);
             setIsToolbarOpen(isPinned ? false : true);
           }}
         >⚙</span>
       </div>
-      
-      <div style={{
-        ...styles.toolbar,
-        transform: isToolbarOpen ? 'translateX(0)' : 'translateX(-90%)',
-        opacity: isToolbarOpen ? 1 : .2
-      }}
-      className='no-selection-removal-on-click'>
+      <div
+        className={`no-selection-removal-on-click toolbar-panel${isToolbarOpen ? ' open' : ''}`}
+      >
         {toolbarIcons.map((iconObj) => (
           <div
             id={iconObj.id}
             key={iconObj.index}
+            className={`circle${clickedCircle === iconObj.index ? ' circle-clicked' : hoveredCircle === iconObj.index ? ' circle-hovered' : ''}`}
             style={{
-              ...styles.toolbarCircle,
-              ...iconObj.style,
-              backgroundColor:
-                (clickedCircle === iconObj.index)
-                  ? '#ff6b6b'
-                  : hoveredCircle === iconObj.index
-                    ? 'rgba(0, 0, 0, 0.95)'
-                    : 'rgba(32, 32, 32, 0.85)',
               pointerEvents: iconObj.pointerEvents as any,
               color: iconObj.color,
             }}
@@ -217,57 +190,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
       </div>
     </div>
   );
-};
-
-const styles = {
-  circle: {
-    width: '50px',
-    height: '50px',
-    borderRadius: '50%',
-    borderStyle: 'solid',
-    borderColor: '#ff6b6b',
-    backgroundColor: '#6e6e6eff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    zIndex: 1001,
-    position: 'relative' as const,
-  },
-  icon: {
-    fontSize: '24px',
-    color: 'white',
-    cursor: 'pointer',
-    zIndex: 1001
-  },
-  toolbar: {
-    position: 'fixed' as const,
-    top: '0',
-    left: '0',
-    height: '100vh',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '10px',
-    paddingTop: '110px',
-    transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
-    zIndex: 900
-  },
-  toolbarCircle: {
-    width: '50px',
-    height: '50px',
-    borderRadius: '50%',
-    borderColor: '#c49797',
-    borderWidth: '2px',
-    borderStyle: 'solid',
-    backgroundColor: '#ff6b6b',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-  },
-  toolbarIcon: {
-    fontSize: '18px',
-  },
 };
 
 export default Toolbar;
