@@ -4,24 +4,132 @@ interface ToolbarProps {
   selectAllImages: () => void;
   setHandleDeleteImages: (fn: any) => void;
   handleDeleteMarkedImages: () => void;
+  handleDeleteSelectedImages: () => void;
   setPopupOptions: (opts: any) => void;
   images: any[];
+  selectedImageIds: number[];
 }
 
 
-const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, setPopupOptions, images }) => {
+const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, selectedImageIds }) => {
+  // ...existing code...
+
+  // State for disabling delete marked icon
   const [isToolbarOpen, setIsToolbarOpen] = useState(false);
   const [hoveredCircle, setHoveredCircle] = useState<number | null>(null);
   const [clickedCircle, setClickedCircle] = useState<number | null>(null);
   const [isDeleteMarkedForDeletionDisabled, setIsDeleteMarkedForDeletionDisabled] = useState(true);
+  const [isDeleteSelectedImagesDisabled, setIsDeleteSelectedImagesDisabled] = useState(selectedImageIds.length === 0);
+
+  // Define toolbar icons with all attributes
+  const toolbarIcons = [
+    {
+      name: 'selectAll',
+      index: 0,
+      id: 'select-all',
+      element: <i className="bi bi-check2-all" />,
+      style: {
+        fontSize: '22px', transition: 'color 0.3s ease, backgroundColor 0.3s ease', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      },
+      title: 'SELECT ALL',
+      pointerEvents: 'auto',
+      color: 'white',
+      onClick: selectAllImages,
+    },
+    {
+      name: 'deleteSelected',
+      index: 1,
+      id: 'delete-selected',
+      element: <i className="bi bi-trash-fill" />,
+      style: {
+        fontSize: '22px', transition: 'color 0.3s ease, backgroundColor 0.3s ease', color: isDeleteSelectedImagesDisabled ? 'white' : 'gray', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      },
+      title: 'DELETE SELECTED',
+      pointerEvents: isDeleteSelectedImagesDisabled ? 'none' : 'auto',
+      color: isDeleteSelectedImagesDisabled ? 'gray' : 'white',
+      onClick: !isDeleteSelectedImagesDisabled ? () => {
+        setHandleDeleteImages(() => handleDeleteSelectedImages);
+        setPopupOptions({
+          isVisible: true,
+          isYesNo: true,
+          title: 'DELETE',
+          message: 'You are about to delete all SELECTED images. Are you sure you want to proceed?'
+        });
+      } : undefined,
+    },
+    {
+      name: 'deleteMarked',
+      index: 2,
+      id: 'delete-marked',
+      element: <i className="bi bi-cart-x" />,
+      style: {
+        fontSize: '22px', transition: 'color 0.3s ease, backgroundColor 0.3s ease', color: isDeleteMarkedForDeletionDisabled ? 'gray' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      },
+      title: 'DELETE MARKED',
+      pointerEvents: isDeleteMarkedForDeletionDisabled ? 'none' : 'auto',
+      color: isDeleteMarkedForDeletionDisabled ? 'gray' : 'white',
+      onClick: !isDeleteMarkedForDeletionDisabled ? () => {
+        setHandleDeleteImages(() => handleDeleteMarkedImages);
+        setPopupOptions({
+          isVisible: true,
+          isYesNo: true,
+          title: 'DELETE',
+          message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'
+        });
+      } : undefined,
+    },
+    {
+      name: 'search',
+      index: 3,
+      id: 'search',
+      element: <span>🔍</span>,
+      style: { fontSize: '18px' },
+      title: 'SEARCH',
+      pointerEvents: 'auto',
+      color: 'white',
+    },
+    {
+      name: 'star',
+      index: 4,
+      id: 'star',
+      element: <span>⭐</span>,
+      style: { fontSize: '18px' },
+      title: 'STAR',
+      pointerEvents: 'auto',
+      color: 'white',
+    },
+    {
+      name: 'trash',
+      index: 5,
+      id: 'trash',
+      element: <span>🗑️</span>,
+      style: { fontSize: '18px' },
+      title: 'TRASH',
+      pointerEvents: 'auto',
+      color: 'white',
+    },
+    {
+      name: 'camera',
+      index: 6,
+      id: 'camera',
+      element: <span>📷</span>,
+      style: { fontSize: '18px' },
+      title: 'CAMERA',
+      pointerEvents: 'auto',
+      color: 'white',
+    },
+  ];
 
   const [isPinned, setIsPinned] = useState(false);
 
   useEffect(() => {
     const anyMarked = Array.isArray(images) && images.some((i: any) => i.isMarkedForDeletion === true);
-    const markedImages = Array.isArray(images) ? images.filter((i: any) => i.isMarkedForDeletion === true) : [];
     setIsDeleteMarkedForDeletionDisabled(!anyMarked);
   }, [images]);
+
+  useEffect(() => {
+    setIsDeleteSelectedImagesDisabled(selectedImageIds.length === 0);
+  }, [selectedImageIds]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -79,88 +187,33 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
         opacity: isToolbarOpen ? 1 : .2
       }}
       className='no-selection-removal-on-click'>
-        {[
-          <i className={`bi bi-check2-all`} key="check2-all"
+        {toolbarIcons.map((iconObj) => (
+          <div
+            id={iconObj.id}
+            key={iconObj.index}
             style={{
-              display: 'block', fontSize: '22px', color: 'white',
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
+              ...styles.toolbarCircle,
+              ...iconObj.style,
+              backgroundColor:
+                (clickedCircle === iconObj.index)
+                  ? '#ff6b6b'
+                  : hoveredCircle === iconObj.index
+                    ? 'rgba(0, 0, 0, 0.95)'
+                    : 'rgba(32, 32, 32, 0.85)',
+              pointerEvents: iconObj.pointerEvents as any,
+              color: iconObj.color,
             }}
-          />,
-          <i className={`bi bi-cart-x`} key="delete-marked"
-            style={{
-              display: 'block', fontSize: '22px', color: 'white',
-              transition: 'color 0.3s ease, background-color 0.3s ease',
-              textAlign: 'center',
-            }}
-            title='DELETE MARKED'
-          />,
-          '📁', '🔍', '⭐', '🗑️', '📷'
-        ].map((icon, index) => {
-          // pointerEvents for DELETE MARKED
-          let pointerEvents = 'auto';
-          let color = 'white';
-          if (index === 1) {
-            pointerEvents = isDeleteMarkedForDeletionDisabled ? 'none' : 'auto';
-            color = isDeleteMarkedForDeletionDisabled ? 'gray' : 'white';
-          }
-          return (
-            <div
-              id={index === 1 ? 'delete-marked' : undefined}
-              key={index}
-              style={{
-                ...styles.toolbarCircle,
-                backgroundColor:
-                  index === 1 && clickedCircle === index
-                      ? '#ff6b6b'
-                      : hoveredCircle === index
-                        ? 'rgba(0, 0, 0, 0.95)'
-                        : 'rgba(32, 32, 32, 0.85)',
-                pointerEvents: pointerEvents as any
-              }}
-              onMouseEnter={() => setHoveredCircle(index)}
-              onMouseLeave={() => setHoveredCircle(null)}
-              onMouseDown={() => setClickedCircle(index)}
-              onMouseUp={() => setClickedCircle(null)}
-              onClick={
-                index === 0
-                  ? selectAllImages
-                  : index === 1 && !isDeleteMarkedForDeletionDisabled
-                    ? () => {
-                        setHandleDeleteImages(() => handleDeleteMarkedImages);
-                        setPopupOptions({
-                          isVisible: true,
-                          isYesNo: true,
-                          title: 'DELETE',
-                          message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'
-                        });
-                      }
-                    : undefined
-              }
-              onTouchEnd={
-                index === 0
-                  ? selectAllImages
-                  : index === 1 && !isDeleteMarkedForDeletionDisabled
-                    ? () => {
-                        setHandleDeleteImages(() => handleDeleteMarkedImages);
-                        setPopupOptions({
-                          isVisible: true,
-                          isYesNo: true,
-                          title: 'DELETE',
-                          message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'
-                        });
-                      }
-                    : undefined
-              }
-            >
-              {index === 1 && React.isValidElement(icon)
-                ? React.cloneElement(icon, { style: { ...icon.props.style, color } })
-                : index <= 1
-                  ? icon
-                  : <span style={styles.toolbarIcon}>{icon}</span>}
-            </div>
-          );
-        })}
+            title={iconObj.title}
+            onMouseEnter={() => setHoveredCircle(iconObj.index)}
+            onMouseLeave={() => setHoveredCircle(null)}
+            onMouseDown={() => setClickedCircle(iconObj.index)}
+            onMouseUp={() => setClickedCircle(null)}
+            onClick={iconObj.onClick}
+            onTouchEnd={iconObj.onClick}
+          >
+            {iconObj.element}
+          </div>
+        ))}
       </div>
     </div>
   );

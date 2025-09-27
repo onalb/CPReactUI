@@ -29,7 +29,7 @@ interface HeaderProps {
   numberOfMarkedImages: number;
   openWithDialog: (path: string) => void;
   selectAllImages: () => void;
-  handleDeleteSelectedImagesOnClick: (e: any) => void;
+  handleDeleteSelectedImages: (e: any) => void;
   handleDeleteMarkedImages: () => void;
   setHandleDeleteImages: (fn: any) => void;
   setPopupOptions: (opts: any) => void;

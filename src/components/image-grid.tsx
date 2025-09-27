@@ -1126,7 +1126,6 @@ const ImageGrid: React.FC = () => {
 
   const handleDeleteSelectedImages = () => {
     const imagesToDelete = images.filter(image => selectedImageIds.includes(image.id) && !image.isKept);
-
     imagesToDelete.forEach((selectedImage: any)=> {
       selectedImage.isDeleted = true;
       queryClient.setQueryData(['images', folder, isOpenOnlyKept], (oldImages: any) => {
@@ -1140,10 +1139,10 @@ const ImageGrid: React.FC = () => {
     setCurrentSelectedImage(null);
   };
 
-  const handleDeleteSelectedImagesOnClick = (e: any) => {
-    setHandleDeleteImages(() => handleDeleteSelectedImages);
-    setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete the SELECTED images. KEPT images will retain. Are you sure you want to proceed?' });
-  }
+  // const handleDeleteSelectedImagesOnClick = (e: any) => {
+  //   setHandleDeleteImages(() => handleDeleteSelectedImages);
+  //   setPopupOptions({ isVisible: true, isYesNo: true, title: 'DELETE', message: 'You are about to delete the SELECTED images. KEPT images will retain. Are you sure you want to proceed?' });
+  // }
 
   const handleDeleteMarkedImages = () => {
     const imagesToDelete = images.filter(image => image.isMarkedForDeletion && !image.isKept && !image.isDeleted);
@@ -1460,8 +1459,10 @@ const ImageGrid: React.FC = () => {
     selectAllImages={selectAllImages}
     setHandleDeleteImages={setHandleDeleteImages}
     handleDeleteMarkedImages={handleDeleteMarkedImages}
+    handleDeleteSelectedImages={handleDeleteSelectedImages}
     setPopupOptions={setPopupOptions}
     images={images}
+    selectedImageIds={selectedImageIds}
   />
   <Header
     isHeaderOpened={isHeaderOpened}
@@ -1492,7 +1493,7 @@ const ImageGrid: React.FC = () => {
     numberOfMarkedImages={numberOfMarkedImages}
     openWithDialog={openWithDialog}
     selectAllImages={selectAllImages}
-    handleDeleteSelectedImagesOnClick={handleDeleteSelectedImagesOnClick}
+    handleDeleteSelectedImages={handleDeleteSelectedImages}
     handleDeleteMarkedImages={handleDeleteMarkedImages}
     setHandleDeleteImages={setHandleDeleteImages}
     setPopupOptions={setPopupOptions}
