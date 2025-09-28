@@ -807,7 +807,7 @@ const ImageGrid: React.FC = () => {
 
   useEffect(() => {
     debugger;
-    if (isGalleriaClosed ?? true) {
+  if (isGalleriaClosed === true) {
       addTrackedEventListener(window, 'click', handleClickOutside);
       addTrackedEventListener(window, 'touchend', handleClickOutside);
       const cleanup = applyMouseAndTouchEvents(
@@ -1049,14 +1049,14 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleKeepOnClick = (e: any, image: any): boolean => {
-    if (isZooming || isDragging) return false;
+    if (isZooming || isDragging || e.ctrlKey) return false;
 
     setIsKeepButtonDisabled(true);
     setTimeout(() => {
       setIsKeepButtonDisabled(false);
     }, 400);
 
-      
+    // Only run bubble effect if not kept
     if (!image.isKept) {
       createParticles(e.clientX, e.clientY, zoomScale, 'keep');
     }
@@ -1067,8 +1067,9 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleMarkForDeletionOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
-    if (isZooming || isDragging) return false;
-      
+    if (isZooming || isDragging || e.ctrlKey) return false;
+    
+    // Only run bubble effect if not kept
     if (!image.isKept) {
       createParticles(e.clientX, e.clientY, zoomScale, 'keep');
     }
@@ -1079,7 +1080,7 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleDeleteOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
-    if (isZooming || isDragging) return false;
+    if (isZooming || isDragging || e.ctrlKey) return false;
     if (deleteIcon) {
       if (!image.deleteClickedOnce) {
         // DO NOT DELETE COMMENT: if delete icon was never clicked this will update the icon color
@@ -1091,6 +1092,7 @@ const ImageGrid: React.FC = () => {
       } else {
         // DO NOT DELETE COMMENT: if delete icon is clicked twice it will come here
         // DO NOT DELETE COMMENT: Optimistically update the UI
+        // Only run bubble effect for intentional delete
         createParticles(e.clientX, e.clientY, zoomScale, 'delete');
         
         setImages((oldImages: any[]) => {
