@@ -1,3 +1,4 @@
+import { ScrollOrZoomMode } from './constants';
 import { addTrackedEventListener, removeTrackedEventListeners } from './tracked-event-handler';
 
 const applyMouseAndTouchEvents = (
@@ -14,8 +15,9 @@ const applyMouseAndTouchEvents = (
   openImageOnNewTab?: any,
   onScrollPositionChange?: (x: number, y: number) => void,
   customView?: any,
-  isScrollToZoom?: boolean,
+  scrollOrZoomMode?: ScrollOrZoomMode,
 ) => {
+  console.log(scrollOrZoomMode)
   // Use custom view if provided, otherwise use global view
   const currentView = customView || view;
   
@@ -135,6 +137,7 @@ const applyMouseAndTouchEvents = (
       const dx = event.clientX - lastPosX;
       const dy = event.clientY - lastPosY;
       setIsDragging(dx || dy ? true : false);
+      // For mouse drag, do NOT scale by zoom: use raw dx/dy for 1:1 movement
       currentView.pan({ x: dx, y: dy });
       currentView.applyTo(document.getElementById(elementId));
       lastPosX = event.clientX;
@@ -226,8 +229,8 @@ const applyMouseAndTouchEvents = (
         }
       }
     } else {
-      // Determine if we should zoom or scroll based on the toggle and modifier keys
-      const shouldZoom = isScrollToZoom ? !event.ctrlKey : event.ctrlKey;
+      // Only zoom if mode is ZOOM and CTRL is NOT held
+      const shouldZoom = scrollOrZoomMode === ScrollOrZoomMode.ZOOM;
 
       if (shouldZoom) {
         // Zoom behavior
@@ -240,7 +243,7 @@ const applyMouseAndTouchEvents = (
         currentView.scaleAt(at, amount, setZoomScale);
         currentView.applyTo(document.getElementById(elementId));
       } else {
-        // Vertical scroll behavior with boundary constraints
+        // Always scroll otherwise
         const dy = event.deltaY;
         const mainElement = document.getElementById(elementId);
 

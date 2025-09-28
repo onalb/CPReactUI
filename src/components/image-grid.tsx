@@ -22,6 +22,7 @@ import { useMutation, useQueryClient } from 'react-query';
 import { useQuery } from 'react-query';
 import { getPhotoListFromFolder, deletePhotoListFromFolder, toggleKeepPhoto, toggleMarkForDeletion } from '../services/PhotoService';
 import LoadingSpinner from './loading-spinner';
+import { ScrollOrZoomMode } from './constants';
 
 // Place these outside your component so they persist across renders
 let clickTimeout: NodeJS.Timeout | null = null;
@@ -75,7 +76,7 @@ const ImageGrid: React.FC = () => {
   const [isHeaderOpened, setIsHeaderOpened] = useState<boolean>(false);
   const [isHeaderPinned, setIsHeaderPinned] = useState<boolean>(false);
   const [headerCloseTimeout, setHeaderCloseTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [isScrollToZoom, setIsScrollToZoom] = useState<boolean>(true); // Default: scroll to zoom (ON)
+  const [scrollOrZoomMode, setScrollOrZoomMode] = useState<ScrollOrZoomMode>(ScrollOrZoomMode.ZOOM); // Default: zoom mode
   const [isFilteredView, setIsFilteredView] = useState<boolean>(false); // Track if we're showing filtered view
   const [filteredImageIds, setFilteredImageIds] = useState<number[]>([]); // Store IDs of images to show in filtered view
   const [isKeptFilteredView, setIsKeptFilteredView] = useState<boolean>(false); // Track if we're showing kept filtered view
@@ -255,13 +256,12 @@ const ImageGrid: React.FC = () => {
   );
 
   useQuery(['images', folder, isOpenOnlyKept], async() => {
-    console.log('Fetching images for folder:', folder, 'isOpenOnlyKept:', isOpenOnlyKept);
     if (!folder) {
       console.log('No folder path provided');
       return [];
     }
     const data = await getPhotoListFromFolder(folder);
-    console.log('Received images data:', data);
+    // console.log('Received images data:', data);
     if (data.length > 0) setIsImageListFetched(true);
     return data
   }, 
@@ -270,7 +270,7 @@ const ImageGrid: React.FC = () => {
     refetchOnWindowFocus: false,
     enabled: !!folder, // Only run query if folder is provided
     onSuccess: async (data) => {
-      console.log('Query onSuccess called with data:', data);
+      // console.log('Query onSuccess called with data:', data);
       setIsImageListFetched(true);
 
       if (data.length > 0) {
@@ -646,14 +646,12 @@ const ImageGrid: React.FC = () => {
 
   // Reset loading state when images change
   useEffect(() => {
-    console.log('Images changed, resetting loading state. New images length:', images.length);
     setLoadedImageCount(0);
     setIsLoadingCompletedAtStart(false);
   }, [images.length]);
 
   // Reset state when switching between "all images" and "kept only" views
   useEffect(() => {
-    console.log('isOpenOnlyKept changed:', isOpenOnlyKept);
     setImages([]);
     setLoadedImageCount(0);
     setIsLoadingCompletedAtStart(false);
@@ -796,7 +794,7 @@ const ImageGrid: React.FC = () => {
         openImageOnNewTab,
         handleScrollPositionChange,
         viewRef.current,
-        isScrollToZoom,
+        scrollOrZoomMode,
       );
 
       return () => {
@@ -805,10 +803,11 @@ const ImageGrid: React.FC = () => {
         removeTrackedEventListeners(window, 'keydown');
       };
     }
-  }, [isLoadingCompletedAtStart, isScrollToZoom]);
+  }, [isLoadingCompletedAtStart, scrollOrZoomMode]);
 
   useEffect(() => {
-    if (isGalleriaClosed) {
+    debugger;
+    if (isGalleriaClosed ?? true) {
       addTrackedEventListener(window, 'click', handleClickOutside);
       addTrackedEventListener(window, 'touchend', handleClickOutside);
       const cleanup = applyMouseAndTouchEvents(
@@ -825,7 +824,7 @@ const ImageGrid: React.FC = () => {
         openImageOnNewTab,
         handleScrollPositionChange,
         viewRef.current,
-        isScrollToZoom,
+        scrollOrZoomMode,
       );
         addTrackedEventListener(window, 'keyup', handleKeyUp as EventListener);
         addTrackedEventListener(window, 'keydown', handleKeyDown as EventListener);
@@ -836,7 +835,7 @@ const ImageGrid: React.FC = () => {
       removeTrackedEventListeners(window, 'keyup');
       removeTrackedEventListeners(window, 'keydown');
     };
-  }, [setIsGalleriaClosed, isGalleriaClosed, isScrollToZoom, isFilteredView]);
+  }, [setIsGalleriaClosed, isGalleriaClosed, scrollOrZoomMode, isFilteredView]);
 
   useEffect(() => {
     addTrackedEventListener(window, 'click', handleClickOutside);
@@ -858,8 +857,8 @@ const ImageGrid: React.FC = () => {
   // User-Event handlers
   const handleKeyDown = (event: any) => {
     if (event.ctrlKey) {
-      setIsScrollToZoom((prev) => {
-        return !prev;
+      setScrollOrZoomMode((prev) => {
+        return prev === ScrollOrZoomMode.ZOOM ? ScrollOrZoomMode.SCROLL : ScrollOrZoomMode.ZOOM;
       });
     }
 
@@ -897,7 +896,9 @@ const ImageGrid: React.FC = () => {
 
   const handleKeyUp = (event: KeyboardEvent) => {
     if (event.key === 'Control') {
-      setIsScrollToZoom((prev) => !prev);
+      setScrollOrZoomMode((prev) => {
+        return prev === ScrollOrZoomMode.ZOOM ? ScrollOrZoomMode.SCROLL : ScrollOrZoomMode.ZOOM;
+      });
       if (squareRef.current) {
         document.body.removeChild(squareRef.current);
         squareRef.current = null;
@@ -1272,13 +1273,10 @@ const ImageGrid: React.FC = () => {
       if (isGalleriaClosed !== true) {
         setLoadedImageCount(prevCount => {
           const newCount = prevCount + 1;
-          console.log(`Image loaded: ${newCount}/${images.length}`);
           
           // Check if this is the last image to load
           const deletedImgCount = images.filter((i: any) => i['isDeleted'] === true).length;
           const targetCount = images.length - deletedImgCount - 1;
-          
-          console.log(`Loading progress: ${newCount}/${targetCount} (total images: ${images.length}, deleted: ${deletedImgCount})`);
           
           if (newCount === images.length - 1) {
             setIsCachingCompleted(true);
@@ -1286,7 +1284,6 @@ const ImageGrid: React.FC = () => {
           }
           
           if (images.length > 0 && newCount === targetCount) {
-            console.log('All images loaded! Setting loading completed.');
             setIsLoadingCompletedAtStart(true);
           }
           
@@ -1471,8 +1468,8 @@ const ImageGrid: React.FC = () => {
     handleMouseEnterHeader={handleMouseEnterHeader}
     handleMouseLeaveHeader={handleMouseLeaveHeader}
     handleHeaderHandleClick={handleHeaderHandleClick}
-    isScrollToZoom={isScrollToZoom}
-    setIsScrollToZoom={setIsScrollToZoom}
+    scrollOrZoomMode={scrollOrZoomMode}
+    setScrollOrZoomMode={setScrollOrZoomMode}
     isFilteredView={isFilteredView}
     setIsFilteredView={setIsFilteredView}
     filteredImageIds={filteredImageIds}

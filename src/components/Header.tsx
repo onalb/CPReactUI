@@ -1,4 +1,5 @@
 import React from 'react';
+import { ScrollOrZoomMode } from './constants';
 
 interface HeaderProps {
   isHeaderOpened: boolean;
@@ -6,8 +7,8 @@ interface HeaderProps {
   handleMouseEnterHeader: (e: any) => void;
   handleMouseLeaveHeader: (e: any) => void;
   handleHeaderHandleClick: (e: any) => void;
-  isScrollToZoom: boolean;
-  setIsScrollToZoom: (checked: boolean) => void;
+  scrollOrZoomMode: ScrollOrZoomMode;
+  setScrollOrZoomMode: (mode: ScrollOrZoomMode) => void;
   isFilteredView: boolean;
   setIsFilteredView: (v: boolean) => void;
   filteredImageIds: number[];
@@ -287,8 +288,8 @@ const Header: React.FC<HeaderProps> = (props) => (
           }} className='no-selection-removal-on-click'>
             <input
               type="checkbox"
-              checked={props.isScrollToZoom}
-              onChange={(e) => props.setIsScrollToZoom(e.target.checked)}
+              checked={props.scrollOrZoomMode === ScrollOrZoomMode.ZOOM}
+              onChange={(e) => props.setScrollOrZoomMode(e.target.checked ? ScrollOrZoomMode.ZOOM : ScrollOrZoomMode.SCROLL)}
               style={{
                 opacity: 0,
                 width: 0,
@@ -302,7 +303,7 @@ const Header: React.FC<HeaderProps> = (props) => (
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: props.isScrollToZoom ? '#4CAF50' : '#ccc',
+              backgroundColor: props.scrollOrZoomMode === ScrollOrZoomMode.ZOOM ? '#4CAF50' : '#ccc',
               borderRadius: '24px',
               transition: '0.3s',
               cursor: 'pointer'
@@ -312,7 +313,7 @@ const Header: React.FC<HeaderProps> = (props) => (
                 content: '""',
                 height: '18px',
                 width: '18px',
-                left: props.isScrollToZoom ? '26px' : '3px',
+                left: props.scrollOrZoomMode === ScrollOrZoomMode.ZOOM ? '26px' : '3px',
                 bottom: '3px',
                 backgroundColor: 'white',
                 borderRadius: '50%',
@@ -322,7 +323,7 @@ const Header: React.FC<HeaderProps> = (props) => (
             </span>
           </label>
           <span style={{ color: 'white', fontSize: '12px' }} className='no-selection-removal-on-click'>
-            {props.isScrollToZoom ? 'Zoom' : 'Pan'}
+            {props.scrollOrZoomMode === ScrollOrZoomMode.ZOOM ? 'Zoom' : 'Pan'}
           </span>
         </div>
       </div>
