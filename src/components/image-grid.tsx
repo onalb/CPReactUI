@@ -1049,16 +1049,26 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleKeepOnClick = (e: any, image: any): boolean => {
-    if (isZooming || isDragging || e.ctrlKey) return false;
+  // Allow keep in galleria regardless of drag/zoom state
+  if ((isZooming || isDragging || e.ctrlKey) && isGalleriaClosed !== false) return false;
 
     setIsKeepButtonDisabled(true);
     setTimeout(() => {
       setIsKeepButtonDisabled(false);
     }, 400);
 
-    // Only run bubble effect if not kept
-    if (!image.isKept) {
-      createParticles(e.clientX, e.clientY, zoomScale, 'keep');
+    // Always run bubble effect in galleria, otherwise only if not dragging/zooming/ctrl
+    if (isGalleriaClosed === false || (!isZooming && !isDragging && !e.ctrlKey)) {
+      let x = e.clientX, y = e.clientY;
+      // Fallback to button center if clientX/clientY are not available
+      if (typeof x !== 'number' || typeof y !== 'number') {
+        if (e.target && e.target.getBoundingClientRect) {
+          const rect = e.target.getBoundingClientRect();
+          x = rect.left + rect.width / 2;
+          y = rect.top + rect.height / 2;
+        }
+      }
+      createParticles(x, y, zoomScale, image.isKept ? 'unkeep' : 'keep');
     }
 
     toggleKeepPhotoMutation.mutate(image);
@@ -1067,11 +1077,20 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleMarkForDeletionOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
-    if (isZooming || isDragging || e.ctrlKey) return false;
+  // Allow mark for deletion in galleria regardless of drag/zoom state
+  if ((isZooming || isDragging || e.ctrlKey) && isGalleriaClosed !== false) return false;
     
-    // Only run bubble effect if not kept
-    if (!image.isKept) {
-      createParticles(e.clientX, e.clientY, zoomScale, 'keep');
+    // Always run bubble effect in galleria, otherwise only if not dragging/zooming/ctrl
+    if (!image.isKept && (isGalleriaClosed === false || (!isZooming && !isDragging && !e.ctrlKey))) {
+      let x = e.clientX, y = e.clientY;
+      if (typeof x !== 'number' || typeof y !== 'number') {
+        if (e.target && e.target.getBoundingClientRect) {
+          const rect = e.target.getBoundingClientRect();
+          x = rect.left + rect.width / 2;
+          y = rect.top + rect.height / 2;
+        }
+      }
+      createParticles(x, y, zoomScale, 'keep');
     }
 
     toggleMarkForDeletionMutation.mutate(image);
@@ -1080,7 +1099,8 @@ const ImageGrid: React.FC = () => {
   };
 
   const handleDeleteOnClick = (e: any, image: any, index: number, deleteIcon: any) => {
-    if (isZooming || isDragging || e.ctrlKey) return false;
+  // Allow delete in galleria regardless of drag/zoom state
+  if ((isZooming || isDragging || e.ctrlKey) && isGalleriaClosed !== false) return false;
     if (deleteIcon) {
       if (!image.deleteClickedOnce) {
         // DO NOT DELETE COMMENT: if delete icon was never clicked this will update the icon color
@@ -1092,8 +1112,18 @@ const ImageGrid: React.FC = () => {
       } else {
         // DO NOT DELETE COMMENT: if delete icon is clicked twice it will come here
         // DO NOT DELETE COMMENT: Optimistically update the UI
-        // Only run bubble effect for intentional delete
-        createParticles(e.clientX, e.clientY, zoomScale, 'delete');
+        // Always run bubble effect in galleria, otherwise only if not dragging/zooming/ctrl
+        if (isGalleriaClosed === false || (!isZooming && !isDragging && !e.ctrlKey)) {
+          let x = e.clientX, y = e.clientY;
+          if (typeof x !== 'number' || typeof y !== 'number') {
+            if (e.target && e.target.getBoundingClientRect) {
+              const rect = e.target.getBoundingClientRect();
+              x = rect.left + rect.width / 2;
+              y = rect.top + rect.height / 2;
+            }
+          }
+          createParticles(x, y, zoomScale, 'delete');
+        }
         
         setImages((oldImages: any[]) => {
           return oldImages.map((img: any) => {

@@ -3,21 +3,29 @@
     let transform: string = '';
     let particleCount: number = 0;
 
-    if(operation === 'delete') {     
+    if (operation === 'delete') {     
       particleCount = Math.floor(Math.random() * 6) + 5;
-    } // Random number between 5 and 10 
-    else if(operation === 'keep') {
+    } else if (operation === 'keep' || operation === 'unkeep') {
       particleCount = 2;
-     } 
+    }
 
     for (let i = 0; i < particleCount; i++) {
-      if(operation === 'delete') {
+      if (operation === 'delete') {
         // zoomScale is added so that the particles are bigger when zoomed in and smaller when zoomed out
-        transform = `translate(-50%, -50%) translate(${(Math.random() * 200 - 100) * zoomScale}px, ${(Math.random() * 200 - 100) * zoomScale}px)`
+        transform = `translate(-50%, -50%) translate(${(Math.random() * 200 - 100) * zoomScale}px, ${(Math.random() * 200 - 100) * zoomScale}px)`;
         createParticle(x, y, zoomScale, '', transform);
-      } else if(operation === 'keep') {
-        transform = `translate(500%, -500%)`
+      } else if (operation === 'keep') {
+        // Inward effect for keep
+        transform = `translate(500%, -500%)`;
         createParticle(x, y, zoomScale, transform, '');
+      } else if (operation === 'unkeep') {
+        // Outward effect for unkeep, wider spread
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = 300 * zoomScale + Math.random() * 300 * zoomScale;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+        transform = `translate(500%, -500%)`;
+        createParticle(x, y, zoomScale, '', transform);
       }
     }
   }
@@ -41,7 +49,7 @@
     particle.style.top = `${y}px`;
     particle.style.pointerEvents = 'none';
     particle.style.borderRadius = '50%';
-    particle.style.zIndex = '1000';
+  particle.style.zIndex = '9999';
 
     // Animate the particle
     const animation = particle.animate(
