@@ -1,3 +1,22 @@
+.toolbar-badge {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: #ff6b6b;
+  color: #fff;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  pointer-events: none;
+  z-index: 2;
+}
 .toolbar-container {
   position: fixed;
   top: 25px;
@@ -20,7 +39,7 @@
   opacity: 0.2;
 }
 .toolbar-panel.open {
-  transform: translateX(0);
+  transform: translateX(15%);
   opacity: 1;
 }
 
@@ -46,11 +65,12 @@
   justify-content: center;
   cursor: pointer;
   position: relative;
-  transition: background-color 0.3s, border-color 0.3s;
+  transition: background-color 0.3s, border-color 0.3s, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 18px;
 }
 .circle-hovered {
   background-color: rgba(110, 110, 110, 0.678); /* slightly less transparent on hover */
+  transform: scale(1.15);
 }
 .circle-clicked {
   background-color: #ff6b6b;

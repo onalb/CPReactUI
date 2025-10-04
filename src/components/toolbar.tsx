@@ -25,24 +25,29 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
   const [isDeleteSelectedImagesDisabled, setIsDeleteSelectedImagesDisabled] = useState(selectedImageIds.length === 0);
 
   // Define toolbar icons with all attributes
+  // Calculate badge counts for each action
+  const deleteSelectedCount = images.filter(img => selectedImageIds.includes(img.id) && !img.isKept).length;
+  const deleteMarkedCount = images.filter(img => img.isMarkedForDeletion && !img.isKept).length;
+  const markSelectedCount = images.filter(img => selectedImageIds.includes(img.id) && !img.isMarkedForDeletion).length;
+  const keepSelectedCount = images.filter(img => selectedImageIds.includes(img.id) && !img.isKept).length;
+
   const toolbarIcons = [
     {
       name: 'selectAll',
       index: 0,
       id: 'select-all',
       element: <i className="bi bi-check2-all select-all-icon" />,
-      // style moved to CSS
       title: 'SELECT ALL',
       pointerEvents: 'auto',
-      color: '#5899ceff',
+      color: '#18d9fcff',
       onClick: selectAllImages,
+      badge: null,
     },
     {
       name: 'deleteSelected',
       index: 1,
       id: 'delete-selected',
       element: <i className="bi bi-trash-fill delete-selected-icon" />,
-      // style moved to CSS
       title: 'DELETE SELECTED',
       pointerEvents: isDeleteSelectedImagesDisabled ? 'none' : 'auto',
       color: isDeleteSelectedImagesDisabled ? 'gray' : 'white',
@@ -55,13 +60,13 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
           message: 'You are about to delete all SELECTED images. Are you sure you want to proceed?'
         });
       } : undefined,
+      badge: deleteSelectedCount > 0 ? deleteSelectedCount : null,
     },
     {
       name: 'deleteMarked',
       index: 2,
       id: 'delete-marked',
       element: <i className="bi bi-cart-x delete-marked-icon" />,
-      // style moved to CSS
       title: 'DELETE MARKED',
       pointerEvents: isDeleteMarkedForDeletionDisabled ? 'none' : 'auto',
       color: isDeleteMarkedForDeletionDisabled ? 'gray' : 'rgb(255, 100, 100)',
@@ -74,18 +79,17 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
           message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'
         });
       } : undefined,
+      badge: deleteMarkedCount > 0 ? deleteMarkedCount : null,
     },
     {
       name: 'markSelectedForDeletion',
       index: 3,
       id: 'mark-selected-for-deletion',
       element: <i className="bi bi-cart-plus mark-selected-icon" />,
-      // style moved to CSS
       title: 'MARK SELECTED FOR DELETION',
       pointerEvents: selectedImageIds.length > 0 ? 'auto' : 'none',
       color: selectedImageIds.length > 0 ? 'rgb(255, 193, 100)' : 'gray',
       onClick: selectedImageIds.length > 0 ? () => {
-        // Mark all selected images for deletion using setImages for React state update
         setImages((prevImages: any[]) =>
           prevImages.map((img) =>
             selectedImageIds.includes(img.id)
@@ -94,13 +98,13 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
           )
         );
       } : undefined,
+      badge: markSelectedCount > 0 ? markSelectedCount : null,
     },
     {
       name: 'keepSelected',
       index: 5,
       id: 'keep-selected',
       element: <i className="bi bi-bag-check keep-selected-icon" />,
-      // style moved to CSS
       title: 'KEEP SELECTED',
       pointerEvents: selectedImageIds.length > 0 ? 'auto' : 'none',
       color: selectedImageIds.length > 0 ? 'rgb(25, 255, 79)' : 'gray',
@@ -113,6 +117,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
           )
         );
       } : undefined,
+      badge: keepSelectedCount > 0 ? keepSelectedCount : null,
     },
   ];
 
@@ -175,6 +180,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
             style={{
               pointerEvents: iconObj.pointerEvents as any,
               color: iconObj.color,
+              position: 'relative',
             }}
             title={iconObj.title}
             onMouseEnter={() => setHoveredCircle(iconObj.index)}
@@ -185,6 +191,9 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
             onTouchEnd={iconObj.onClick}
           >
             {iconObj.element}
+            {iconObj.badge !== null && (
+              <span className="toolbar-badge">{iconObj.badge}</span>
+            )}
           </div>
         ))}
       </div>
