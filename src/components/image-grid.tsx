@@ -1491,6 +1491,7 @@ const ImageGrid: React.FC = () => {
     handleDeleteSelectedImages={handleDeleteSelectedImages}
     setPopupOptions={setPopupOptions}
     images={images}
+    filteredImages={filteredImages}
     selectedImageIds={selectedImageIds}
     setImages={setImages}
   />

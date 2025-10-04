@@ -8,12 +8,13 @@ interface ToolbarProps {
   handleDeleteSelectedImages: () => void;
   setPopupOptions: (opts: any) => void;
   images: any[];
+  filteredImages: any[];
   selectedImageIds: number[];
   setImages: (fn: (prevImages: any[]) => any[]) => void;
 }
 
 
-const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, selectedImageIds, setImages }) => {
+const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, filteredImages, selectedImageIds, setImages }) => {
   // setImages is now available directly from props
   // ...existing code...
 
@@ -32,6 +33,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
   const markSelectedCount = images.filter(img => selectedImageIds.includes(img.id) && !img.isMarkedForDeletion && !img.isKept).length;
   const keepSelectedCount = images.filter(img => selectedImageIds.includes(img.id) && !img.isKept).length;
 
+  const allFilteredSelected = filteredImages.length > 0 && filteredImages.every(img => selectedImageIds.includes(img.id));
   const toolbarIcons = [
     {
       name: 'selectAll',
@@ -42,7 +44,8 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
       pointerEvents: 'auto',
       color: '#18d9fcff',
       onClick: selectAllImages,
-      badge: images.length > 0 ? images.length : 0,
+      badge: filteredImages.length > 0 ? filteredImages.length : 0,
+      badgeColor: allFilteredSelected ? undefined : '#888',
     },
     {
       name: 'deleteSelected',
@@ -195,7 +198,12 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
             >
               {iconObj.element}
               {iconObj.badge > 0 && (
-                <span className="toolbar-badge">{iconObj.badge}</span>
+                <span 
+                  className="toolbar-badge"
+                  style={iconObj.badgeColor ? { background: iconObj.badgeColor } : {}}
+                >
+                  {iconObj.badge}
+                </span>
               )}
             </div>
           );
