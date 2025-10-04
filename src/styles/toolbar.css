@@ -1,3 +1,6 @@
+.circle-disabled {
+  opacity: 0.9;
+}
 .toolbar-badge {
   position: absolute;
   bottom: -8px;
@@ -36,7 +39,7 @@
   transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
   z-index: 900;
   transform: translateX(-90%);
-  opacity: 0.2;
+  opacity: 1;
 }
 .toolbar-panel.open {
   transform: translateX(15%);

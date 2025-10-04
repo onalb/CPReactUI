@@ -28,7 +28,8 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
   // Calculate badge counts for each action
   const deleteSelectedCount = images.filter(img => selectedImageIds.includes(img.id) && !img.isKept).length;
   const deleteMarkedCount = images.filter(img => img.isMarkedForDeletion && !img.isKept).length;
-  const markSelectedCount = images.filter(img => selectedImageIds.includes(img.id) && !img.isMarkedForDeletion).length;
+  // Only count selected images that are not kept and not already marked
+  const markSelectedCount = images.filter(img => selectedImageIds.includes(img.id) && !img.isMarkedForDeletion && !img.isKept).length;
   const keepSelectedCount = images.filter(img => selectedImageIds.includes(img.id) && !img.isKept).length;
 
   const toolbarIcons = [
@@ -41,17 +42,17 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
       pointerEvents: 'auto',
       color: '#18d9fcff',
       onClick: selectAllImages,
-      badge: null,
+      badge: images.length > 0 ? images.length : 0,
     },
     {
       name: 'deleteSelected',
       index: 1,
       id: 'delete-selected',
       element: <i className="bi bi-trash-fill delete-selected-icon" />,
-      title: 'DELETE SELECTED',
-      pointerEvents: isDeleteSelectedImagesDisabled ? 'none' : 'auto',
-      color: isDeleteSelectedImagesDisabled ? 'gray' : 'white',
-      onClick: !isDeleteSelectedImagesDisabled ? () => {
+      title: deleteSelectedCount > 0 ? `DELETE ${deleteSelectedCount} SELECTED` : 'DELETE SELECTED',
+      pointerEvents: deleteSelectedCount === 0 ? 'none' : 'auto',
+      color: deleteSelectedCount === 0 ? 'gray' : 'white',
+      onClick: deleteSelectedCount === 0 ? undefined : () => {
         setHandleDeleteImages(() => handleDeleteSelectedImages);
         setPopupOptions({
           isVisible: true,
@@ -59,18 +60,18 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
           title: 'DELETE',
           message: 'You are about to delete all SELECTED images. Are you sure you want to proceed?'
         });
-      } : undefined,
-      badge: deleteSelectedCount > 0 ? deleteSelectedCount : null,
+      },
+      badge: deleteSelectedCount > 0 ? deleteSelectedCount : 0,
     },
     {
       name: 'deleteMarked',
       index: 2,
       id: 'delete-marked',
       element: <i className="bi bi-cart-x delete-marked-icon" />,
-      title: 'DELETE MARKED',
-      pointerEvents: isDeleteMarkedForDeletionDisabled ? 'none' : 'auto',
-      color: isDeleteMarkedForDeletionDisabled ? 'gray' : 'rgb(255, 100, 100)',
-      onClick: !isDeleteMarkedForDeletionDisabled ? () => {
+      title: deleteMarkedCount > 0 ? `DELETE ${deleteMarkedCount} MARKED` : 'DELETE MARKED',
+      pointerEvents: deleteMarkedCount === 0 ? 'none' : 'auto',
+      color: deleteMarkedCount === 0 ? 'gray' : 'rgb(255, 100, 100)',
+      onClick: deleteMarkedCount === 0 ? undefined : () => {
         setHandleDeleteImages(() => handleDeleteMarkedImages);
         setPopupOptions({
           isVisible: true,
@@ -78,37 +79,37 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
           title: 'DELETE',
           message: 'You are about to delete all the images MARKED for deletion. KEPT images will retain. Are you sure you want to proceed?'
         });
-      } : undefined,
-      badge: deleteMarkedCount > 0 ? deleteMarkedCount : null,
+      },
+      badge: deleteMarkedCount > 0 ? deleteMarkedCount : 0,
     },
     {
       name: 'markSelectedForDeletion',
       index: 3,
       id: 'mark-selected-for-deletion',
       element: <i className="bi bi-cart-plus mark-selected-icon" />,
-      title: 'MARK SELECTED FOR DELETION',
-      pointerEvents: selectedImageIds.length > 0 ? 'auto' : 'none',
-      color: selectedImageIds.length > 0 ? 'rgb(255, 193, 100)' : 'gray',
-      onClick: selectedImageIds.length > 0 ? () => {
+      title: markSelectedCount > 0 ? `MARK ${markSelectedCount} SELECTED FOR DELETION` : 'MARK SELECTED FOR DELETION',
+      pointerEvents: markSelectedCount === 0 ? 'none' : 'auto',
+      color: markSelectedCount === 0 ? 'gray' : 'rgb(255, 193, 100)',
+      onClick: markSelectedCount === 0 ? undefined : () => {
         setImages((prevImages: any[]) =>
           prevImages.map((img) =>
-            selectedImageIds.includes(img.id)
+            selectedImageIds.includes(img.id) && !img.isKept && !img.isMarkedForDeletion
               ? { ...img, isMarkedForDeletion: true }
               : img
           )
         );
-      } : undefined,
-      badge: markSelectedCount > 0 ? markSelectedCount : null,
+      },
+      badge: markSelectedCount > 0 ? markSelectedCount : 0,
     },
     {
       name: 'keepSelected',
       index: 5,
       id: 'keep-selected',
       element: <i className="bi bi-bag-check keep-selected-icon" />,
-      title: 'KEEP SELECTED',
-      pointerEvents: selectedImageIds.length > 0 ? 'auto' : 'none',
-      color: selectedImageIds.length > 0 ? 'rgb(25, 255, 79)' : 'gray',
-      onClick: selectedImageIds.length > 0 ? () => {
+      title: keepSelectedCount > 0 ? `KEEP ${keepSelectedCount} SELECTED` : 'KEEP SELECTED',
+      pointerEvents: keepSelectedCount === 0 ? 'none' : 'auto',
+      color: keepSelectedCount === 0 ? 'gray' : 'rgb(25, 255, 79)',
+      onClick: keepSelectedCount === 0 ? undefined : () => {
         setImages((prevImages: any[]) =>
           prevImages.map((img) =>
             selectedImageIds.includes(img.id)
@@ -116,8 +117,8 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
               : img
           )
         );
-      } : undefined,
-      badge: keepSelectedCount > 0 ? keepSelectedCount : null,
+      },
+      badge: keepSelectedCount > 0 ? keepSelectedCount : 0,
     },
   ];
 
@@ -172,30 +173,33 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
       <div
         className={`no-selection-removal-on-click toolbar-panel${isToolbarOpen ? ' open' : ''}`}
       >
-        {toolbarIcons.map((iconObj) => (
-          <div
-            id={iconObj.id}
-            key={iconObj.index}
-            className={`circle${clickedCircle === iconObj.index ? ' circle-clicked' : hoveredCircle === iconObj.index ? ' circle-hovered' : ''}`}
-            style={{
-              pointerEvents: iconObj.pointerEvents as any,
-              color: iconObj.color,
-              position: 'relative',
-            }}
-            title={iconObj.title}
-            onMouseEnter={() => setHoveredCircle(iconObj.index)}
-            onMouseLeave={() => setHoveredCircle(null)}
-            onMouseDown={() => setClickedCircle(iconObj.index)}
-            onMouseUp={() => setClickedCircle(null)}
-            onClick={iconObj.onClick}
-            onTouchEnd={iconObj.onClick}
-          >
-            {iconObj.element}
-            {iconObj.badge !== null && (
-              <span className="toolbar-badge">{iconObj.badge}</span>
-            )}
-          </div>
-        ))}
+        {toolbarIcons.map((iconObj) => {
+          const isEnabled = iconObj.badge === null || iconObj.badge > 0;
+          return (
+            <div
+              id={iconObj.id}
+              key={iconObj.index}
+              className={`circle${clickedCircle === iconObj.index ? ' circle-clicked' : (hoveredCircle === iconObj.index && isEnabled) ? ' circle-hovered' : ''}${!isEnabled ? ' circle-disabled' : ''}`}
+              style={{
+                cursor: isEnabled ? 'pointer' : 'not-allowed',
+                color: iconObj.color,
+                position: 'relative',
+              }}
+              title={iconObj.title}
+              onMouseEnter={() => setHoveredCircle(iconObj.index)}
+              onMouseLeave={() => setHoveredCircle(null)}
+              onMouseDown={() => setClickedCircle(iconObj.index)}
+              onMouseUp={() => setClickedCircle(null)}
+              onClick={isEnabled ? iconObj.onClick : undefined}
+              onTouchEnd={isEnabled ? iconObj.onClick : undefined}
+            >
+              {iconObj.element}
+              {iconObj.badge > 0 && (
+                <span className="toolbar-badge">{iconObj.badge}</span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
