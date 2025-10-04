@@ -77,7 +77,7 @@ const Header: React.FC<HeaderProps> = (props) => (
             style={{        
               display: 'block', 
               fontSize: '45px', 
-              color: !props.isFilteredView && !props.isKeptFilteredView && !props.isMarkedFilteredView ? 'white' : 'gray',
+              color: !props.isFilteredView && !props.isKeptFilteredView && !props.isMarkedFilteredView ? '#ff9393ff' : 'white',
               transition: 'color 0.3s ease, background-color 0.3s ease',
               textAlign: 'left',
               cursor: 'pointer',

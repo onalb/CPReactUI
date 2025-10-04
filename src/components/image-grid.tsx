@@ -806,7 +806,6 @@ const ImageGrid: React.FC = () => {
   }, [isLoadingCompletedAtStart, scrollOrZoomMode]);
 
   useEffect(() => {
-    debugger;
   if (isGalleriaClosed === true) {
       addTrackedEventListener(window, 'click', handleClickOutside);
       addTrackedEventListener(window, 'touchend', handleClickOutside);
