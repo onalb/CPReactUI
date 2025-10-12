@@ -91,8 +91,8 @@ const ImageGrid: React.FC = () => {
     height: window.innerHeight // Subtract header height
   });
   const [scrollbarUpdateTrigger, setScrollbarUpdateTrigger] = useState(0); // Force scrollbar recalculation
-  const [isHorizontalScrollbarVisible, setIsHorizontalScrollbarVisible] = useState<boolean>(false);
-  const [isVerticalScrollbarVisible, setIsVerticalScrollbarVisible] = useState<boolean>(false);
+  // const [isHorizontalScrollbarVisible, setIsHorizontalScrollbarVisible] = useState<boolean>(false);
+  // const [isVerticalScrollbarVisible, setIsVerticalScrollbarVisible] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState(1);
 
   const padding = 10;
@@ -1560,7 +1560,7 @@ const ImageGrid: React.FC = () => {
       marginTop: isHeaderPinned ? '100px' : '0px',
       transformOrigin: origin, // Dynamic transform-origin based on mouse position
       transform: 'matrix(1, 0, 0, 1, 0, 0)',
-      transition: 'margin-top 0.3s ease-in-out',
+      transition: 'margin-top 0.3s ease',
     }}
     onMouseDown={handleMouseDown}
     onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}

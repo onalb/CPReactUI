@@ -91,8 +91,6 @@
   display: inline-flex;
   flex-wrap: wrap;
   box-sizing: border-box;
-  transform: matrix(1, 0, 0, 0, 0, 0); /* Scale down to 0 */
-  transition: transform 0.2s ease-out;
   user-select: none;
 }
 

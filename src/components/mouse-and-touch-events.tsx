@@ -455,7 +455,18 @@ export const createView = (onScrollPositionChange?: (x: number, y: number) => vo
       if (dirty) {
         this.update();
       }
+      // Detect if only scale (zoom) changed
+      const prevScale = el.__prevScale ?? m[0];
+      const currentScale = m[0];
       el.style.transform = `matrix(${m[0]},${m[1]},${m[2]},${m[3]},${m[4]},${m[5]})`;
+      if (prevScale !== currentScale) {
+        // Only animate transform when scale (zoom) changes
+        el.style.transition = 'transform 0.3s';
+      } else {
+        // Remove transition for pan/translation
+        el.style.transition = 'transform 0.03s';
+      }
+      el.__prevScale = currentScale;
       // Notify scroll position change
       if (onScrollPositionChange) {
         onScrollPositionChange(-pos.x, -pos.y);
