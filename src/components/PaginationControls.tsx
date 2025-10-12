@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 
 interface PaginationControlsProps {
   currentPage: number;
+  totalPages: number;
   onPageChange: (page: number) => void;
 }
 
-const totalPages = 5;
-
-const PaginationControls: React.FC<PaginationControlsProps> = ({ currentPage, onPageChange }) => {
+const PaginationControls: React.FC<PaginationControlsProps> = ({ currentPage, totalPages, onPageChange }) => {
   const [hovered, setHovered] = useState(false);
 
   // Styles
@@ -88,7 +87,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({ currentPage, on
         onMouseLeave={() => setHovered(false)}
         onTouchEnd={() => setHovered(false)}
       >
-        {Array.from({ length: totalPages }, (_, i) => {
+  {Array.from({ length: totalPages }, (_, i) => {
           const isActive = currentPage === i + 1;
           return (
             <button

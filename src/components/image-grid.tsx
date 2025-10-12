@@ -128,9 +128,26 @@ const ImageGrid: React.FC = () => {
       return true;
     });
 
+  // Pagination logic: 500 images per page, last page shows the remainder (<=500)
+  const IMAGES_PER_PAGE = 500;
+  const totalPages = Math.max(1, Math.ceil(filteredImages.length / IMAGES_PER_PAGE));
+  // Compute paginated images for current page
+  const paginatedImages = useMemo(() => {
+    // Always fill up to 500 images per page if possible
+    let start = (currentPage - 1) * IMAGES_PER_PAGE;
+    let end = start + IMAGES_PER_PAGE;
+    let pageImages = filteredImages.slice(start, end);
+    // If less than 500 images on current page and there are more images in next page, fill from next page
+    if (pageImages.length < IMAGES_PER_PAGE && end < filteredImages.length) {
+      const fillCount = IMAGES_PER_PAGE - pageImages.length;
+      pageImages = pageImages.concat(filteredImages.slice(end, end + fillCount));
+    }
+    return pageImages;
+  }, [filteredImages, currentPage]);
+
   // Select all images currently displayed (filtered)
   const selectAllImages = () => {
-    setSelectedImageIds(filteredImages.map(img => img.id));
+    setSelectedImageIds(paginatedImages.map(img => img.id));
   };
 
   // Variables
@@ -275,7 +292,7 @@ const ImageGrid: React.FC = () => {
 
       if (data.length > 0) {
         if (isOpenOnlyKept === 'true') {
-          data = data.filter(image => image.isKept);
+          data = data.filter((image: any) => image.isKept);
         } 
 
         setFirstRowWidth(calculateFirstRowWidth(data, numberOfColumns));
@@ -462,7 +479,7 @@ const ImageGrid: React.FC = () => {
     }
   };
 
-  const prepImagesData = async (data) => {
+  const prepImagesData = async (data: any[]) => {
     let prepedImages: any[] = [];
     try {
       setTotalNumberOfImages(data.length);
@@ -1206,7 +1223,7 @@ const ImageGrid: React.FC = () => {
     }
   };
 
-  const handleMouseUp = (event) => {
+  const handleMouseUp = (event: any) => {
     if (squareRef.current) {
       const squareRect = squareRef.current.getBoundingClientRect();
       const isAClick = squareRect.right - squareRect.left === 4 && squareRect.bottom - squareRect.top === 4;
@@ -1304,25 +1321,28 @@ const ImageGrid: React.FC = () => {
       if (isGalleriaClosed !== true) {
         setLoadedImageCount(prevCount => {
           const newCount = prevCount + 1;
-          
-          // Check if this is the last image to load
-          const deletedImgCount = images.filter((i: any) => i['isDeleted'] === true).length;
-          const targetCount = images.length - deletedImgCount - 1;
-          
-          if (newCount === images.length - 1) {
+          // Only count images for the current page (pagination)
+          const IMAGES_PER_PAGE = 500;
+          // paginatedImages is already calculated in the main render logic
+          // But here, we need to know how many images are expected to load for the current page
+          // If paginatedImages is not available, fallback to min(500, images.length)
+          let expectedCount = Math.min(IMAGES_PER_PAGE, images.filter((i: any) => !i.isDeleted).length);
+          // If filteredImages is used for pagination, use that
+          if (typeof paginatedImages !== 'undefined') {
+            expectedCount = paginatedImages.length;
+          }
+          if (newCount === expectedCount) {
+            setIsLoadingCompletedAtStart(true);
+          }
+          // Also set caching completed if all images for the page are loaded
+          if (newCount === expectedCount) {
             setIsCachingCompleted(true);
             setImagesElements(Array.from(document.getElementById('main-element')!.getElementsByTagName('img')));
           }
-          
-          if (images.length > 0 && newCount === targetCount) {
-            setIsLoadingCompletedAtStart(true);
-          }
-          
           return newCount;
         });
         setIsCachingCompleted(false);
       }
-
       // To get and display the number of images that are loaded make the calculation here -- tech debt
     }
   }
@@ -1546,7 +1566,7 @@ const ImageGrid: React.FC = () => {
     onMouseMove={(e) => handleMouseMove(e, { x: startPoint?.x, y: startPoint?.y })}
     onContextMenu={(e) => e.preventDefault()} // Prevent default context menu
   >
-    {filteredImages
+    {paginatedImages
       .map((image, index) => (
         <ImageCard 
           image={image}
@@ -1610,7 +1630,7 @@ const ImageGrid: React.FC = () => {
     marginBottom: overflow.horizontal ? 20 : 0
   }}>
     <div style={{ pointerEvents: 'auto', width: 'fit-content' }}>
-      <PaginationControls currentPage={currentPage} onPageChange={handlePageChange} />
+  <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
     </div>
   </div>
   </>
