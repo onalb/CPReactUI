@@ -11,13 +11,11 @@ interface ToolbarProps {
   filteredImages: any[];
   selectedImageIds: number[];
   setImages: (fn: (prevImages: any[]) => any[]) => void;
+  resetMainElement?: () => void;
 }
 
 
-const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, filteredImages, selectedImageIds, setImages }) => {
-  // setImages is now available directly from props
-  // ...existing code...
-
+const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, filteredImages, selectedImageIds, setImages, resetMainElement }) => {
   // State for disabling delete marked icon
   const [isToolbarOpen, setIsToolbarOpen] = useState(false);
   const [hoveredCircle, setHoveredCircle] = useState<number | null>(null);
@@ -35,6 +33,21 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
 
   const allFilteredSelected = filteredImages.length > 0 && filteredImages.every(img => selectedImageIds.includes(img.id));
   const toolbarIcons = [
+    {
+      name: 'resetZoom',
+      index: 99,
+      id: 'reset-zoom',
+      element: <i className="bi bi-arrow-counterclockwise reset-zoom-icon" />,
+      title: 'RESET ZOOM & POSITION',
+      color: '#ffb347',
+      onClick: () => {
+        console.log('Resetting zoom and position from toolbar1');
+        if (typeof resetMainElement === 'function') {
+          resetMainElement();
+        }
+      },
+      badge: null,
+    },
     {
       name: 'selectAll',
       index: 0,
@@ -177,7 +190,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
         className={`no-selection-removal-on-click toolbar-panel${isToolbarOpen ? ' open' : ''}`}
       >
         {toolbarIcons.map((iconObj) => {
-          const isEnabled = iconObj.badge === null || iconObj.badge > 0;
+          const isEnabled = iconObj.name === 'resetZoom' || iconObj.badge === null || iconObj.badge > 0;
           return (
             <div
               id={iconObj.id}

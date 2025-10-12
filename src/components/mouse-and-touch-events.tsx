@@ -17,7 +17,6 @@ const applyMouseAndTouchEvents = (
   customView?: any,
   scrollOrZoomMode?: ScrollOrZoomMode,
 ) => {
-  console.log(scrollOrZoomMode)
   // Use custom view if provided, otherwise use global view
   const currentView = customView || view;
   
@@ -507,6 +506,11 @@ export const createView = (onScrollPositionChange?: (x: number, y: number) => vo
       setZoomScale(scale);
       pos.x = at.x - (at.x - pos.x) * amount;
       pos.y = at.y - (at.y - pos.y) * amount;
+      dirty = true;
+    },
+    // this is to reset the zoom scale on reset
+    setZoom(newZoom: number) {
+      scale = newZoom;
       dirty = true;
     },
     getScale() {

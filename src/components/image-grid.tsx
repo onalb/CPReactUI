@@ -554,21 +554,7 @@ const ImageGrid: React.FC = () => {
       }
     };
   }
-  
-  // Functions
-  function calculateFirstRowWidth (images: any[], numberOfColumns: number) {
-    let result = padding; 
-    const ratio = defaultRowHeight / images[0]!.height;
 
-    for (let i = 0; i < numberOfColumns; i++) {
-      if (images[i]) {
-        result += images[i]!.width * ratio + columnGap;
-      }
-    }
-
-    result -= columnGap;
-    return result;
-  }
 
   // Scrollbar Functions
   const calculateContentSize = () => {
@@ -631,6 +617,37 @@ const ImageGrid: React.FC = () => {
       }
     }
   };
+
+  // Functions
+  function calculateFirstRowWidth (images: any[], numberOfColumns: number) {
+    let result = padding; 
+    const ratio = defaultRowHeight / images[0]!.height;
+
+    for (let i = 0; i < numberOfColumns; i++) {
+      if (images[i]) {
+        result += images[i]!.width * ratio + columnGap;
+      }
+    }
+
+    result -= columnGap;
+    return result;
+  }
+
+    // Reset zoom and position function
+  function resetMainElement() {
+    console.log('Resetting zoom and position');
+    setZoomScale(1);
+    setPrevZoomScale(1);
+    setScrollPosition({ x: 0, y: 0 });
+    if (viewRef.current) {
+      viewRef.current.setZoom(1); // Use the new setZoom method
+      viewRef.current.setPosition(0, 0);
+      const mainElement = document.getElementById('main-element');
+      if (mainElement) {
+        viewRef.current.applyTo(mainElement);
+      }
+    }
+  }
 
   // Initialize custom view
   useEffect(() => {
@@ -1513,6 +1530,7 @@ const ImageGrid: React.FC = () => {
     filteredImages={filteredImages}
     selectedImageIds={selectedImageIds}
     setImages={setImages}
+    resetMainElement={resetMainElement}
   />
   <Header
     isHeaderOpened={isHeaderOpened}

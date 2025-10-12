@@ -14,9 +14,10 @@ interface ToolbarToggleProps {
   filteredImages: any[];
   selectedImageIds: number[];
   setImages: (fn: any) => void;
+  resetMainElement?: () => void;
 }
 
-const ToolbarToggle: React.FC<ToolbarToggleProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, filteredImages, selectedImageIds, setImages }) => {
+const ToolbarToggle: React.FC<ToolbarToggleProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, filteredImages, selectedImageIds, setImages, resetMainElement }) => {
   return <Toolbar
     selectAllImages={selectAllImages}
     setHandleDeleteImages={setHandleDeleteImages}
@@ -27,6 +28,7 @@ const ToolbarToggle: React.FC<ToolbarToggleProps> = ({ selectAllImages, setHandl
     filteredImages={filteredImages}
     selectedImageIds={selectedImageIds}
     setImages={setImages}
+    resetMainElement={resetMainElement}
   />;
 };
 
