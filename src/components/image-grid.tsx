@@ -566,7 +566,7 @@ const ImageGrid: React.FC = () => {
     if (mainElement) {
       // Use the actual scrollHeight and scrollWidth of the main element
       // Apply the current zoom scale to get the transformed dimensions
-      const actualContentHeight = mainElement.scrollHeight * zoomScale;
+      const actualContentHeight = (mainElement.scrollHeight) * zoomScale;
       const actualContentWidth = mainElement.scrollWidth * zoomScale;
       
       return { width: actualContentWidth, height: actualContentHeight };
@@ -1480,7 +1480,7 @@ const ImageGrid: React.FC = () => {
   const scrollbarElements = useMemo(() => {
     const dynamicContentSize = {
       width: overflow.actualContentBounds.width || contentSize.width,
-      height: overflow.actualContentBounds.height || contentSize.height
+      height: overflow.actualContentBounds.height + 100 || contentSize.height
     };
     return (
       <>
