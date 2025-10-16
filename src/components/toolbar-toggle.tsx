@@ -15,9 +15,32 @@ interface ToolbarToggleProps {
   selectedImageIds: number[];
   setImages: (fn: any) => void;
   resetMainElement?: () => void;
+  handleHorizontalScroll?: (position: number) => void;
+  handleVerticalScroll?: (position: number) => void;
+  scrollPosition?: { x: number, y: number };
+  contentSize?: { width: number, height: number };
+  viewportSize?: { width: number, height: number };
+  zoomScale?: number;
 }
 
-const ToolbarToggle: React.FC<ToolbarToggleProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, filteredImages, selectedImageIds, setImages, resetMainElement }) => {
+const ToolbarToggle: React.FC<ToolbarToggleProps> = ({
+  selectAllImages,
+  setHandleDeleteImages,
+  handleDeleteMarkedImages,
+  handleDeleteSelectedImages,
+  setPopupOptions,
+  images,
+  filteredImages,
+  selectedImageIds,
+  setImages,
+  resetMainElement,
+  handleHorizontalScroll,
+  handleVerticalScroll,
+  scrollPosition,
+  contentSize,
+  viewportSize,
+  zoomScale
+}) => {
   return <Toolbar
     selectAllImages={selectAllImages}
     setHandleDeleteImages={setHandleDeleteImages}
@@ -29,6 +52,12 @@ const ToolbarToggle: React.FC<ToolbarToggleProps> = ({ selectAllImages, setHandl
     selectedImageIds={selectedImageIds}
     setImages={setImages}
     resetMainElement={resetMainElement}
+    handleHorizontalScroll={handleHorizontalScroll}
+    handleVerticalScroll={handleVerticalScroll}
+    scrollPosition={scrollPosition}
+    contentSize={contentSize}
+    viewportSize={viewportSize}
+    zoomScale={zoomScale}
   />;
 };
 

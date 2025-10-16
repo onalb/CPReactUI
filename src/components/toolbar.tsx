@@ -12,10 +12,211 @@ interface ToolbarProps {
   selectedImageIds: number[];
   setImages: (fn: (prevImages: any[]) => any[]) => void;
   resetMainElement?: () => void;
+  handleHorizontalScroll?: (position: number) => void;
+  handleVerticalScroll?: (position: number) => void;
+  scrollPosition?: { x: number, y: number };
+  contentSize?: { width: number, height: number };
+  viewportSize?: { width: number, height: number };
+  zoomScale?: number;
 }
 
 
-const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImages, handleDeleteMarkedImages, handleDeleteSelectedImages, setPopupOptions, images, filteredImages, selectedImageIds, setImages, resetMainElement }) => {
+const Toolbar: React.FC<ToolbarProps> = ({
+  selectAllImages,
+  setHandleDeleteImages,
+  handleDeleteMarkedImages,
+  handleDeleteSelectedImages,
+  setPopupOptions,
+  images,
+  filteredImages,
+  selectedImageIds,
+  setImages,
+  resetMainElement,
+  handleHorizontalScroll,
+  handleVerticalScroll,
+  scrollPosition,
+  contentSize,
+  viewportSize,
+  zoomScale
+}) => {
+  // Scroll right logic using handleHorizontalScroll
+  const SCROLL_STEP = 500; // px per click - increased from 200 for faster horizontal movement
+  // State to track if scroll-right is in down mode
+  const [scrollDownMode, setScrollDownMode] = useState(false);
+  // State to track if animation is currently running
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    // If at rightmost edge, enable down arrow mode
+    if (
+      scrollPosition &&
+      contentSize &&
+      viewportSize &&
+      scrollPosition.x >= Math.max(contentSize.width - viewportSize.width, 0)
+    ) {
+      setScrollDownMode(true);
+    } else {
+      setScrollDownMode(false);
+    }
+  }, [scrollPosition, contentSize, viewportSize]);
+
+  const scrollContentRightOrDown = () => {
+    // Prevent click if animation is already running
+    if (isAnimating) return;
+    
+    if (!handleHorizontalScroll || !handleVerticalScroll || !scrollPosition || !contentSize || !viewportSize) return;
+    const contentWidth = contentSize.width;
+    const viewportWidth = viewportSize.width;
+    const contentHeight = contentSize.height;
+    const viewportHeight = viewportSize.height;
+    let currentScrollX = scrollPosition.x;
+    let currentScrollY = scrollPosition.y;
+
+    // Set animation state
+    setIsAnimating(true);
+
+    if (scrollDownMode) {
+      // Scroll down by one card size scaled by zoom and jump to leftmost edge
+      const BASE_CARD_HEIGHT = 350; // Base card height at 1x zoom
+      const scaledCardHeight = BASE_CARD_HEIGHT * (zoomScale || 1); // Scale by zoom factor
+      let targetScrollY = Math.min(currentScrollY + scaledCardHeight, contentHeight - viewportHeight);
+      let targetScrollX = 0; // Jump to leftmost edge
+      
+      // Two-stage animation: first animate left, then animate down
+      animateTwoStage(currentScrollX, currentScrollY, targetScrollX, targetScrollY);
+      setScrollDownMode(false); // Switch back to right arrow mode
+    } else {
+      // Normal scroll right: only update horizontal scroll
+      if (contentWidth <= viewportWidth) {
+        setIsAnimating(false); // Reset animation state if no scroll needed
+        return;
+      }
+      let targetScrollX = currentScrollX + SCROLL_STEP;
+      if (targetScrollX > contentWidth - viewportWidth) targetScrollX = contentWidth - viewportWidth;
+      
+      // Animate horizontal movement
+      animateScroll(currentScrollX, currentScrollY, targetScrollX, currentScrollY, 200); // 400ms duration
+    }
+  };
+
+  // Two-stage animation: animate down first, then left
+  const animateTwoStage = (fromX: number, fromY: number, toX: number, toY: number) => {
+    // Stage 1: Animate vertical movement down
+    const animateVertical = () => {
+      const startTime = performance.now();
+      const duration = 300; // 300ms for down movement
+      
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smooth animation (ease-out)
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        
+        const currentY = fromY + (toY - fromY) * easeOutQuart;
+        
+        if (handleVerticalScroll) {
+          handleVerticalScroll(currentY);
+        }
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Start stage 2: horizontal movement
+          animateHorizontal();
+        }
+      };
+      
+      requestAnimationFrame(animate);
+    };
+    
+    // Stage 2: Animate horizontal movement to the left
+    const animateHorizontal = () => {
+      const startTime = performance.now();
+      const duration = 400; // 400ms for left movement
+      
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smooth animation (ease-out)
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        
+        const currentX = fromX + (toX - fromX) * easeOutQuart;
+        
+        if (handleHorizontalScroll) {
+          handleHorizontalScroll(currentX);
+        }
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Animation complete, reset animation state
+          setIsAnimating(false);
+        }
+      };
+      
+      requestAnimationFrame(animate);
+    };
+    
+    // Start with vertical animation
+    animateVertical();
+  };
+
+  // Smooth animation function for vertical-only movement
+  const animateVerticalOnly = (fromY: number, toY: number, duration: number) => {
+    const startTime = performance.now();
+    
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function for smooth animation (ease-out)
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      
+      const currentY = fromY + (toY - fromY) * easeOutQuart;
+      
+      if (handleVerticalScroll) {
+        handleVerticalScroll(currentY);
+      }
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  };
+
+  // Smooth animation function using requestAnimationFrame
+  const animateScroll = (fromX: number, fromY: number, toX: number, toY: number, duration: number) => {
+    const startTime = performance.now();
+    
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function for smooth animation (ease-out)
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      
+      const currentX = fromX + (toX - fromX) * easeOutQuart;
+      const currentY = fromY + (toY - fromY) * easeOutQuart;
+      
+      if (handleHorizontalScroll && handleVerticalScroll) {
+        handleHorizontalScroll(currentX);
+        handleVerticalScroll(currentY);
+      }
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // Animation complete, reset animation state
+        setIsAnimating(false);
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  };
   // State for disabling delete marked icon
   const [isToolbarOpen, setIsToolbarOpen] = useState(false);
   const [hoveredCircle, setHoveredCircle] = useState<number | null>(null);
@@ -33,6 +234,21 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
 
   const allFilteredSelected = filteredImages.length > 0 && filteredImages.every(img => selectedImageIds.includes(img.id));
   const toolbarIcons = [
+    {
+      name: 'scrollRight',
+      index: 98,
+      id: 'scroll-right',
+      element: scrollDownMode 
+        ? <i className="bi bi-arrow-down-circle scroll-down-icon" />
+        : <i className="bi bi-arrow-right-circle scroll-right-icon" />,
+      title: isAnimating 
+        ? 'ANIMATING...' 
+        : (scrollDownMode ? 'SCROLL DOWN & JUMP LEFT' : 'SCROLL RIGHT'),
+      color: isAnimating ? '#888' : '#ffb347',
+      onClick: isAnimating ? undefined : scrollContentRightOrDown,
+      badge: null,
+      disabled: isAnimating,
+    },
     {
       name: 'resetZoom',
       index: 99,
@@ -190,7 +406,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
         className={`no-selection-removal-on-click toolbar-panel${isToolbarOpen ? ' open' : ''}`}
       >
         {toolbarIcons.map((iconObj) => {
-          const isEnabled = iconObj.name === 'resetZoom' || iconObj.badge === null || iconObj.badge > 0;
+          const isEnabled = !iconObj.disabled && (iconObj.name === 'resetZoom' || iconObj.badge === null || (iconObj.badge !== null && iconObj.badge > 0));
           return (
             <div
               id={iconObj.id}
@@ -210,7 +426,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ selectAllImages, setHandleDeleteImage
               onTouchEnd={isEnabled ? iconObj.onClick : undefined}
             >
               {iconObj.element}
-              {iconObj.badge > 0 && (
+              {iconObj.badge !== null && iconObj.badge > 0 && (
                 <span 
                   className="toolbar-badge"
                   style={iconObj.badgeColor ? { background: iconObj.badgeColor } : {}}

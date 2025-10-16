@@ -585,6 +585,7 @@ const ImageGrid: React.FC = () => {
   const handleHorizontalScroll = (position: number) => {
     if (viewRef.current) {
       setIsScrolling(true);
+      setScrollPosition(prev => ({ ...prev, x: position })); // Update scroll position state
       viewRef.current.setPosition(-position, viewRef.current.getPosition().y);
       const mainElement = document.getElementById('main-element');
       if (mainElement) {
@@ -603,6 +604,7 @@ const ImageGrid: React.FC = () => {
   const handleVerticalScroll = (position: number) => {
     if (viewRef.current) {
       setIsScrolling(true);
+      setScrollPosition(prev => ({ ...prev, y: position })); // Update scroll position state
       viewRef.current.setPosition(viewRef.current.getPosition().x, -position);
       const mainElement = document.getElementById('main-element');
       if (mainElement) {
@@ -1531,6 +1533,12 @@ const ImageGrid: React.FC = () => {
     selectedImageIds={selectedImageIds}
     setImages={setImages}
     resetMainElement={resetMainElement}
+    handleHorizontalScroll={handleHorizontalScroll}
+    handleVerticalScroll={handleVerticalScroll}
+    scrollPosition={scrollPosition}
+    contentSize={contentSize}
+    viewportSize={viewportSize}
+    zoomScale={zoomScale}
   />
   <Header
     isHeaderOpened={isHeaderOpened}
